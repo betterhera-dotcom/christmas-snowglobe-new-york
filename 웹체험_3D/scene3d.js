@@ -16,13 +16,13 @@ export function createScene(container){
  let cityLightStats={};
  const lanternMaterials=[];
  const groups={};const loader=new GLTFLoader();
- const globeReady=loader.loadAsync('./assets/3d/snowglobe.glb').then(gltf=>{
+ const globeReady=loader.loadAsync('./assets/3d/snowglobe.glb').then(async gltf=>{
   model.add(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.frustumCulled=true;o.castShadow=true;o.receiveShadow=true;if(o.name.startsWith('TREES'))o.castShadow=false;
    const name=o.name;for(const kind of ['GLASS','BASE','CITY','TREES','PROPS'])if(name.startsWith(kind)){(groups[kind]||=[]).push(o);}
    const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(m.map)m.map.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());tuneMaterial(m);if(m.normalMap)materialMaps++;}
   }});
   for(const o of groups.PROPS||[]){const materials=Array.isArray(o.material)?o.material:[o.material];o.material=materials.map(m=>{if(m.name!=='Warm window glass')return m;const lit=m.clone();lit.emissive.setHex(0xffc36a);lit.emissiveIntensity=1.4;lit.roughness=.35;lanternMaterials.push(lit);return lit;});}
-  cityLightStats=decorateCityLights(gltf.scene);
+  cityLightStats=await decorateCityLights(gltf.scene);
   // Thin optical shell: real volume, controlled reflections, no 2D deformation.
   for(const o of groups.GLASS||[])o.material=new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:.012,transmission:1,thickness:.003,ior:1.24,transparent:true,opacity:1,depthWrite:false,side:THREE.FrontSide,envMapIntensity:.65});
   for(const o of groups.GLASS||[])o.castShadow=false;const base=model.getObjectByName('BASE');if(base){baseBounds=new THREE.Box3().setFromObject(base);baseMin=baseBounds.min.y-(pivot.position.y+model.position.y);model.position.y=-1.5-baseMin;}return true;
