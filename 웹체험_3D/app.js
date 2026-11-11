@@ -157,6 +157,7 @@ window.snowglobe={getState:()=>({mode,phase,travel,energy:motion.energy,bpm:caro
 if(new URLSearchParams(location.search).has('verify')){
  const bar=document.createElement('div');bar.style.cssText='position:fixed;top:120px;left:20px;z-index:99;background:#15251bd9;padding:8px';bar.id='verification-controls';
  for(const [label,action] of [
+ ['들고 유지',()=>{demoTime=null;startPointer();pointerHeld=true;motion.keepHeld=true;motion.sample(.5,.5,performance.now()/1000);}],['내려놓기',()=>{demoTime=null;releasePointer();}],
  ['자동 흔들기 검증',()=>{startPointer();demoTime=performance.now()/1000;}],
  ['왼쪽 위 보기',()=>scene.lookAt(0,0)],['오른쪽 아래 보기',()=>scene.lookAt(1,1)],
  ['정면 보기',()=>scene.lookAt(.5,.5)],['복귀 검증',()=>{demoTime=null;setMode('pointer');carol.reset();}]

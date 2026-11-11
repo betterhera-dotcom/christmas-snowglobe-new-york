@@ -1,0 +1,16 @@
+{
+  "snowglobe": {
+    "bytes": 51967808,
+    "materials": 22,
+    "normal_mapped": 11,
+    "roughness_mapped": 5,
+    "color_mapped": 14
+  },
+  "shop": {
+    "bytes": 32110952,
+    "materials": 15,
+    "normal_mapped": 13,
+    "roughness_mapped": 2,
+    "color_mapped": 11
+  }
+}

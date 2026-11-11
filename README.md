@@ -2,6 +2,10 @@
 
 뉴욕을 시작으로 제작하는 1인 인터랙티브 미디어아트입니다. MediaPipe 손·얼굴 추적과 Blender/Three.js 3D 도시, 실시간 눈, 속도가 변하는 캐롤을 연결합니다.
 
+## 최신 변경 (v06)
+
+배경과 책상을 실제 3D 매장으로 교체하고 접지, PBR 요철·거칠기, 매장 반사·그림자, 도시의 지속 강설을 보완했습니다. 편집 원본은 Blender/snowglobe_new_york_v06_shop_pbr.blend, 재생성 코드는 Blender/build_shop_pbr.py입니다. 검수 기록은 제작기록/v06-매장과재질-검수.txt에 있습니다.
+
 ## 실행
 
 macOS에서 `3D 스노우볼 실행.command`를 실행하고 Chrome으로 http://127.0.0.1:8877/ 에 접속합니다. Python 3가 필요합니다.
