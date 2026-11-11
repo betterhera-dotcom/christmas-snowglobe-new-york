@@ -4,3 +4,10 @@ __pycache__/
 .env
 .env.*
 *.log
+
+/배포_site/
+
+/배포_모델대기/
+/.sites-archive-*/
+/뉴욕-*-배포.tar.gz
+/뉴욕-부분업로드.tar.gz

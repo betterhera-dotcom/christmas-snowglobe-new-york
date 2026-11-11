@@ -24,7 +24,7 @@ export function createScene(container){
 
  const shop=new THREE.Group();scene.add(shop);
  const shopReady=loader.loadAsync('./assets/3d/shop.glb').then(gltf=>{shop.add(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.receiveShadow=!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.name==='SHOP dusk beyond glass');o.castShadow=(Array.isArray(o.material)?o.material:[o.material]).some(m=>/SHOP walnut|SHOP cloth|SHOP wrapping|SHOP burgundy|Aged champagne brass|SHOP winter evergreen/.test(m.name));for(const m of Array.isArray(o.material)?o.material:[o.material]){tuneMaterial(m);if(m.map)m.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());if(m.normalMap)materialMaps++;}}});shopLoaded=true;return true;}).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'매장 3D 모델을 읽지 못했습니다. 새로고침해주세요.'}));return false;});
- const ready=Promise.all([globeReady,shopReady]).then(results=>{loaded=results.every(Boolean);container.dataset.loaded=String(loaded);document.getElementById('shop').style.display='none';document.getElementById('window-snow').style.display='none';if(loaded){pivot.visible=false;shadow.visible=false;const cubeTarget=new THREE.WebGLCubeRenderTarget(256,{type:THREE.HalfFloatType});const capture=new THREE.CubeCamera(.1,40,cubeTarget);capture.position.set(0,1.6,0);capture.update(renderer,scene);const generator=new THREE.PMREMGenerator(renderer);const old=scene.environment;scene.environment=generator.fromCubemap(cubeTarget.texture).texture;old?.dispose();generator.dispose();cubeTarget.dispose();pivot.visible=true;shadow.visible=true;}return loaded;});
+ const ready=Promise.all([globeReady,shopReady]).then(results=>{loaded=results.every(Boolean);document.getElementById('shop').style.display='none';document.getElementById('window-snow').style.display='none';if(loaded){pivot.visible=false;shadow.visible=false;const cubeTarget=new THREE.WebGLCubeRenderTarget(256,{type:THREE.HalfFloatType});const capture=new THREE.CubeCamera(.1,40,cubeTarget);capture.position.set(0,1.6,0);capture.update(renderer,scene);const generator=new THREE.PMREMGenerator(renderer);const old=scene.environment;scene.environment=generator.fromCubemap(cubeTarget.texture).texture;old?.dispose();generator.dispose();cubeTarget.dispose();pivot.visible=true;shadow.visible=true;}container.dataset.loaded=String(loaded);return loaded;});
  // Warm fixtures in the shop are anchored in the same real 3D room.
  for(const x of [-3.8,3.8]){const lamp=new THREE.PointLight(0xffb763,6,9,2);lamp.position.set(x,3,-1.6);shop.add(lamp);}
  const shopSnowGeo=new THREE.BufferGeometry(),shopSnowPos=new Float32Array(350*3);
@@ -53,26 +53,21 @@ export function createScene(container){
   const city=model.getObjectByName('CITY');if(city)for(const [x,z,rotation] of [[-3,-2,0],[2.7,-2,0],[-3,-5,0],[2.7,-5,0],[-3,-8,0],[2.7,-8,0],[0,-10,Math.PI],[3,1,-Math.PI/2],[-3,1,Math.PI/2]]){const copy=city.clone();copy.traverse(o=>{if(o.isMesh&&o.material.name.startsWith('Snow')){const geometry=o.geometry.clone(),positions=geometry.attributes.position,index=geometry.index,keep=[];for(let n=0;n<index.count;n+=3){const a=index.getX(n),b=index.getX(n+1),c=index.getX(n+2);if(Math.max(positions.getY(a),positions.getY(b),positions.getY(c))>.90)keep.push(a,b,c);}geometry.setIndex(keep);o.geometry=geometry;}});copy.traverse(o=>{if(o.isMesh)o.castShadow=false;});copy.position.set(x,0,z);copy.rotation.y=rotation;architecture.add(copy);}
   const trees=model.getObjectByName('TREES');if(trees)for(const [x,z]of [[-2,-3],[2,-3]]){const copy=trees.clone();copy.position.set(x,0,z);outer.add(copy);}
  });
- // Existing wide AI artwork is a curved distant backdrop, not a surveyed 360 panorama.
- // The visible head-look range stays within its front 252 degrees; no image edge is exposed.
- const skyGeometry=new THREE.SphereGeometry(55,96,48),skyUV=skyGeometry.attributes.uv,skyP=skyGeometry.attributes.position;
- for(let i=0;i<skyUV.count;i++){
-  const angle=Math.atan2(skyP.getX(i),-skyP.getZ(i)),elevation=Math.asin(THREE.MathUtils.clamp(skyP.getY(i)/55,-1,1));
-  skyUV.setXY(i,THREE.MathUtils.clamp(.5+angle/4.4,0,1),.55+elevation*.75);
- }
- const sky=new THREE.Mesh(skyGeometry,new THREE.MeshBasicMaterial({color:0x8c9eaf,side:THREE.BackSide,transparent:true,opacity:0,depthWrite:false,toneMapped:false}));scene.add(sky);sky.visible=false;
- // Fade the top of this non-360 image into winter sky instead of stretching its edge.
- sky.material.onBeforeCompile=shader=>{
-  shader.uniforms.winterSky={value:new THREE.Color(0x9faab8)};
-  shader.fragmentShader='uniform vec3 winterSky;\n'+shader.fragmentShader;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n#ifdef USE_MAP\ndiffuseColor.rgb=mix(diffuseColor.rgb,winterSky,smoothstep(.80,.98,vMapUv.y));\n#endif');
- };
- let cityBackdropLoaded=false,cityBackdropSize=null;
- new THREE.TextureLoader().load('./assets/redraw-v4/new-york-wide.png',texture=>{
-  texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-  sky.material.map=texture;sky.material.color.setHex(0xffffff);sky.material.needsUpdate=true;
-  cityBackdropLoaded=true;cityBackdropSize=[texture.image.width,texture.image.height];
- },undefined,()=>{container.dataset.backgroundWarning='뉴욕 배경을 읽지 못해 기본 하늘을 표시합니다.';});
+ // Independent sky dome and distant skyline: buildings never stretch with sky elevation.
+ const sky=new THREE.Mesh(new THREE.SphereGeometry(55,64,32),new THREE.MeshBasicMaterial({color:0x9caabd,side:THREE.BackSide,transparent:true,opacity:0,depthWrite:false,toneMapped:false,fog:false}));
+ sky.rotation.y=Math.PI/2;sky.renderOrder=-20;sky.visible=false;scene.add(sky);
+ const skyline=new THREE.Mesh(new THREE.CylinderGeometry(40,40,22,144,1,true),new THREE.MeshBasicMaterial({color:0xc4cdd9,side:THREE.BackSide,transparent:true,opacity:0,depthWrite:false,alphaTest:.015,toneMapped:false,fog:false}));
+ skyline.position.y=11+.72;skyline.rotation.y=Math.PI;skyline.renderOrder=-10;skyline.visible=false;scene.add(skyline);
+ const cityFog=new THREE.Fog(0x9caabd,8,52);
+ let cityBackdropLoaded=false,cityBackdropSize=null,skyLoaded=false,skylineLoaded=false;
+ const backgroundLoader=new THREE.TextureLoader();
+ backgroundLoader.load('./assets/city-background-v2/winter-sky.png',texture=>{
+  texture.colorSpace=THREE.SRGBColorSpace;sky.material.map=texture;sky.material.color.setHex(0xffffff);sky.material.needsUpdate=true;skyLoaded=true;cityBackdropLoaded=skylineLoaded;
+ },undefined,()=>{container.dataset.backgroundWarning='겨울 하늘을 읽지 못했습니다.';});
+ backgroundLoader.load('./assets/city-background-v2/manhattan-distant.png',texture=>{
+  texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=THREE.RepeatWrapping;texture.repeat.x=3;texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  skyline.material.map=texture;skyline.material.needsUpdate=true;skylineLoaded=true;cityBackdropLoaded=skyLoaded;cityBackdropSize=[texture.image.width,texture.image.height];
+ },undefined,()=>{container.dataset.backgroundWarning='뉴욕 원경을 읽지 못했습니다.';});
  const cityCount=1800,cityPos=new Float32Array(cityCount*3),citySpeeds=new Float32Array(cityCount);for(let i=0;i<cityCount;i++){const near=i<650;cityPos[i*3]=(Math.random()-.5)*(near?4:22);cityPos[i*3+1]=.9+Math.random()*(near?4:10);cityPos[i*3+2]=near?-.9+Math.random()*2:(Math.random()-.5)*24;citySpeeds[i]=.23+Math.random()*.45;}
  const cityGeo=new THREE.BufferGeometry();cityGeo.setAttribute('position',new THREE.BufferAttribute(cityPos,3));const citySize=Float32Array.from({length:cityCount},()=>.045+Math.random()*.08625);cityGeo.setAttribute('size',new THREE.BufferAttribute(citySize,1));const citySnowMat=snowMat.clone();citySnowMat.uniforms.opacity.value=.92;const cityFlakes=new THREE.Points(cityGeo,citySnowMat);scene.add(cityFlakes);cityFlakes.visible=false;
  const startPos=new THREE.Vector3(0,2.9,9.5),endPos=new THREE.Vector3(-.20,1.13,1.12),startAim=new THREE.Vector3(0,1.60,0),endAim=new THREE.Vector3(-.10,1.40,-.42),aim=new THREE.Vector3(),inv=new THREE.Quaternion(),g=new THREE.Vector3(),v=new THREE.Vector3();
@@ -82,6 +77,7 @@ export function createScene(container){
  const api={canvas:renderer.domElement,ready,lookAt(x,y=.5){targetLook=THREE.MathUtils.clamp((x-.5)*2,-1,1);targetLookY=THREE.MathUtils.clamp((y-.5)*2,-1,1);},
  reset(){pose.reset();physics.reset();targetLook=targetLookY=look=lookY=travelLast=0;},
  update(dt,time,motion,travel=0){
+  if(!loaded){container.dataset.state=JSON.stringify(api.stats());return;}
   const tick=performance.now();frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
   pivot.position.set(pose.position[0]*settle,1.5+pose.position[1]*settle,pose.position[2]*settle);pivot.rotation.set(pose.rotation[0]*settle,pose.rotation[1]*settle,pose.rotation[2]*settle);
   if(baseBounds){let lowest=Infinity;for(const x of [baseBounds.min.x,baseBounds.max.x])for(const y of [baseBounds.min.y,baseBounds.max.y])for(const z of [baseBounds.min.z,baseBounds.max.z]){v.set(x,y+model.position.y,z).applyQuaternion(pivot.quaternion).add(pivot.position);lowest=Math.min(lowest,v.y);}if(lowest<0)pivot.position.y-=lowest;contactGap=Math.max(0,lowest);}
@@ -90,7 +86,7 @@ export function createScene(container){
   look+=(targetLook-look)*(1-Math.exp(-dt*3));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*3));
   if(travel>=1){const base=endAim.clone().sub(endPos),yaw=-look*.90,pitch=-lookY*.38;const euler=new THREE.Euler(pitch,yaw,0,'YXZ');base.applyEuler(euler);aim.copy(camera.position).add(base);}
   camera.lookAt(aim);camera.fov=36+enter*24;camera.updateProjectionMatrix();
-  sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;outer.visible=travel>.68;shadow.visible=travel<.5;shop.visible=travel<.74;
+  sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;skyline.material.opacity=sky.material.opacity;skyline.visible=sky.visible;scene.fog=travel>.68?cityFog:null;outer.visible=travel>.68;shadow.visible=travel<.5;shop.visible=travel<.74;
   for(const o of groups.GLASS||[])o.visible=travel<.84;
   for(const o of groups.BASE||[])o.visible=travel<.80;
   flakes.visible=travel<.92;cityFlakes.visible=travel>.68;
@@ -100,7 +96,7 @@ export function createScene(container){
   renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2&&quality===1){quality=.75;renderer.setPixelRatio(1);resize();snowMat.uniforms.pixelRatio.value=1;citySnowMat.uniforms.pixelRatio.value=1;}
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);
  },
- stats(){return {artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
+ stats(){return {artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
  };
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 연결이 중단되었습니다. 새로고침해주세요.'}));});
  return api;

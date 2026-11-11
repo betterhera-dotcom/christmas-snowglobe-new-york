@@ -1,0 +1,5 @@
+전용 뉴욕 원경과 겨울 구름 하늘을 기본 imagegen으로 생성. 원경은 따뜻한 창문, 크림 석재, 벽돌과 옥상 눈, 투명 하늘; 거리·사람·고정 눈송이 제외. 하늘은 청회색 겨울 구름과 옅은 저녁빛, 건물/땅/눈송이 제외. 2172×724 RGBA 및 1774×887 RGB.
+서로 다른 원통/돔에 연결, 원경 가로3회 반복, 먼 도시 안개. 큰 눈은 유지. 이전 이미지 보존.
+시작 로딩 문제: 모델 다운로드 전 파티클만 렌더됨. HTML 초기 data-loaded=false, 준비안내, CSS 캔버스 숨김, 준비 전 update 중지. 성공시 표시, 실패시 재시도.
+배포 패키지 로컬8878 실제 검사: 준비안내 관찰, 완료 후 artLoaded/shopLoaded/backgroundLoaded true, error null, contactGap0. 사람 웹캠 미검증.
+Blender5.3 백그라운드 열기 검사: v06 파일 FILE 이미지15, packed15, unpacked0.

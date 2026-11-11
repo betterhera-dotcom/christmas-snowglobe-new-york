@@ -1,0 +1,8 @@
+배경 개선 전 기준 버전. GitHub 13b017e pushed.
+Sites project: appgprj_6af4eb7609e881918918ceee7c152752
+URL: https://christmas-snowglobe-nyc-hera.ciaobellakim.chatgpt.site
+Deployment: appgdep_6af4ecaced3c8191a137549cba815e75 succeeded
+Saved version: appgprj_6af4eb7609e881918918ceee7c152752~appgver_d94ce36a8a908191a8f2307d52bb331c
+Sites source: 0a839b731e00a7f1ca8a1e11378d09b8e3c38958
+Access: owner-private. 배포본 로컬 테스트에서 모델/도시 진입 확인. 실서버는 로그인 게이트까지 확인.
+배포_site/의 독립 저장소 사용. 원본 GLB를 16MiB 조각으로 나눠 byte 동일 검증 후 parseAsync로 복원. 외부 전달용 일반 공개 링크가 아님.

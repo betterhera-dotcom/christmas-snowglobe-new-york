@@ -35,8 +35,10 @@ function drawStorm(time){
 }
 function status(text,active=false){$('status').textContent=text;$('status-dot').classList.toggle('active',active);}
 function error(text){$('error').textContent=text;$('error').hidden=!text;}
-window.addEventListener('art-error',event=>error(event.detail));
-try{scene=createScene($('scene'));$('camera').disabled=$('pointer').disabled=true;status('3D 스노우볼을 준비하고 있습니다…');scene.ready.then(ok=>{$('camera').disabled=$('pointer').disabled=!ok;status(ok?'시작 방법을 선택해주세요':'3D 파일을 읽지 못했습니다');});}catch(e){error('입체 화면을 시작하지 못했습니다. Chrome의 그래픽 가속 설정과 브라우저를 확인해주세요.');console.error(e);}
+function loadingFailed(message){error(message);$('loading').hidden=false;$('loading-message').textContent=message;$('loading').querySelector('small').textContent='연결을 확인한 후 다시 불러와주세요.';$('retry-load').hidden=false;}
+$('retry-load').addEventListener('click',()=>location.reload());
+window.addEventListener('art-error',event=>loadingFailed(event.detail));
+try{scene=createScene($('scene'));$('camera').disabled=$('pointer').disabled=$('reset').disabled=true;status('3D 스노우볼을 준비하고 있습니다…');scene.ready.then(ok=>{$('camera').disabled=$('pointer').disabled=$('reset').disabled=!ok;$('scene').setAttribute('aria-busy','false');if(ok){$('loading').hidden=true;}else{loadingFailed('스노우볼을 불러오지 못했어요');}status(ok?'시작 방법을 선택해주세요':'3D 파일을 읽지 못했습니다');});}catch(e){loadingFailed('입체 화면을 시작하지 못했습니다. Chrome의 그래픽 가속 설정과 브라우저를 확인해주세요.');console.error(e);}
 function stopCamera(){if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('webcam').srcObject=null;$('camera-preview').removeAttribute('data-active');lastVideo=-1;}
 function setMode(value){
   mode=value;phase='globe';travel=0;document.body.dataset.phase=phase;motion.reset();grip.reset();headLook.reset();pointerHeld=false;motion.keepHeld=false;motion.gripRevision=0;motion.wristRoll=0;motion.pitch=0;scene?.reset();milestones=[false,false,false];
