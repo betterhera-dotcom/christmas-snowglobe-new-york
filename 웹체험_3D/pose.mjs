@@ -1,9 +1,11 @@
 export class HeldPose{
  constructor(){this.reset();}
- reset(){this.held=false;this.anchor=null;this.position=[0,0,0];this.velocity=[0,0,0];this.rotation=[0,0,0];this.target=[0,0,0];}
+ reset(){this.held=false;this.anchor=null;this.gripRevision=0;this.position=[0,0,0];this.velocity=[0,0,0];this.rotation=[0,0,0];this.target=[0,0,0];}
  update(dt,m){
   const held=!!m.keepHeld;
-  if(held&&!this.held)this.anchor={x:m.x,y:m.y,base:[...this.position]};
+  const revision=m.gripRevision||0;
+  if(held&&(!this.held||revision!==this.gripRevision)){const base=[...this.position];if(this.held)base[1]-=.22;this.anchor={x:m.x,y:m.y,base};}
+  this.gripRevision=revision;
   this.held=held;
   this.target=held?[Math.max(-1.25,Math.min(1.25,this.anchor.base[0]+(m.x-this.anchor.x)*4)),Math.max(.12,Math.min(1.1,this.anchor.base[1]+.22+(this.anchor.y-m.y)*3)),0]:[0,0,0];
   const steps=Math.max(1,Math.ceil(dt/.008)),h=dt/steps;

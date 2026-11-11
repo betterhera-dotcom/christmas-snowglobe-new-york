@@ -42,19 +42,21 @@ function openFingers(hand){
 }
 export class Grip {
   constructor(){this.reset();}
-  reset(){this.closed=false;this.since=null;this.lastSeen=-Infinity;this.openSince=null;}
+  reset(){this.closed=false;this.since=null;this.lastSeen=-Infinity;this.openSince=null;this.openFrames=0;}
   update(hand,time=performance.now()/1000){
-    if(!hand){
-      this.since=this.openSince=null;
-      if(time-this.lastSeen>1.2)this.closed=false;
+    if(!hand||hand.length!==21||hand.some(p=>!p||!Number.isFinite(p.x+p.y+(p.z??0)))){
+      this.since=this.openSince=null;this.openFrames=0;
+      if(time-this.lastSeen>2.5)this.closed=false;
       return this.closed;
     }
+    const continuous=time-this.lastSeen<=.25;
     this.lastSeen=time;
     if(this.closed){
-      if(openFingers(hand)>=3){
-        if(this.openSince===null)this.openSince=time;
-        if(time-this.openSince>=.4){this.closed=false;this.since=null;}
-      }else this.openSince=null;
+      if(!isCGrip(hand)&&openFingers(hand)===4){
+        if(this.openSince===null||!continuous){this.openSince=time;this.openFrames=0;}
+        this.openFrames++;
+        if(time-this.openSince>=.8&&this.openFrames>=6){this.closed=false;this.since=null;}
+      }else{this.openSince=null;this.openFrames=0;}
     }else{
       if(isCGrip(hand)){
         if(this.since===null)this.since=time;

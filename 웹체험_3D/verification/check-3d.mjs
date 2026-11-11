@@ -16,3 +16,5 @@ assert(maxUpper>200&&maxAirborne>1200,'snow spreads throughout the globe');asser
 for(let i=0;i<7200;i++)snow.update(1/60,15+i/60,[0,0,0]);assert.equal(snow.stats().airborne,0,'all snow settles after rest');
 const collision=new GlobeSnow(1,random);collision.boxes=[{min:[-.2,1,-.2],max:[.2,1.5,.2]}];collision.p.set([0,1.48,0]);collision.update(1/60,0,[0,0,0]);assert(collision.p[1]>=1.5,'roof collision');
 console.log(JSON.stringify({grabAnchor:true,heldNoDrop:true,boundedTilt:true,release:true,maxUpper,maxAirborne,maxRadius,settled:snow.stats(),roofCollision:true}));
+
+const recovered=new HeldPose();for(let i=0;i<180;i++)recovered.update(1/60,{keepHeld:true,x:.5,y:.5});const heldHeight=recovered.position[1];for(let i=0;i<120;i++)recovered.update(1/60,{keepHeld:true,x:.8,y:.85,gripRevision:1});assert(Math.abs(recovered.position[1]-heldHeight)<.001,'reacquired hand must not pull globe down');assert(Math.abs(recovered.position[0])<.001,'reacquired hand must not snap sideways');console.log('PASS: reacquisition preserves held position');

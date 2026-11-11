@@ -39,11 +39,11 @@ window.addEventListener('art-error',event=>error(event.detail));
 try{scene=createScene($('scene'));$('camera').disabled=$('pointer').disabled=true;status('3D 스노우볼을 준비하고 있습니다…');scene.ready.then(ok=>{$('camera').disabled=$('pointer').disabled=!ok;status(ok?'시작 방법을 선택해주세요':'3D 파일을 읽지 못했습니다');});}catch(e){error('입체 화면을 시작하지 못했습니다. Chrome의 그래픽 가속 설정과 브라우저를 확인해주세요.');console.error(e);}
 function stopCamera(){if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('webcam').srcObject=null;$('camera-preview').removeAttribute('data-active');lastVideo=-1;}
 function setMode(value){
-  mode=value;phase='globe';travel=0;document.body.dataset.phase=phase;motion.reset();grip.reset();headLook.reset();pointerHeld=false;motion.keepHeld=false;motion.wristRoll=0;motion.pitch=0;scene?.reset();milestones=[false,false,false];
+  mode=value;phase='globe';travel=0;document.body.dataset.phase=phase;motion.reset();grip.reset();headLook.reset();pointerHeld=false;motion.keepHeld=false;motion.gripRevision=0;motion.wristRoll=0;motion.pitch=0;scene?.reset();milestones=[false,false,false];
   questIds.forEach((id,i)=>{$(id).classList.remove('done');$(id).setAttribute('aria-label',`${questNames[i]}: 대기`);});$('quest-count').textContent='0';$('feedback').hidden=true;
   $('reset').textContent='처음으로';document.querySelector('.step').textContent='01 / LIFT THE SNOWGLOBE';document.body.classList.toggle('active',value!=='idle');
   $('mode-label').textContent=value==='camera'?'CAMERA':value==='pointer'?'TOUCH / MOUSE':'READY';$('prompt').textContent='손으로 작은 겨울을 들어보세요';
-  $('hint').textContent=value==='pointer'?'마우스를 누른 채 상하·좌우·원형으로 흔들어보세요. 놓으면 내려놓습니다.':'손을 C자 모양으로 만들어 잡고 자유롭게 흔들어보세요. 손을 완전히 펴면 내려놓습니다.';$('hand-cursor').hidden=true;lastHand=0;
+  $('hint').textContent=value==='pointer'?'마우스를 누른 채 상하·좌우·원형으로 흔들어보세요. 놓으면 내려놓습니다.':'손을 C자 모양으로 만들어 잡고 자유롭게 흔들어보세요. 손을 완전히 펴서 1초간 유지하면 내려놓습니다.';$('hand-cursor').hidden=true;lastHand=0;
 }
 async function startCamera(){
   if(starting||!scene?.stats().artLoaded)return;const token=++generation;starting=true;$('camera').disabled=true;error('');stopCamera();setMode('idle');status('손 인식을 준비하고 있습니다…');
@@ -86,7 +86,7 @@ $('pointer').addEventListener('click',startPointer);
 function samplePointer(event){const r=$('scene').getBoundingClientRect(),x=(event.clientX-r.left)/r.width;if(phase==='city'){if(mode==='pointer')scene?.lookAt(x,(event.clientY-r.top)/r.height);return;}if(mode!=='pointer'||phase!=='globe'||!pointerHeld)return;motion.sample(x,(event.clientY-r.top)/r.height,performance.now()/1000);}
 $('scene').addEventListener('pointerdown',event=>{if(mode==='idle'&&!starting)startPointer();if(mode==='pointer'){pointerHeld=true;motion.keepHeld=true;$('scene').setPointerCapture(event.pointerId);samplePointer(event);}});
 $('scene').addEventListener('pointermove',samplePointer);
-function releasePointer(){pointerHeld=false;motion.keepHeld=false;motion.release();}
+function releasePointer(){if(mode==='camera')return;pointerHeld=false;motion.keepHeld=false;motion.release();}
 $('scene').addEventListener('pointerup',releasePointer);
 $('scene').addEventListener('pointercancel',releasePointer);
 $('scene').addEventListener('lostpointercapture',releasePointer);
@@ -108,7 +108,8 @@ function frame(now){
         const points=[hand[0],hand[5],hand[9],hand[13],hand[17]],x=1-points.reduce((s,p)=>s+p.x,0)/5,y=points.reduce((s,p)=>s+p.y,0)/5;
         const wasClosed=grip.closed,closed=grip.update(result.worldLandmarks?.[0]||hand,time);
         const wristAngle=Math.atan2(hand[9].y-hand[0].y,hand[9].x-hand[0].x);
-        if(closed&&!wasClosed)wristBase=wristAngle;
+        if(closed&&(!wasClosed||time-lastHand>.3))wristBase=wristAngle;
+        if(closed&&wasClosed&&time-lastHand>.3)motion.gripRevision=(motion.gripRevision||0)+1;
         if(closed){motion.wristRoll=-Math.atan2(Math.sin(wristAngle-wristBase),Math.cos(wristAngle-wristBase));
           const points3D=result.worldLandmarks?.[0]||hand,palm=Math.hypot(points3D[9].x-points3D[0].x,points3D[9].y-points3D[0].y,points3D[9].z-points3D[0].z);
           motion.pitch=Math.max(-.65,Math.min(.65,(points3D[9].z-points3D[0].z)/Math.max(.001,palm)));
