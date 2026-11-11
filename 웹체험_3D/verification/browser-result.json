@@ -1,0 +1,72 @@
+{
+  "before": {
+    "mode": "pointer",
+    "energy": 0,
+    "bpm": 72,
+    "burst": 0,
+    "strokes": 0,
+    "modelLoaded": false,
+    "cameraActive": false,
+    "handSeen": false,
+    "airborne": 0,
+    "particles": 1400,
+    "drawCalls": 110
+  },
+  "shaken": {
+    "mode": "pointer",
+    "energy": 0.7182929053243041,
+    "bpm": 133.20501115093583,
+    "burst": 0.04500999999999933,
+    "strokes": 11,
+    "modelLoaded": false,
+    "cameraActive": false,
+    "handSeen": false,
+    "airborne": 1312,
+    "particles": 1400,
+    "drawCalls": 110
+  },
+  "settled": {
+    "mode": "pointer",
+    "energy": 0.000009558972234283217,
+    "bpm": 72.00183818087099,
+    "burst": 0,
+    "strokes": 0,
+    "modelLoaded": false,
+    "cameraActive": false,
+    "handSeen": false,
+    "airborne": 0,
+    "particles": 1400,
+    "drawCalls": 110
+  },
+  "muted": "true",
+  "reset": {
+    "mode": "idle",
+    "energy": 0,
+    "bpm": 72,
+    "burst": 0,
+    "strokes": 0,
+    "modelLoaded": false,
+    "cameraActive": false,
+    "handSeen": false,
+    "airborne": 0,
+    "particles": 1400,
+    "drawCalls": 110
+  },
+  "camera": {
+    "mode": "camera",
+    "energy": 0,
+    "bpm": 72,
+    "burst": 0,
+    "strokes": 0,
+    "modelLoaded": true,
+    "cameraActive": true,
+    "handSeen": false,
+    "airborne": 0,
+    "particles": 1400,
+    "drawCalls": 110
+  },
+  "cameraStopped": true,
+  "overflow": false,
+  "errors": [],
+  "externalRequests": []
+}

@@ -1,0 +1,23 @@
+{
+  "job": "50ce47a9-a0bc-410f-b960-024ebe6c7abe",
+  "params": {
+    "model": "gpt_image_2_6",
+    "quality": "high",
+    "resolution": "2k",
+    "aspect_ratio": "1:1",
+    "count": 1,
+    "background": "transparent",
+    "output_format": "png",
+    "medias": [
+      {
+        "role": "image",
+        "value": "c703793c-6c7b-4056-8972-adcdd7dd28af"
+      }
+    ],
+    "prompt": "Precise production cleanup of this exact snowglobe sprite. Remove ALL suspended airborne white snow particles and specks from the clear air inside the glass, especially the dark empty upper half and in front of buildings. The air is completely clear and still. Preserve the accumulated snow on roofs, trees and ground, warm lamps, every building, exact sphere outline, pedestal, camera, size, pixel alignment, glass edge highlights and window reflections. Keep transparent alpha OUTSIDE the globe, no background, no redesign, no new snow, no fairy. Remove floating particles only; the real time application will animate them separately. Same exact 2048 square framing."
+  },
+  "url": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261111_122227_50ce47a9-a0bc-410f-b960-024ebe6c7abe.png",
+  "quotedCredits": 2.75,
+  "actualDebit": "not returned",
+  "change": "Removed baked airborne snow; source original retained. Generated edit not pixel identical."
+}

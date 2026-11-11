@@ -1,0 +1,7 @@
+2026-11-11
+Approved v4 art integrated. Existing approved d60c video retained.
+Chrome 1440x1199: loaded new art, pointer approach, snow milestone, repeated drags triggered entering, arrived 3/3, reset successful.
+MediaPipe initialization completed; getUserMedia permission pending. No claim of actual camera stream or hand tracking verified.
+Motion checks passed including 15 Hz input, jitter suppression, loss/reacquisition and reset.
+New city hand pan implemented; actual hand pan unverified.
+No new paid generation.

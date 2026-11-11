@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>손끝에서 열리는 크리스마스 · 스노우볼 세계여행</title>
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
+</head>
+<body data-phase="globe">
+  <main id="experience">
+    <div id="shop" aria-hidden="true"></div>
+    <canvas id="window-snow" aria-hidden="true"></canvas>
+    <div id="scene" aria-label="크리스마스 매장에서 손으로 들고 흔드는 뉴욕 스노우볼"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <header class="arcade-panel">
+      <div class="title"><h1>손끝에서 열리는 크리스마스</h1><p>스노우볼 세계여행</p></div>
+      <div class="destination"><span class="small-label">WINTER JOURNEY</span><span>NEW YORK</span></div>
+      <ol class="quest" aria-label="체험 진행">
+        <li id="quest-hold" aria-label="스노우볼 들기: 대기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4v4h-4zM9 8h6v8h-2v5h-2v-5H9zM8 9H3V5h3v2h2zM16 9h5V5h-3v2h-2zM8 11H2v5h4v-2h2zM16 11h6v5h-4v-2h-2z"/></svg><span>들기</span></li>
+        <li id="quest-snow" aria-label="눈 깨우기: 대기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 1h2v5l3-3 2 2-5 5v1h1l5-5 2 2-3 3h5v2h-5l3 3-2 2-5-5h-1v1l5 5-2 2-3-3v5h-2v-5l-3 3-2-2 5-5v-1h-1l-5 5-2-2 3-3H1v-2h5L3 8l2-2 5 5h1v-1L6 5l2-2 3 3z"/></svg><span>눈</span></li>
+        <li id="quest-city" aria-label="뉴욕 도착: 대기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 1h2v3h2v3h2v14h3V11h3v12H1V13h4v8h2V7h2V4h2z"/><path class="pixel-window" d="M10 9h4v2h-4zM10 13h4v2h-4zM10 17h4v2h-4z"/></svg><span>여행</span></li>
+      </ol><span class="quest-count"><span id="quest-count">0</span><small>/ 3</small></span>
+    </header>
+    <div class="scene-caption"><span>THE CHRISTMAS ATELIER</span><p>작은 유리구 속, 또 하나의 겨울</p></div>
+    <div id="feedback" role="status" aria-live="polite" hidden></div>
+    <div id="hand-cursor" hidden aria-hidden="true">✦</div>
+    <section class="instruction arcade-panel">
+      <div class="guide"><span class="step">01 / LIFT THE SNOWGLOBE</span><h2 id="prompt">손으로 작은 겨울을 들어보세요</h2><p id="hint">한 손을 보여주고 위로 올려보세요. 스노우볼을 들고 좌우로 충분히 흔들면 뉴욕으로 떠납니다.</p></div>
+      <div class="actions"><button id="camera" class="primary">카메라로 시작 <span aria-hidden="true">▶</span></button><button id="pointer">마우스 · 터치로 체험</button></div>
+      <div class="readout"><div class="signal"><i id="status-dot"></i><span id="status">시작 방법을 선택해주세요</span></div><span id="mode-label">READY</span><div class="energy"><span>SNOW</span><div class="meter" role="progressbar" aria-label="눈을 깨우는 힘" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="energy-bar"></div></div></div><span class="tempo"><span id="bpm">56</span> <small>BPM</small></span></div>
+      <p id="error" role="alert" hidden></p>
+    </section>
+    <footer><span class="footer-title">스노우볼 세계여행 <span>· CHRISTMAS EDITION</span></span><div><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset">처음으로</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
+    <details id="camera-preview"><summary>손 인식 확인</summary><video id="webcam" autoplay playsinline muted></video><p>영상은 이 기기에서만 처리하며 저장하지 않습니다.</p></details>
+    <canvas id="storm-particles" aria-hidden="true"></canvas><div id="blizzard" aria-hidden="true"></div>
+    <noscript>이 작품을 실행하려면 Chrome에서 JavaScript를 허용해주세요.</noscript>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

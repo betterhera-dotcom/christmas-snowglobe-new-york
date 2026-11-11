@@ -1,0 +1,159 @@
+{
+  "master": {
+    "model": "gpt_image_2_6",
+    "quality": "high",
+    "resolution": "2k",
+    "aspect_ratio": "16:9",
+    "count": 1,
+    "medias": [
+      {
+        "role": "image",
+        "value": "54de8042-6770-450e-904a-c4a85b9b1fc0"
+      },
+      {
+        "role": "image",
+        "value": "80b877ca-9bc3-41c6-83bb-574a23093047"
+      }
+    ],
+    "prompt": "Edit reference 1 into the master frame of a Christmas snowglobe interactive artwork. PRESERVE its exact antique forest-green boutique counter, windows, camera perspective, soft diagonal daylight, dark green wall, brass details, natural optical depth and restrained tactile cinematic miniature CGI. Reference 2 is the exact approved fairy identity and outfit, preserve face, proportions, pink bellflower hat, botanical skirt and translucent veined wings; remove blue background. Add subtle evergreen garlands with burgundy bows at upper edges, a small warm-lit tree and wrapped ivory gifts at far right, frost and falling snow OUTSIDE windows, keeping the exact green interior and flowers. On the center-right counter place a beautiful ROUND CLEAR GLASS snowglobe with compact deep emerald enamel pedestal and delicate thin brass botanical relief. Globe is a true sphere, about 34 percent image width, resting at y=80 percent. Inside is a physical miniature NEW YORK winter neighborhood on a circular snowy island: cream limestone Empire State Building at rear left, three little cream and brick brownstones with green roofs and glowing windows at right, a snowy winding street, brass lamps, modest lit Christmas tree front right. Buildings occupy lower two thirds of sphere leaving visible clear air above, discrete three-dimensional miniatures not a city photo or painted backdrop. Glass has subtle reflections of these same shop windows, no opaque white highlights obscuring world. The exact approved fairy hovers left of globe, full body only 22 percent image height, both hands touching glass, tiny relative to surroundings. Physically coherent soft shadows, contact points, perspective and same soft daylight on all elements. Maintain intimate dark green reference shop, do not replace with grand gilded hall. No branding, letters, signage, perfume, UI, collage or separate panels. No excessive gold or overall orange tint. Single cohesive cinematic frame, not painterly illustration."
+  },
+  "jobs": [
+    {
+      "index": 0,
+      "job_id": "c2878819-8c57-4aa8-9f93-26773592530d",
+      "name": "shop",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "cbf5d0ba-9806-4806-9de8-e86638ce2b11"
+          }
+        ],
+        "aspect_ratio": "16:9",
+        "prompt": "Create the exact clean background plate of this image. Remove ONLY fairy and snowglobe including their shadows and reflections. Reconstruct matching dark green wall and marble counter behind them. Preserve every other pixel arrangement, camera, Christmas decorations, windows, soft daylight, architecture and materials. Empty center counter. No new objects, no text."
+      }
+    },
+    {
+      "index": 1,
+      "job_id": "c703793c-6c7b-4056-8972-adcdd7dd28af",
+      "name": "snowglobe",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "cbf5d0ba-9806-4806-9de8-e86638ce2b11"
+          }
+        ],
+        "aspect_ratio": "1:1",
+        "prompt": "Isolate ONLY the exact snowglobe and its green botanical brass pedestal from this image on genuine transparent alpha background. Preserve identical camera, design, miniature buildings, lamps, snowy winding road, Empire State tower back left and tree front right. Full object with margin, no fairy, shop or external shadow. Clear glass with source window reflections. No solid background or checkerboard. Air inside globe sparse snow. Preserve precise material and lighting, do not redesign.",
+        "background": "transparent",
+        "output_format": "png"
+      }
+    },
+    {
+      "index": 2,
+      "job_id": "0daf80fa-f900-42b6-9951-abd6230b13f9",
+      "name": "fairy",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "cbf5d0ba-9806-4806-9de8-e86638ce2b11"
+          }
+        ],
+        "aspect_ratio": "1:1",
+        "prompt": "Isolate ONLY the exact full-body fairy from this image on genuine transparent alpha background. Exact face, pink bellflower hat, veined wings, botanical dress, flying right with hands touching invisible globe, exact pose and lighting. Remove entire globe and room. Full silhouette with margins, no blue background, shadow, text or props. No character redesign.",
+        "background": "transparent",
+        "output_format": "png"
+      }
+    },
+    {
+      "index": 3,
+      "job_id": "1a71808f-fab7-41af-8320-62590e0331e2",
+      "name": "new-york-city",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "cbf5d0ba-9806-4806-9de8-e86638ce2b11"
+          }
+        ],
+        "aspect_ratio": "21:9",
+        "prompt": "Move camera INSIDE the exact miniature New York neighborhood in this reference globe, to pedestrian eye level on its snowy winding lane. Create a wide cinematic environment with same brownstones at right, same cream Empire State tower rear-left, brass streetlights and small Christmas tree front right, cream stone and warm brick, forest-green roofs and doors, soft wintry daylight and warm windows. Extend neighborhood coherently to both sides. Preserve tactile miniature CGI physical materials and delicate realistic depth; same world as shop, not unrelated city photography or illustration. No globe rim, pedestal, fairy, shop exterior or text. Light falling snow with clear view of architecture. Full immersive street fills frame."
+      }
+    },
+    {
+      "index": 4,
+      "job_id": "4cb7a39c-5795-4013-ab49-8b73f395a3f0",
+      "name": "snowstorm",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "cbf5d0ba-9806-4806-9de8-e86638ce2b11"
+          }
+        ],
+        "aspect_ratio": "16:9",
+        "prompt": "Create the transition frame immediately as camera enters the same reference snowglobe: soft ivory snowflakes swirl around camera in a gentle spiral, dense at edges, glimpse of same New York snowy street, green roofs, warm brass lamps and cream tower through center. Cinematic physical depth, several large softly blurred flakes near camera and tiny far flakes. Soft daylight with restrained warm highlights, no black vortex, no neon, no text, no UI. Preserve source visual world."
+      }
+    }
+  ],
+  "files": [
+    {
+      "name": "master-scene",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261111_114302_cbf5d0ba-9806-4806-9de8-e86638ce2b11.png"
+    },
+    {
+      "name": "shop",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261111_114507_c2878819-8c57-4aa8-9f93-26773592530d.png"
+    },
+    {
+      "name": "snowglobe",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261111_114512_c703793c-6c7b-4056-8972-adcdd7dd28af.png"
+    },
+    {
+      "name": "fairy",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261111_114516_0daf80fa-f900-42b6-9951-abd6230b13f9.png"
+    },
+    {
+      "name": "new-york-city",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261111_114519_1a71808f-fab7-41af-8320-62590e0331e2.png"
+    },
+    {
+      "name": "snowstorm",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261111_114522_4cb7a39c-5795-4013-ab49-8b73f395a3f0.png"
+    }
+  ],
+  "references": [
+    {
+      "media_id": "80b877ca-9bc3-41c6-83bb-574a23093047",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/80b877ca-9bc3-41c6-83bb-574a23093047.png"
+    },
+    {
+      "media_id": "54de8042-6770-450e-904a-c4a85b9b1fc0",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/54de8042-6770-450e-904a-c4a85b9b1fc0.png"
+    }
+  ],
+  "status": "Six images generated and visually inspected; not integrated into live interactive app. Fairy and globe RGBA verified. Original approved fairy video remains motion source.",
+  "cost": "Master quote 2.75 credits. Five derived images same settings; actual total debit not provided."
+}

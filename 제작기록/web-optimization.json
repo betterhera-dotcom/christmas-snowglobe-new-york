@@ -1,0 +1,13 @@
+{
+  "objects_before": 5673,
+  "objects_after": 5,
+  "polygons_by_group": {
+    "GLASS": 16640,
+    "BASE": 28800,
+    "CITY": 19810,
+    "TREES": 141396,
+    "PROPS": 8082
+  },
+  "colliders": 10,
+  "note": "Joined by category; glTF primitives split by material. UVs explicitly generated. Master v04 preserved."
+}

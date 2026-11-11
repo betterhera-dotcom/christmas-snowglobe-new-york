@@ -1,0 +1,128 @@
+{
+  "date": "2026-11-11",
+  "scope": "Full graphic redraw for New York core scene, following user's corrected warm green/gold shop reference; no reuse of rejected globe/city/fairy artwork.",
+  "reference": {
+    "media_id": "81f8271f-0e36-4040-89af-2c455736310d",
+    "status": "uploaded",
+    "type": "image",
+    "filename": "codex-clipboard-aeb86673-f728-4e77-bcc4-fb694db12328.png",
+    "content_type": "image/png",
+    "size_bytes": 2549682,
+    "source_file_id": "file_00000000671481f8a3cb2fcdd1e9f7a5",
+    "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/81f8271f-0e36-4040-89af-2c455736310d.png"
+  },
+  "master": {
+    "id": "f1d85474-393c-4383-b1e8-a506ccb7074f",
+    "params": {
+      "model": "gpt_image_2_6",
+      "quality": "high",
+      "resolution": "2k",
+      "aspect_ratio": "16:9",
+      "count": 1,
+      "medias": [
+        {
+          "role": "image",
+          "value": "81f8271f-0e36-4040-89af-2c455736310d"
+        },
+        {
+          "role": "image",
+          "value": "d2eaf171-8da6-42d9-9079-a6bd3c0a87c3"
+        }
+      ],
+      "prompt": "A completely newly art-directed MASTER FRAME for an interactive Christmas fairy snowglobe experience. Reference 1 is the mandatory visual world, palette, architecture, materials, lighting and exact counter-level camera. Reference 2 establishes the tiny flower fairy's design and cinematic miniature VFX language. Redraw every part of this scene as ONE coherent film frame, not a collage of unrelated assets. Preserve the intimate forest-green antique boutique in reference 1: creamy carved stone arches, deep forest-green lacquer, polished honey-gold brass window mullions, burgundy velvet Christmas garlands and central wreath, warm amber reflections, snow-covered trees outside at dusk, white botanical flowers, gold vases and cream/dusty-pink parcels at far edges. No sage industrial laboratory, no exposed factory pipes.\n\nDesign a NEW exquisite medium-sized snowglobe resting naturally at the center-right of this very counter, from x=43% to72%, top near27%, foot at77%. Glass sphere truly CLEAR and lit by the same arched shop windows, subtle physically plausible gold reflections; the background can faintly show through empty regions. NEW pedestal is a small handcrafted botanical jewel: cream porcelain relief panels shaped like the shop arches, deep forest-green enamel insets, finely cast slender warm golden brass lily leaves and tiny feet. Restrained tapered elegant form, not a bulky black cylinder. No huge single leaf graphic.\n\nINSIDE the glass create a new fantastical WINTER NEW YORK MINIATURE in this exact fairy boutique craft language. Small ivory Manhattan brownstone shop facades with emerald roofs, tiny warm brass streetlamps, snowy winding pedestrian lane, a little golden-lit Christmas tree to the front right, and an elegant recognizable slender stepped Empire-State-inspired cream tower rising at the back left, airy composition with plenty of clear glass between buildings. Every tiny building has the same fine cream carving, botanical gold metalwork and tactile painted miniature finish as the surrounding shop. Rounded soft edges, charming luxurious fairy-world CGI like reference 2. Not a photograph of a real modern city pasted inside the sphere, not giant Rockefeller tree blocking a skyscraper, not a skating rink. Snow rests on roofs and paving; almost no snow in air yet.\n\nOne tiny fairy with exactly reference 2's tall pink foxglove bell hat and green calyx, short auburn hair, fitted rose petal bodice with puff sleeves, long pale pink and olive pointed petal skirt, tiny pink slippers and four translucent pink veined insect wings hovers on the LEFT of the globe, three-quarter profile facing RIGHT, both palms visibly touch the left glass edge. Fairy including hat and trailing feet occupies 28% of image height, natural small scale relative to globe. Delicate face and real petal/wing textures, not a cartoon doll. Same warm light and shadows as glass and shop.\n\nCamera straight on from just above countertop, 16:9 wide composition and readable depth. Counter occupies y=67%-81%, dark green carved front below. Rich but soft cinematic textures, warm controlled highlights and warm cream/forest green/gold/burgundy/soft pink palette unified across EVERY element including buildings inside globe. Contact shadow and subtle reflection physically ground globe. All objects fully visible. No UI, words, brands, logos, signage, bottles, products, joystick or mechanical claw. A single cohesive NEW image, no panels."
+    },
+    "path": "assets/redraw-v2/master-scene.png",
+    "quotedCredits": 2.75
+  },
+  "assets": [
+    {
+      "index": 1,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "f1d85474-393c-4383-b1e8-a506ccb7074f"
+          }
+        ],
+        "aspect_ratio": "16:9",
+        "prompt": "Production CLEAN BACKGROUND PLATE for the exact supplied master frame. Remove ONLY the entire snowglobe with its pedestal, the fairy and all their reflections and cast shadows. Reconstruct the small obscured portions of the existing empty deep forest-green countertop, distant gold-green rear window, wreath and right cream column. Preserve the EXACT same counter height, camera, architecture, composition, materials, colors, light, left/right flowers and gift boxes, right miniature Christmas tree, wreath, garlands and all details. Everything must align with the original master scene at the same coordinates. Do not redesign the shop, change viewpoint, add objects or people. One 16:9 image, no text, brand, logo or UI. Empty center counter, beautifully lit warm gold/green antique Christmas boutique."
+      },
+      "job_id": "3864ef91-f003-4314-b920-97ee2242ea89",
+      "quotedCredits": 2.75
+    },
+    {
+      "index": 2,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "f1d85474-393c-4383-b1e8-a506ccb7074f"
+          }
+        ],
+        "aspect_ratio": "1:1",
+        "background": "transparent",
+        "output_format": "png",
+        "prompt": "Production transparent sprite of ONLY the exact NEW snowglobe from the supplied master frame. Preserve its exact design and viewing angle: the clear spherical glass, warm gold shop-window reflections, slender ivory Empire State inspired tower at back LEFT, winding snowy lane receding left, carved cream buildings with dark forest-green mansard roofs at RIGHT, warm brass streetlamps, Christmas tree at front RIGHT, and the exquisite tapered cream porcelain/emerald enamel pedestal with arched flower relief panels, slender gold edges and little gold feet. Do not redesign or replace any architecture or pedestal. Isolate the complete object with true transparent alpha outside it. Remove fairy, hands, shop, counter and all surrounding objects completely. Center in a square frame; whole object fits from y=6% to94%, sphere center x=50%, sphere top y=6%, sphere bottom near73%, pedestal y=73% to94%. Preserve optical clear-glass warmth, detailed handcrafted miniature materials, all fine edging and entire base. Air inside sphere clear with no floating snow (animated later). Empty space around and outside glass must be genuinely transparent, NOT a black or white studio backdrop or checkered pixels. No external cast shadow, ground or reflection. No text, brands, letters, UI, people or fairy. Match the source lighting exactly."
+      },
+      "job_id": "fdb54fcd-0798-4062-b83e-c26990ee79d0",
+      "quotedCredits": 2.75
+    },
+    {
+      "index": 3,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "f1d85474-393c-4383-b1e8-a506ccb7074f"
+          }
+        ],
+        "aspect_ratio": "1:1",
+        "background": "transparent",
+        "output_format": "png",
+        "prompt": "Production CHARACTER SPRITE of ONLY the exact fairy visible in this master image, same face, short auburn curls, pink foxglove bell hat and green calyx, pink puff-sleeved floral bodice, long pale pink and olive pointed-petal skirt, pink slippers and four translucent pink-veined wings. Isolate her full silhouette on true transparent alpha. Keep the exact three-quarter right-facing hovering pose: both arms extended to the RIGHT, palms facing right at the far right edge of her silhouette as though touching an invisible glass globe; no object, globe or props. Legs trail down-left. Same warm amber highlights and soft shadows, refined cinematic botanical miniature CGI. Do not make her more cartoonish, more realistic or change outfit. Square frame, full figure centered with safe margin; hat at y=7%, feet y=92%, outstretched palms near x=81%, y=46%. No floor, shadow behind or below figure, particles, background, text, brand or other characters. Genuine transparent alpha; retain delicate wings."
+      },
+      "job_id": "60638a88-976e-4c85-909f-d3935b238717",
+      "quotedCredits": 2.75
+    },
+    {
+      "index": 4,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "f1d85474-393c-4383-b1e8-a506ccb7074f"
+          }
+        ],
+        "aspect_ratio": "21:9",
+        "prompt": "The camera is now INSIDE the tiny winter New York world contained in the supplied snowglobe master frame. Create a completely NEW full-width cinematic street-level view from a tiny visitor's eye height on that EXACT winding snowy lane. Preserve the globe's IDENTICAL architectural design, green mansard roofs, cream carved shop facades, warm gold brass mullions and lamps, floral ornaments, burgundy velvet Christmas ribbons, tiny conifers and snowy paving. The same recognizable slender stepped Empire-State-inspired cream tower stays in the back LEFT along the receding lane; the same ornate three-story corner boutique with emerald mansard roof and burgundy awning is on the RIGHT, and its warm fairy-lit Christmas tree with small golden ornaments stands in front at RIGHT. A brass streetlamp on the left foreground; more matching cream/emerald facades and winter floral greenery extend left and right for horizontal exploration. ONE coherent handcrafted fairy-world cinematic CGI environment, same warm amber illumination and tactile painted miniature charm as reference, soften fine edges slightly, rich materials, not a literal real-world New York photograph. Shop/city architectural language must be the same. Snowy evening with subtle muted olive-blue sky, amber shop windows light snowy path. Ground is visible and leads into deep perspective. No skating rink, no giant central Christmas tree, no Rockefeller tower, no modern glass buildings. No outside shop background, globe glass, sphere, pedestal, huge fairy or humans. No writing, signage, brands, logos, UI. 21:9 ultrawide single scene. Little snow in air, foreground clear for realtime particles. Immersive but preserve miniature craft realism and original warm cream/green/gold palette."
+      },
+      "job_id": "404b75d8-7048-4d41-8046-f0471639e2e9",
+      "quotedCredits": 2.75
+    }
+  ],
+  "notes": "Actual final debits unavailable. Original user references preserved. Transparent extraction is generated, not pixel-exact restoration.",
+  "disposition": "Superseded before web integration when user supplied the dedicated reference-image folder; gloss, warmth and character face did not match the newly reviewed originals.",
+  "video": {
+    "job_id": "4e56a73a-eb49-4571-82e5-bea4b2ff5f91",
+    "quotedCredits": 35,
+    "status": "pending-at-record",
+    "notes": "Submitted before latest reference-folder message; do not use as final character identity."
+  },
+  "quotedTotal": 48.75
+}

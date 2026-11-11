@@ -1,0 +1,96 @@
+{
+  "reference": "https://higgsfield.ai/s/G_JaEgpcJbQ",
+  "referenceJob": "d950c79c-1445-435b-b1e4-4c7e81ee4c70",
+  "originalPrompt": "30-second vertical luxury CGI fragrance FACTORY GAME advertisement. Use video reference only for exact flower fairy identity, pink bell-shaped flower hats, leaf skirts, translucent wings, miniature detailed faces. Six fairies in this design family in pink, ivory, pale green. Reference image is exact Gucci Flora Gorgeous Gardenia bottle, correct original botanical floral arch label, exact readable name and gold ribbed cap, stable proportions. Invent an extravagant whimsical botanical factory game with oversized pear presses, elevated flower conveyor belts, spiral glass pipes, brass gears, miniature sugar mine carts and emerald enamel machines. Entire space feels like a rich tactile playable diorama, energetic cause-and-effect machine interactions, not a quiet laboratory tour. Cream stone architecture, emerald, pink, brass, soft cinematic daylight. No movie characters or copied sets. 0-3s camera smoothly flies through emerald entrance revealing three connected factory stations at different heights, multiple fairies bustling at work. 3-8s pear station: two pink fairies physically roll ONE oversized pear onto a brass plate. At 5.5s a fairy pulls a large lever, flower-shaped press descends onto pear, pale green juice visibly flows through transparent spiral pipe; mechanical action is clear and coherent. 8-13s camera tracks a moving conveyor of white gardenia flowers; at 11s ivory fairy taps the fully open bloom, a brass scoop gently transfers that whole flower into a glass extraction funnel, gold particles flow along the second pipe. 13-19s camera follows a small mine cart on brass rails at FLOOR LEVEL filled with small brown sugar crystals; two green fairies push it to a weighing hopper, at 16.5s fairy pulls lever, cart tilts and same small crystals tumble into hopper; no giant sugar boulders, no sugar on flowers. 19-24s all three pipes visibly connect to large central glass blending machine; a pink fairy swings on valve handle and opens three valves sequentially, ingredients swirl into pale blush liquid, gears turn, three lamps illuminate, steam puff signals completion. 24-27s camera tracks DOWN AND FORWARD to a clearly separate little delivery doorway in the lower front of machine. Solid emerald door swings aside revealing an ALREADY COMPLETE OPAQUE bottle standing upright on a brass conveyor INSIDE the dark compartment. Conveyor physically carries bottle forward through open doorway into open air, correct clearance, bottle never intersects glass or metal. Bottle must NOT appear inside mixing tank, must NOT materialize, fade in, grow or transform; label attached from very first visible frame. 27-30s camera smoothly approaches bottle on conveyor, label faces camera frontally, exact GUCCI FLORA GORGEOUS GARDENIA original product design; fairies hover on either side without obscuring bottle. All movement smooth, no duplicate freeze frames, no camera jumps. Keep top 11 percent quiet for HUD added later. No rendered UI, no text except actual product label, no speech. Continuous playful elegant celesta and pizzicato music, gear clicks, glass chimes, satisfying mechanical sounds synchronized to levers and magical completion chime. Music resolves at end.",
+  "finalAssets": [
+    {
+      "path": "assets/fairy-flight.mp4",
+      "job": "d60c9e28-6f88-473e-86b2-5c5f18a04476",
+      "quotedCredits": 35,
+      "params": {
+        "model": "seedance_2_5",
+        "mode": "omni_reference",
+        "duration": 5,
+        "aspect_ratio": "1:1",
+        "resolution": "720p",
+        "generate_audio": false,
+        "count": 1,
+        "medias": [
+          {
+            "role": "video",
+            "value": "69cbcafd-41cc-4ed6-a091-8dfdc833d350"
+          }
+        ],
+        "prompt": "Use the video reference ONLY for the exact pink foxglove fairy identity, cinematic material quality, pink bell-shaped flower hat with olive cap, detailed petite face, layered dusty-pink and muted olive petal skirt, bare feet, and four translucent pink veined wings. Create a new isolated CHARACTER ANIMATION ASSET for an interactive Christmas snow globe artwork. ONE full-body tiny fairy alone against perfectly flat solid saturated chroma BLUE background #0000ff, uniform color without shadows, gradients, floor, objects or particles. Locked orthographic-style camera, square frame. Fairy is three-quarter side view FACING RIGHT, leaning forward in hovering flight with both arms held out to the RIGHT, palms facing right as if pressing both hands gently against the LEFT SIDE of an invisible snow globe. There is NO globe and NO held prop. Hands remain steady at the far right of her silhouette throughout. Full silhouette fits within central 84 percent of frame, hat, all wings and feet always visible, no cropping. Keep constant character size and position; body small graceful hovering motion only, legs trailing left, petals flutter naturally. Wings repeatedly flutter with convincing articulated natural wing beats, no frozen wings. Small gentle coordinated forward-back forearm movement suitable for shaking a globe. Continuous smooth 5-second cycle, starts and ends in the same pose for seamless looping. Golden warm light from upper left, fine realistic botanical textures. No copied background or flower stalk, no brands, no writing, no UI, no camera movement, no cuts, no zoom, no multiplication, no turning toward viewer, no growing, no ground. Blue background must remain exactly uniform for clean compositing. Preserve the reference fairy character."
+      }
+    },
+    {
+      "path": "assets/new-york-globe.png",
+      "job": "0886299a-5d91-484f-bc9d-812d1dd8734b",
+      "quotedCredits": 2.75,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "background": "transparent",
+        "output_format": "png",
+        "aspect_ratio": "1:1",
+        "count": 1,
+        "prompt": "Create a premium photorealistic cinematic CGI Christmas snow globe isolated on TRUE TRANSPARENT ALPHA background. This is a production sprite, centered square composition, full circular sphere and full base inside frame with 6% margin. Sophisticated tactile miniature VFX, handcrafted exquisite details, physically plausible glass refraction and reflections, soft warm sunlight, cream and deep emerald palette, restrained burgundy, aged polished brass. A flawlessly clear spherical glass globe on a short circular dark forest-green lacquered wood pedestal with delicate engraved golden brass rings, elegant scalloped botanical Art Nouveau ornaments on the pedestal, NO writing. Camera slightly above pedestal, straight on, symmetrical. Sphere radius about 42% of canvas width, center at (50%,44%); short pedestal occupies y=78-94%, entire object not cropped. INSIDE: extremely detailed snowy New York Christmas miniature. A magnificent natural evergreen Rockefeller-inspired Christmas tree with fine needles, thousands of tiny warm gold lights, burgundy ribbon and golden star is the central foreground landmark. In front of tree a small oval icy skating rink and tiny black brass Victorian street lamps. Behind tree stands one tall recognizable stepped Art Deco Manhattan tower, cream stone facade with intricate window grids and warm illuminated windows, surrounded by smaller detailed brownstone blocks and Beaux-Arts buildings. Architectural depth, soft golden window glows, dusting of snow on ledges, tiny gift parcels at tree foot. Whole miniature completely contained in glass, no landmark pokes outside. Match the rich warm antique fairy boutique cinematography, not toy blocks, not flat cartoon, not polygon art, not low-poly. Snow lies thick on ground but the air inside is CLEAR, NO airborne particles so we can animate snow later. Outside sphere pure transparent, no studio wall, no ground, no horizon, no cast shadow outside base, no checkerboard painted into image. Glass interior may hold a subtle dark olive blue-hour atmosphere behind miniature while retaining beautiful clear rim and natural glass highlights. No brands, logos, signage, letters, labels, text, products, UI, characters, fairy, people, huge hands or bottles."
+      }
+    },
+    {
+      "path": "assets/christmas-atelier.png",
+      "job": "b85ffef2-87ab-45eb-a9dc-a2db6362b2dc",
+      "quotedCredits": 2.75,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "aspect_ratio": "16:9",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "a87b6040-a555-46a7-980b-48e437b99a03"
+          },
+          {
+            "role": "image",
+            "value": "496a7b7b-5434-471d-b17f-1c2ca5f6d59d"
+          }
+        ],
+        "prompt": "Recreate the EXACT visual world of the two reference frames as a CHRISTMAS snow globe atelier background plate for a widescreen interactive experience. Preserve the reference palette, materials, lighting, camera realism and miniature fairy-workshop sensibility: muted sage/emerald enamel walls and counters, creamy carved neoclassical moldings, tall arched windows with pale diffuse winter daylight, soft dusty pink reflections, warm rose-copper / brass pipes with convincing joints, delicate brass gears and crystal serpentine tubes at the SIDES. Sophisticated tactile photoreal miniature VFX, not cartoon, not low poly, not flat illustration. Widen this same interior naturally to landscape 16:9, camera locked looking across one large exquisite sage-green and cream workshop counter toward receding arches and other small workstations in the distance. Countertop is dark muted green enamel with copper rim, extends across entire lower portion; its upper surface begins 64% down and front edge is at 77% down. The entire central foreground from x=25% to75%, y=30%-78% must be clear and empty to composite a snow globe and one fairy later. No main machine, no big glass vessel or globe in central foreground, no characters in this background. Workshop machinery may remain at distant far sides for spatial depth. Add Christmas atmosphere in the SAME delicate style: small fir garlands and warm tiny bulbs around archways, restrained burgundy velvet ribbon bows, cream and dusty pink wrapped gift parcels at far left edge, a small natural fir tree on far right adorned with brass stars, fine snow and snow-covered branches visible OUTSIDE tall windows. Keep brightness soft and airy like reference, not orange-saturated, no heavy golden sunlight, no dark nightclub feel. Preserve elaborate cream ornament, slender copper tubing and optical glass textures from reference. No perfume, no fruit, no product labels, no lettering, no logos, no brands, no game UI, no symbols or words. Empty main counter is essential. Photorealistic cinematic background, entire frame sharp enough for a 75-inch display, depth from perspective and atmospheric light."
+      }
+    },
+    {
+      "path": "assets/new-york-city.png",
+      "job": "2ce0049c-d083-441c-9f49-abc94ec6ac0b",
+      "quotedCredits": 2.75,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "high",
+        "resolution": "2k",
+        "aspect_ratio": "21:9",
+        "count": 1,
+        "medias": [
+          {
+            "role": "image",
+            "value": "0886299a-5d91-484f-bc9d-812d1dd8734b"
+          },
+          {
+            "role": "image",
+            "value": "496a7b7b-5434-471d-b17f-1c2ca5f6d59d"
+          }
+        ],
+        "prompt": "Create a wide cinematic eye-level landscape INSIDE the New York Christmas scene shown in reference image 1, with visual material softness and craft of reference image 2. The viewer has magically entered the snow globe. This is a full-scale immersive environment viewed from a person's eye level at the front edge of the oval skating rink, NOT an image of a snowglobe. Remove the exterior glass sphere, rim, pedestal, shop and any outside world. Preserve the exact identifiable landmarks and their relationship from image 1: central large realistic evergreen Christmas tree with fine needles, warm gold fairy lights, one burgundy bow and winding velvet ribbon, small golden star; tall stepped cream Art Deco Manhattan skyscraper behind it at the center; snow-covered warm brownstone architecture left and ornate cream Beaux-Arts stone building on right; oval icy rink in the near foreground; elegant small dark green/brass street lamps with warm frosted-glass lanterns, gold railings and restrained garlands; gift parcels under the tree. Expand street far LEFT and RIGHT to reveal more matching buildings and snowy side streets for gentle horizontal looking around. Realistic street-level perspective, NO fisheye, NO spherical curvature, vertical architecture straight. At blue hour winter dusk, pale muted blue/green sky, soft cream stone, antique brass and dusty blush window reflections, warm glowing windows, luxurious handcrafted cinematic realism. Snow lies on ledges, tree, ground and railings. Only a few faint falling flakes; foreground empty of large snow overlays so we can add interactive snowfall. Deep immersive architecture, miniature-world charm rendered photoreal at human scale; not low-poly or illustrated. No text, no signage, no trademarks, no logos, no brands, no fairies, no close people, no hands, no glass globe or pedestal in frame. One single ultrawide 21:9 photograph-like scene, no collage or panels."
+      }
+    }
+  ],
+  "quotedTotal": 43.25,
+  "notes": "All four Higgsfield jobs completed. Quotes are not a statement of final debit. Images are generated references, not exact restorations. Brand names appear only in this historical source prompt, never in the exhibit UI. User authorized reuse and adaptation of source prompts. Assets stay local in the exhibition app.",
+  "userSuppliedVideoReferences": [
+    "/Users/herakim/Downloads/hf_20261015_002943_4577c04b-1c11-4fe5-8a9c-62337f0401a1.mp4",
+    "/Users/herakim/Downloads/hf_20261013_080627_eced9b26-15d0-4725-b881-36ce93c2383c (1).mp4"
+  ],
+  "localVisualReview": "Both supplied videos inspected at six timestamps. Character identity, material, lighting and spatial scale used as continuity criteria. Original files unchanged."
+}

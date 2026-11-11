@@ -1,0 +1,8 @@
+{
+  "recessed_brownstone_windows": 18,
+  "needle_quads": 77760,
+  "winter_branches": 168,
+  "preserved": "v03 original; globe/pedestal/building placements unchanged",
+  "scope": "real window recesses, jambs, sashes, glass, curtain layers, sills; fir boughs, needles, tapered winter twigs",
+  "status": "design preview, not performance-optimized or connected to MediaPipe"
+}

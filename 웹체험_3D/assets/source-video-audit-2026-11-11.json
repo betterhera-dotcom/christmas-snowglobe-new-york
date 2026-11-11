@@ -1,0 +1,166 @@
+{
+  "reviewedAt": "2026-11-11",
+  "scope": "User requested honest source-video/style analysis. No additional generation or application changes during this source audit.",
+  "sourceJobs": [
+    {
+      "id": "487f18f4-f049-4b43-a3b6-e53eedfb9fef",
+      "type": "video",
+      "status": "completed",
+      "model": "seedance_2_5",
+      "params": {
+        "prompt": "Rework the supplied fairy factory film into Gucci Flora Gorgeous Orchid while preserving its 30-second structure, continuous camera path, fairies, architecture and machine actions. Required exact product reference is yellow Gucci Flora Gorgeous Orchid bottle, NOT pink Gardenia. Entire narrative must use these official notes: VANILLA DUO, VANILLA ORCHID, OZONIC ACCORD. At first station replace pear with two oversized long dark vanilla pods; fairies feed pods into brass press, creamy pale gold extract flows through glass pipes. At second station conveyor carries pale ivory-green vanilla orchid flowers (long narrow petals, tubular pale yellow lip), fairy transfers orchid to funnel. At third station cart carries transparent pale cyan floating air orbs filled with light mist, fantasy game visualization of ozonic accord, no brown sugar or crystals; fairies tilt cart and glowing airy spheres float into hopper. Central mixing chamber becomes warm pale ivory-gold, not pink. Keep the same miniature whimsical factory visual quality, fairy bellflower hats and wings, intricate brass and emerald machines, realistic shadows/reflections, smooth movement without stutter. Final delivery door opens to reveal exact reference yellow perfume bottle already standing opaque, with exact label GUCCI FLORA GORGEOUS ORCHID attached from first visibility, moving physically on conveyor through clear doorway, no teleportation, no morphing, no label overlay entrance. Final front-facing hero with botanical floral label design and text accurately matching photograph. Maintain continuous playful celesta and pizzicato music with soft mechanical sounds. No UI or titles; those added later. No pear, gardenia or brown sugar anywhere.",
+        "aspect_ratio": "16:9",
+        "duration": 30,
+        "medias": [
+          {
+            "role": "image",
+            "data": {
+              "id": "f3b1296b-ca2f-46d3-a1b2-d031e3d6dbfe",
+              "type": "media_input",
+              "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/f3b1296b-ca2f-46d3-a1b2-d031e3d6dbfe.jpg"
+            }
+          },
+          {
+            "role": "video",
+            "data": {
+              "id": "d950c79c-1445-435b-b1e4-4c7e81ee4c70",
+              "type": "video_job",
+              "url": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261015_072210_d950c79c-1445-435b-b1e4-4c7e81ee4c70.mp4"
+            }
+          }
+        ],
+        "width": 1920,
+        "height": 1080,
+        "genre": "auto",
+        "resolution": "1080p",
+        "generate_audio": true,
+        "multi_shots": false,
+        "multi_shot_mode": "custom",
+        "multi_prompt": [],
+        "speedramp": "auto",
+        "reference_elements": [],
+        "prompt_language": "en",
+        "model": "video_edit",
+        "extension_mode": null,
+        "bitrate_mode": "standard",
+        "draft": false,
+        "seed": null,
+        "draft_job_id": null
+      },
+      "results": {
+        "rawUrl": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261015_085523_487f18f4-f049-4b43-a3b6-e53eedfb9fef.mp4"
+      },
+      "createdAt": 1792054523.625819,
+      "liked": false
+    },
+    {
+      "id": "d950c79c-1445-435b-b1e4-4c7e81ee4c70",
+      "type": "video",
+      "status": "completed",
+      "model": "seedance_2_5",
+      "params": {
+        "prompt": "30-second vertical luxury CGI fragrance FACTORY GAME advertisement. Use video reference only for exact flower fairy identity, pink bell-shaped flower hats, leaf skirts, translucent wings, miniature detailed faces. Six fairies in this design family in pink, ivory, pale green. Reference image is exact Gucci Flora Gorgeous Gardenia bottle, correct original botanical floral arch label, exact readable name and gold ribbed cap, stable proportions. Invent an extravagant whimsical botanical factory game with oversized pear presses, elevated flower conveyor belts, spiral glass pipes, brass gears, miniature sugar mine carts and emerald enamel machines. Entire space feels like a rich tactile playable diorama, energetic cause-and-effect machine interactions, not a quiet laboratory tour. Cream stone architecture, emerald, pink, brass, soft cinematic daylight. No movie characters or copied sets. 0-3s camera smoothly flies through emerald entrance revealing three connected factory stations at different heights, multiple fairies bustling at work. 3-8s pear station: two pink fairies physically roll ONE oversized pear onto a brass plate. At 5.5s a fairy pulls a large lever, flower-shaped press descends onto pear, pale green juice visibly flows through transparent spiral pipe; mechanical action is clear and coherent. 8-13s camera tracks a moving conveyor of white gardenia flowers; at 11s ivory fairy taps the fully open bloom, a brass scoop gently transfers that whole flower into a glass extraction funnel, gold particles flow along the second pipe. 13-19s camera follows a small mine cart on brass rails at FLOOR LEVEL filled with small brown sugar crystals; two green fairies push it to a weighing hopper, at 16.5s fairy pulls lever, cart tilts and same small crystals tumble into hopper; no giant sugar boulders, no sugar on flowers. 19-24s all three pipes visibly connect to large central glass blending machine; a pink fairy swings on valve handle and opens three valves sequentially, ingredients swirl into pale blush liquid, gears turn, three lamps illuminate, steam puff signals completion. 24-27s camera tracks DOWN AND FORWARD to a clearly separate little delivery doorway in the lower front of machine. Solid emerald door swings aside revealing an ALREADY COMPLETE OPAQUE bottle standing upright on a brass conveyor INSIDE the dark compartment. Conveyor physically carries bottle forward through open doorway into open air, correct clearance, bottle never intersects glass or metal. Bottle must NOT appear inside mixing tank, must NOT materialize, fade in, grow or transform; label attached from very first visible frame. 27-30s camera smoothly approaches bottle on conveyor, label faces camera frontally, exact GUCCI FLORA GORGEOUS GARDENIA original product design; fairies hover on either side without obscuring bottle. All movement smooth, no duplicate freeze frames, no camera jumps. Keep top 11 percent quiet for HUD added later. No rendered UI, no text except actual product label, no speech. Continuous playful elegant celesta and pizzicato music, gear clicks, glass chimes, satisfying mechanical sounds synchronized to levers and magical completion chime. Music resolves at end.",
+        "aspect_ratio": "9:16",
+        "duration": 30,
+        "medias": [
+          {
+            "role": "image",
+            "data": {
+              "id": "a2fa6941-05c3-4283-aeed-bd6c858b4021",
+              "type": "media_input",
+              "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/a2fa6941-05c3-4283-aeed-bd6c858b4021.png"
+            }
+          },
+          {
+            "role": "video",
+            "data": {
+              "id": "69cbcafd-41cc-4ed6-a091-8dfdc833d350",
+              "type": "video_input",
+              "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/69cbcafd-41cc-4ed6-a091-8dfdc833d350.mp4"
+            }
+          }
+        ],
+        "width": 1080,
+        "height": 1920,
+        "genre": "auto",
+        "resolution": "1080p",
+        "generate_audio": true,
+        "multi_shots": false,
+        "multi_shot_mode": "custom",
+        "multi_prompt": [],
+        "speedramp": "auto",
+        "reference_elements": [],
+        "prompt_language": "en",
+        "model": "default",
+        "extension_mode": null,
+        "bitrate_mode": "high",
+        "draft": false,
+        "seed": null,
+        "draft_job_id": null
+      },
+      "results": {
+        "rawUrl": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261015_072210_d950c79c-1445-435b-b1e4-4c7e81ee4c70.mp4"
+      },
+      "createdAt": 1792048930.488848,
+      "liked": false
+    },
+    {
+      "id": "4577c04b-1c11-4fe5-8a9c-62337f0401a1",
+      "type": "video",
+      "status": "completed",
+      "model": "seedance_2_5",
+      "params": {
+        "prompt": "Precise continuity edit of this 10-second fairy perfume claw-machine video. Preserve original camera, storefront, fairy, joystick, brass claw, pear grab and drop, white gardenia, lighting, timing and all foreground action exactly. ADD a clearly visible small PILE of multiple AMBER BROWN SUGAR CRYSTALS on the prize bed INSIDE the machine, positioned BEHIND THE PEAR, slightly to its right so pile remains visible beside pear. 6-8 irregular chunky translucent amber-brown rock-sugar pieces, honey color, crystalline facets, stacked naturally on green base, waiting for third turn. Pile already present in VERY FIRST storefront wide shot and remains fixed in same physical location through all shots and pear pickup, with correct perspective, occlusion, shadows and glass reflections. In pear closeups the pile stays visible behind/beside pear, slightly softer focus but recognizable. Preserve white gardenia as another waiting prize. Claw picks ONLY pear. Do not remove sugar as pear is picked. No fruit transformation, no floating crystals, no new actions, no text or UI. Keep all else unchanged.",
+        "aspect_ratio": "16:9",
+        "duration": 10,
+        "medias": [
+          {
+            "role": "video",
+            "data": {
+              "id": "92d1648b-277b-46b2-ab59-c8da34342036",
+              "type": "video_input",
+              "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/92d1648b-277b-46b2-ab59-c8da34342036.mp4"
+            }
+          }
+        ],
+        "width": 1920,
+        "height": 1080,
+        "genre": "auto",
+        "resolution": "1080p",
+        "generate_audio": true,
+        "multi_shots": false,
+        "multi_shot_mode": "custom",
+        "multi_prompt": [],
+        "speedramp": "auto",
+        "reference_elements": [],
+        "prompt_language": "en",
+        "model": "video_edit",
+        "extension_mode": null,
+        "bitrate_mode": "high",
+        "draft": false,
+        "seed": null,
+        "draft_job_id": null
+      },
+      "results": {
+        "rawUrl": "https://d8j0ntlcm91z4.cloudfront.net/user_34nAJ0BLIHUcmQmPsa5khwo46ab/hf_20261015_002943_4577c04b-1c11-4fe5-8a9c-62337f0401a1.mp4"
+      },
+      "createdAt": 1792024183.505093,
+      "liked": false
+    }
+  ],
+  "verification": {
+    "orchid": "Compared 3 source frames at 3.1, 10.5, 20.4s against 12-frame contact sheet of gucci-flora-orchid-factory-game (1).mp4. Same scene compositions and characters visible; source has no added HUD. Both durations 29.709s. No bitwise identity claim.",
+    "clawMachine": "Reviewed local hf_20261014_233948_d5d066b9-083c-40f1-9b45-f15f771a1a7d.mp4 at 12 timestamps. Its exact job ID could not be resolved in current history. Related user-provided 4577 continuity edit recovered.",
+    "factoryReference": "d950 source video 69cbcafd is 5.042s fairy on foxglove in cream conservatory, inspected at 0.5, 2.5, 4.2s. It is not the 30s claw-machine source.",
+    "limitations": "Frame samples, not full continuous playback. Original seed is null. Reusing model/prompt alone cannot guarantee frame/asset identity."
+  },
+  "styleCorrection": {
+    "rendering": "Cinematic tactile miniature CGI with physically coherent scale, object contact, occlusion, glass reflections, soft shadows and depth of field. Do not describe the entire environment as a flat hand-painted illustration.",
+    "palette": "Cream stone and muted green enamel, restrained warm brass/copper, soft daylight, delicate pink/ivory/green flower fairies. Avoid global orange cast and excessive gilding.",
+    "character": "Preserve reference face, slender proportions, bellflower hat, layered botanical skirt, translucent veined wings and miniature scale.",
+    "snowglobe": "Reference round optical glass sphere, compact discrete miniature buildings on a circular snowy island, visible empty air for snow, modest deep-green/gold base. Prior oval giant city-window/globe is not the target.",
+    "continuity": "Use original video and exact frames as visual anchors. Preserve scene/character/material language while changing only narrative objects for Christmas. City must belong to same world, not unrelated photographic panorama.",
+    "nextStage": "Only when requested: one coherent Christmas shop + snowglobe + original fairy keyframe first; verify side by side with source before deriving assets/video. No unrequested paid generations."
+  },
+  "candidateStatus": "redraw-v2 and redraw-v3 are separate candidates, not approved and not applied to the web app."
+}

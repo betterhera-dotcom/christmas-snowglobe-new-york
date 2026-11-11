@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>스노우볼 세계여행 · NEW YORK</title>
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="experience">
+    <div id="scene" aria-label="뉴욕의 크리스마스트리가 담긴 입체 스노우볼"></div>
+    <div class="grain"></div>
+    <header><a class="brand" href="./">손끝에서 열리는 크리스마스<span>AN INTERACTIVE WINTER JOURNEY</span></a><span class="edition">SCENE 01 <i></i> NEW YORK</span></header>
+    <section class="intro"><p class="eyebrow">A LITTLE WORLD, IN YOUR HANDS</p><h1>손안의 겨울,<br><em>뉴욕.</em></h1><p class="description">손을 흔들면 눈이 깨어나고,<br>당신의 리듬으로 크리스마스가 흐릅니다.</p><div class="coordinates">40°45′30″N &nbsp; 73°58′45″W<span>ROCKEFELLER CENTER · NEW YORK</span></div></section>
+    <aside class="readout"><span id="mode-label">시작을 기다리는 중</span><div class="signal"><i id="status-dot"></i><span id="status" role="status">카메라를 켜고 한 손을 보여주세요</span></div><div class="meter"><div id="energy-bar"></div></div><div class="meter-label"><span>고요한 눈</span><span>눈보라</span></div><p class="tempo"><span id="bpm">72</span> BPM <span class="song">JINGLE BELLS</span></p></aside>
+    <div id="hand-cursor" hidden>✧</div>
+    <section class="instruction"><span class="step">01 / SHAKE THE SNOW</span><h2 id="prompt">작은 겨울을 깨워보세요</h2><p id="hint">한 손을 들어 좌우로 흔들어주세요. 멈추면 눈이 천천히 내려앉아요.</p><div class="actions"><button id="camera" class="primary">카메라로 시작 <span>↗</span></button><button id="pointer">마우스로 먼저 체험</button></div><p id="error" role="alert" hidden></p></section>
+    <footer><span class="prototype">뉴욕 스노우볼 · 동작 시험판</span><div><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset">처음으로</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
+    <details id="camera-preview"><summary>손 인식 확인</summary><video id="webcam" autoplay playsinline muted></video><p>영상은 이 기기에서만 처리하며 저장하지 않습니다.</p></details>
+    <canvas id="storm-particles" aria-hidden="true"></canvas>
+    <div id="blizzard"></div>
+    <noscript>이 작품을 실행하려면 Chrome에서 JavaScript를 허용해주세요.</noscript>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "job": "9dd1f3a8-988a-4ade-9b2b-61ee675ddde5",
+  "file": "assets/redraw-v4/new-york-wide.png",
+  "requestedAspect": "3:1",
+  "returnedAspect": "21:9",
+  "quotedCredits": 2.75,
+  "actualCredits": null,
+  "notes": "Original preserved. Wider generated composition, not pixel-identical outpaint. Static sky snow remains."
+}

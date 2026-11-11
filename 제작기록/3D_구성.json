@@ -1,0 +1,16 @@
+{
+  "objects": 455,
+  "collections": {
+    "01_Globe": 1,
+    "02_Pedestal": 79,
+    "03_NewYork": 200,
+    "04_Trees": 113,
+    "05_Props": 55,
+    "06_Snow": 1,
+    "07_Stage": 6
+  },
+  "status": "3D design draft, not connected to MediaPipe",
+  "snow": "static render preview; replace with runtime simulation",
+  "materials": "ambientCG CC0 plus original procedural materials",
+  "original_reference": "웹체험/assets/redraw-v4/snowglobe-clear.png"
+}

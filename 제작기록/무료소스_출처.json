@@ -1,0 +1,23 @@
+{
+  "license_url": "https://docs.ambientcg.com/license/",
+  "assets": [
+    {
+      "id": "Snow001",
+      "source": "https://ambientcg.com/view?id=Snow001",
+      "license": "CC0 1.0",
+      "sha256": "c07262d38fccf947ca24c960068667750b58aeff25398cacfd997bace7350830"
+    },
+    {
+      "id": "Bricks052",
+      "source": "https://ambientcg.com/view?id=Bricks052",
+      "license": "CC0 1.0",
+      "sha256": "1088024ae12acccc254b01185a5173fbfcbd6c91bd30f2b886c50931dfd890dd"
+    },
+    {
+      "id": "Wood051",
+      "source": "https://ambientcg.com/view?id=Wood051",
+      "license": "CC0 1.0",
+      "sha256": "debf3d60f69a09c30613dc95a94da49c8116160ab8a29f77ac8e32cc33f1a1c3"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "before_geometry_sha256": "9c7360339e30fe72fa2b465f734a580612af99ce7d0bb0df8edfbdb2cb2b0698",
+  "after_geometry_sha256": "9c7360339e30fe72fa2b465f734a580612af99ce7d0bb0df8edfbdb2cb2b0698",
+  "identical_geometry": true,
+  "changed_objects": 79,
+  "scope": "02_Pedestal only",
+  "ai_maps": [
+    "green-enamel-color.png",
+    "antique-brass-color.png"
+  ],
+  "note": "AI base color; roughness and bump are shader-derived artistic approximations, not measured PBR maps. Original v01 preserved."
+}
