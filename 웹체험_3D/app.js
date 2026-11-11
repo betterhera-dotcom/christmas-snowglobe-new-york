@@ -16,6 +16,7 @@ const winter=$('window-snow'),winterContext=winter.getContext('2d');
 const outsideFlakes=Array.from({length:75},()=>({x:Math.random(),y:Math.random(),size:.6+Math.random()*1.8,speed:.015+Math.random()*.025}));
 function drawWinter(dt,time){
   if(winter.width!==innerWidth||winter.height!==innerHeight){winter.width=innerWidth;winter.height=innerHeight;}
+  if($('window-snow').style.display==='none')return;
   const w=winter.width,h=winter.height,sceneH=h*(w<650?.70:1),scale=Math.max(w/2688,sceneH/1520),ox=(w-2688*scale)/2,oy=(sceneH-1520*scale)/2;
   winterContext.clearRect(0,0,w,h);if(phase!=='globe')return;
   winterContext.save();winterContext.beginPath();

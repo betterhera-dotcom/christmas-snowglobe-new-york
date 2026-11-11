@@ -11,6 +11,7 @@ export function createScene(container){
  const pivot=new THREE.Group(),model=new THREE.Group();pivot.add(model);model.position.y=-1.5;pivot.position.y=1.5;scene.add(pivot);
  const pose=new HeldPose(),physics=new GlobeSnow(),clock={time:0};let loaded=false,shopLoaded=false,error=null,baseMin=.02,baseBounds=null,contactGap=0,materialMaps=0,look=0,lookY=0,targetLook=0,targetLookY=0,travelLast=0,frameMs=16,quality=1,slowRenderSeconds=0,renderedFrames=0,lastTick=performance.now(),frameInterval=16;
  function tuneMaterial(m){if(m.map)m.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());m.envMapIntensity=.55;if(/limestone/i.test(m.name))m.color.setRGB(.68,.61,.49);if(/walnut|timber|wood/i.test(m.name))m.color.setRGB(.48,.32,.19);if(m.name.startsWith('SHOP cloth binding')){const c=[[.16,.027,.035],[.035,.10,.065],[.24,.16,.065],[.045,.07,.10]][Number(m.name.slice(-1))]||[.1,.07,.04];m.color.setRGB(...c);}if(/Snow/.test(m.name))m.color.setRGB(.88,.92,.97);}
+ const transitionFrames=[];let previousTick=0;
  const groups={};const loader=new GLTFLoader();
  const globeReady=loader.loadAsync('./assets/3d/snowglobe.glb').then(gltf=>{
   model.add(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.frustumCulled=true;o.castShadow=true;o.receiveShadow=true;if(o.name.startsWith('TREES'))o.castShadow=false;
@@ -24,7 +25,7 @@ export function createScene(container){
 
  const shop=new THREE.Group();scene.add(shop);
  const shopReady=loader.loadAsync('./assets/3d/shop.glb').then(gltf=>{shop.add(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.receiveShadow=!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.name==='SHOP dusk beyond glass');o.castShadow=(Array.isArray(o.material)?o.material:[o.material]).some(m=>/SHOP walnut|SHOP cloth|SHOP wrapping|SHOP burgundy|Aged champagne brass|SHOP winter evergreen/.test(m.name));for(const m of Array.isArray(o.material)?o.material:[o.material]){tuneMaterial(m);if(m.map)m.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());if(m.normalMap)materialMaps++;}}});shopLoaded=true;return true;}).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'매장 3D 모델을 읽지 못했습니다. 새로고침해주세요.'}));return false;});
- const ready=Promise.all([globeReady,shopReady]).then(results=>{loaded=results.every(Boolean);document.getElementById('shop').style.display='none';document.getElementById('window-snow').style.display='none';if(loaded){pivot.visible=false;shadow.visible=false;const cubeTarget=new THREE.WebGLCubeRenderTarget(256,{type:THREE.HalfFloatType});const capture=new THREE.CubeCamera(.1,40,cubeTarget);capture.position.set(0,1.6,0);capture.update(renderer,scene);const generator=new THREE.PMREMGenerator(renderer);const old=scene.environment;scene.environment=generator.fromCubemap(cubeTarget.texture).texture;old?.dispose();generator.dispose();cubeTarget.dispose();pivot.visible=true;shadow.visible=true;}container.dataset.loaded=String(loaded);return loaded;});
+ const modelReady=Promise.all([globeReady,shopReady]).then(results=>{loaded=results.every(Boolean);document.getElementById('shop').style.display='none';document.getElementById('window-snow').style.display='none';if(loaded){pivot.visible=false;shadow.visible=false;const cubeTarget=new THREE.WebGLCubeRenderTarget(256,{type:THREE.HalfFloatType});const capture=new THREE.CubeCamera(.1,40,cubeTarget);capture.position.set(0,1.6,0);capture.update(renderer,scene);const generator=new THREE.PMREMGenerator(renderer);const old=scene.environment;scene.environment=generator.fromCubemap(cubeTarget.texture).texture;old?.dispose();generator.dispose();cubeTarget.dispose();pivot.visible=true;shadow.visible=true;}loaded=false;return results.every(Boolean);});
  // Warm fixtures in the shop are anchored in the same real 3D room.
  for(const x of [-3.8,3.8]){const lamp=new THREE.PointLight(0xffb763,6,9,2);lamp.position.set(x,3,-1.6);shop.add(lamp);}
  const shopSnowGeo=new THREE.BufferGeometry(),shopSnowPos=new Float32Array(350*3);
@@ -46,7 +47,7 @@ export function createScene(container){
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),new THREE.MeshStandardMaterial({color:0xe4e9e8,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.position.y=.84;ground.receiveShadow=true;outer.add(ground);
  const street=new THREE.Mesh(new THREE.PlaneGeometry(1.2,45),new THREE.MeshStandardMaterial({color:0x7c8389,roughness:.6}));street.rotation.x=-Math.PI/2;street.position.set(-.4,.846,-4);outer.add(street);
  const architecture=new THREE.Group();outer.add(architecture);
- ready.then(ok=>{if(!ok)return;
+ const cityReady=modelReady.then(ok=>{if(!ok)return;
   function tileMaterial(source,repeat,color){const m=source.clone();for(const key of ['map','normalMap','roughnessMap','metalnessMap','aoMap'])if(m[key]){m[key]=m[key].clone();m[key].wrapS=m[key].wrapT=THREE.RepeatWrapping;m[key].repeat.set(...repeat);m[key].needsUpdate=true;}if(color)m.color.setRGB(...color);return m;}
   let snowSurface,stoneSurface;model.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material]){if(m.name.startsWith('Snow'))snowSurface=m;if(m.name.startsWith('AI aged cream'))stoneSurface=m;}});
   if(snowSurface)ground.material=tileMaterial(snowSurface,[180,180],[.88,.92,.98]);if(stoneSurface)street.material=tileMaterial(stoneSurface,[2,70],[.12,.14,.16]);
@@ -60,43 +61,55 @@ export function createScene(container){
  skyline.position.y=11+.72;skyline.rotation.y=Math.PI;skyline.renderOrder=-10;skyline.visible=false;scene.add(skyline);
  const cityFog=new THREE.Fog(0x9caabd,8,52);
  let cityBackdropLoaded=false,cityBackdropSize=null,skyLoaded=false,skylineLoaded=false;
- const backgroundLoader=new THREE.TextureLoader();
- backgroundLoader.load('./assets/city-background-v2/winter-sky.png',texture=>{
-  texture.colorSpace=THREE.SRGBColorSpace;sky.material.map=texture;sky.material.color.setHex(0xffffff);sky.material.needsUpdate=true;skyLoaded=true;cityBackdropLoaded=skylineLoaded;
- },undefined,()=>{container.dataset.backgroundWarning='겨울 하늘을 읽지 못했습니다.';});
- backgroundLoader.load('./assets/city-background-v2/manhattan-distant.png',texture=>{
+ const backgroundLoader=new THREE.TextureLoader();const backgroundJobs=[];
+ backgroundJobs.push(new Promise(resolve=>backgroundLoader.load('./assets/city-background-v2/winter-sky.png',texture=>{
+  texture.colorSpace=THREE.SRGBColorSpace;sky.material.map=texture;sky.material.color.setHex(0xffffff);sky.material.needsUpdate=true;skyLoaded=true;cityBackdropLoaded=skylineLoaded;resolve();
+ },undefined,()=>{container.dataset.backgroundWarning='겨울 하늘을 읽지 못했습니다.';resolve();})));
+ backgroundJobs.push(new Promise(resolve=>backgroundLoader.load('./assets/city-background-v2/manhattan-distant.png',texture=>{
   texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=THREE.RepeatWrapping;texture.repeat.x=3;texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-  skyline.material.map=texture;skyline.material.needsUpdate=true;skylineLoaded=true;cityBackdropLoaded=skyLoaded;cityBackdropSize=[texture.image.width,texture.image.height];
- },undefined,()=>{container.dataset.backgroundWarning='뉴욕 원경을 읽지 못했습니다.';});
+  skyline.material.map=texture;skyline.material.needsUpdate=true;skylineLoaded=true;cityBackdropLoaded=skyLoaded;cityBackdropSize=[texture.image.width,texture.image.height];resolve();
+ },undefined,()=>{container.dataset.backgroundWarning='뉴욕 원경을 읽지 못했습니다.';resolve();})));
  const cityCount=1800,cityPos=new Float32Array(cityCount*3),citySpeeds=new Float32Array(cityCount);for(let i=0;i<cityCount;i++){const near=i<650;cityPos[i*3]=(Math.random()-.5)*(near?4:22);cityPos[i*3+1]=.9+Math.random()*(near?4:10);cityPos[i*3+2]=near?-.9+Math.random()*2:(Math.random()-.5)*24;citySpeeds[i]=.23+Math.random()*.45;}
  const cityGeo=new THREE.BufferGeometry();cityGeo.setAttribute('position',new THREE.BufferAttribute(cityPos,3));const citySize=Float32Array.from({length:cityCount},()=>.045+Math.random()*.08625);cityGeo.setAttribute('size',new THREE.BufferAttribute(citySize,1));const citySnowMat=snowMat.clone();citySnowMat.uniforms.opacity.value=.92;const cityFlakes=new THREE.Points(cityGeo,citySnowMat);scene.add(cityFlakes);cityFlakes.visible=false;
  const startPos=new THREE.Vector3(0,2.9,9.5),endPos=new THREE.Vector3(-.20,1.13,1.12),startAim=new THREE.Vector3(0,1.60,0),endAim=new THREE.Vector3(-.10,1.40,-.42),aim=new THREE.Vector3(),inv=new THREE.Quaternion(),g=new THREE.Vector3(),v=new THREE.Vector3();
  const smooth=x=>x*x*(3-2*x);
  function resize(){const w=container.clientWidth,h=container.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();startPos.z=camera.aspect<1?12.5:9.5;}
  addEventListener('resize',resize);resize();
+ function setView(travel){const enter=smooth(Math.min(1,travel));
+  camera.position.lerpVectors(startPos,endPos,enter);aim.lerpVectors(startAim,endAim,enter);
+
+  if(travel>=1){const base=endAim.clone().sub(endPos),yaw=-look*.90,pitch=-lookY*.38;const euler=new THREE.Euler(pitch,yaw,0,'YXZ');base.applyEuler(euler);aim.copy(camera.position).add(base);}
+  camera.lookAt(aim);camera.fov=36+enter*24;camera.updateProjectionMatrix();
+  sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;skyline.material.opacity=sky.material.opacity;skyline.visible=sky.visible;scene.fog=travel>.55?cityFog:null;outer.visible=travel>.55;shadow.visible=travel<.5;shop.visible=travel<.5;
+  for(const o of groups.GLASS||[])o.visible=travel<.5;
+  for(const o of groups.BASE||[])o.visible=travel<.5;
+  flakes.visible=travel<.55;cityFlakes.visible=travel>.55;
+ }
+ const ready=Promise.all([modelReady,cityReady,...backgroundJobs]).then(async([ok])=>{
+  if(!ok)return false;
+  // Prepare both light/fog variants and upload city geometry before enabling interaction.
+  for(const travel of [0,.52,.6,1]){setView(travel);await renderer.compileAsync(scene,camera);renderer.render(scene,camera);}
+  setView(0);renderer.render(scene,camera);loaded=true;lastTick=previousTick=performance.now();
+  container.dataset.loaded='true';return true;
+ }).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 준비를 완료하지 못했습니다. 다시 불러와주세요.'}));return false;});
  const api={canvas:renderer.domElement,ready,lookAt(x,y=.5){targetLook=THREE.MathUtils.clamp((x-.5)*2,-1,1);targetLookY=THREE.MathUtils.clamp((y-.5)*2,-1,1);},
  reset(){pose.reset();physics.reset();targetLook=targetLookY=look=lookY=travelLast=0;},
  update(dt,time,motion,travel=0){
   if(!loaded){container.dataset.state=JSON.stringify(api.stats());return;}
-  const tick=performance.now();frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
+  const tick=performance.now();if(travel>0&&travel<1){if(travelLast===0)transitionFrames.length=0;if(previousTick)transitionFrames.push(tick-previousTick);}previousTick=tick;frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
   pivot.position.set(pose.position[0]*settle,1.5+pose.position[1]*settle,pose.position[2]*settle);pivot.rotation.set(pose.rotation[0]*settle,pose.rotation[1]*settle,pose.rotation[2]*settle);
   if(baseBounds){let lowest=Infinity;for(const x of [baseBounds.min.x,baseBounds.max.x])for(const y of [baseBounds.min.y,baseBounds.max.y])for(const z of [baseBounds.min.z,baseBounds.max.z]){v.set(x,y+model.position.y,z).applyQuaternion(pivot.quaternion).add(pivot.position);lowest=Math.min(lowest,v.y);}if(lowest<0)pivot.position.y-=lowest;contactGap=Math.max(0,lowest);}
-  inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;
-  camera.position.lerpVectors(startPos,endPos,enter);aim.lerpVectors(startAim,endAim,enter);
+  inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);if(travel<.55){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;}
   look+=(targetLook-look)*(1-Math.exp(-dt*3));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*3));
-  if(travel>=1){const base=endAim.clone().sub(endPos),yaw=-look*.90,pitch=-lookY*.38;const euler=new THREE.Euler(pitch,yaw,0,'YXZ');base.applyEuler(euler);aim.copy(camera.position).add(base);}
-  camera.lookAt(aim);camera.fov=36+enter*24;camera.updateProjectionMatrix();
-  sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;skyline.material.opacity=sky.material.opacity;skyline.visible=sky.visible;scene.fog=travel>.68?cityFog:null;outer.visible=travel>.68;shadow.visible=travel<.5;shop.visible=travel<.74;
-  for(const o of groups.GLASS||[])o.visible=travel<.84;
-  for(const o of groups.BASE||[])o.visible=travel<.80;
-  flakes.visible=travel<.92;cityFlakes.visible=travel>.68;
+  setView(travel);
   if(cityFlakes.visible){for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=Math.sin(time*.3+i)*dt*.03;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;}cityGeo.attributes.position.needsUpdate=true;}
   if(shop.visible){for(let i=0;i<350;i++){shopSnowPos[i*3+1]-=dt*(.12+(i%7)*.025);if(shopSnowPos[i*3+1]<.15)shopSnowPos[i*3+1]=4.9;}shopSnowGeo.attributes.position.needsUpdate=true;}
+  renderer.shadowMap.autoUpdate=travel<.60;if(travelLast===0)renderer.shadowMap.needsUpdate=true;
   const now=performance.now();renderer.render(scene,camera);frameMs+=(performance.now()-now-frameMs)*.03;
   renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2&&quality===1){quality=.75;renderer.setPixelRatio(1);resize();snowMat.uniforms.pixelRatio.value=1;citySnowMat.uniforms.pixelRatio.value=1;}
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);
  },
- stats(){return {artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
+ stats(){const sorted=transitionFrames.slice().sort((a,b)=>a-b);return {transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
  };
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 연결이 중단되었습니다. 새로고침해주세요.'}));});
  return api;

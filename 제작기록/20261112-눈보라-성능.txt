@@ -1,0 +1,4 @@
+전환 프레임 간격 계측: scene3d stats transitionFrames/transitionMaxMs/transitionP95Ms.
+기준119프레임: 최대2508ms, P95 74ms. 수정 첫125프레임: 최대44ms, P95 34ms. 복귀 후122프레임: 최대43ms, P95 35ms. 품질1 유지, error null, 도시눈1800, 브라우저 error 로그없음.
+사전 shader 준비 및 GPU 버퍼/텍스처 업로드를 로딩에 이동. 매장·유리구·도시 중복 렌더 구간 제거. 정적 도시 그림자 캐시, 보이지 않는 유리구 눈 물리 중지, 전환 CSS 합성 단순화.
+로딩 시간이 늘어날 수 있음. 실제 웹캠, 다른 GPU, 전시 장비의 성능 보장은 아님.
