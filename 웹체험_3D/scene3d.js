@@ -33,10 +33,10 @@ export function createScene(container){
  fetch('./assets/3d/colliders.json').then(r=>{if(!r.ok)throw Error('collision data');return r.json();}).then(b=>physics.boxes=b).catch(()=>{container.dataset.collisionWarning='true';});
  // Main particles share the miniature coordinate system and are occluded by actual buildings.
  const snowGeo=new THREE.BufferGeometry();snowGeo.setAttribute('position',new THREE.BufferAttribute(physics.p,3));
- const sizes=new Float32Array(physics.count);for(let i=0;i<sizes.length;i++)sizes[i]=.018+physics.depth[i]*.024;snowGeo.setAttribute('size',new THREE.BufferAttribute(sizes,1));
+ const sizes=new Float32Array(physics.count);for(let i=0;i<sizes.length;i++)sizes[i]=.045+physics.depth[i]*.060;snowGeo.setAttribute('size',new THREE.BufferAttribute(sizes,1));
  const snowMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{opacity:{value:.88},pixelRatio:{value:renderer.getPixelRatio()}},
- vertexShader:'attribute float size;uniform float pixelRatio;varying float depth;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);depth=-mv.z;gl_Position=projectionMatrix*mv;gl_PointSize=clamp(size*560.*pixelRatio/max(.1,-mv.z),2.25,36.);}',
- fragmentShader:'uniform float opacity;varying float depth;void main(){vec2 p=gl_PointCoord-.5;float r=length(p);float a=(1.-smoothstep(.28,.48,r))*opacity;if(a<.02)discard;gl_FragColor=vec4(.96,.97,.94,a);}'});
+ vertexShader:'attribute float size;uniform float pixelRatio;varying float depth;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);depth=-mv.z;gl_Position=projectionMatrix*mv;gl_PointSize=clamp(size*560.*pixelRatio/max(.1,-mv.z),5.5,80.);}',
+ fragmentShader:'uniform float opacity;varying float depth;void main(){vec2 p=gl_PointCoord-.5;float r=length(p);float a=(1.-smoothstep(.36,.49,r))*opacity;if(a<.02)discard;gl_FragColor=vec4(.96,.97,.94,a);}'});
  const flakes=new THREE.Points(snowGeo,snowMat);model.add(flakes);
  // Contact shadow stays at the counter while the held globe lifts.
  const shadowTexture=document.createElement('canvas');shadowTexture.width=shadowTexture.height=128;const c=shadowTexture.getContext('2d'),grad=c.createRadialGradient(64,64,5,64,64,64);grad.addColorStop(0,'#00000088');grad.addColorStop(1,'#00000000');c.fillStyle=grad;c.fillRect(0,0,128,128);
@@ -53,9 +53,28 @@ export function createScene(container){
   const city=model.getObjectByName('CITY');if(city)for(const [x,z,rotation] of [[-3,-2,0],[2.7,-2,0],[-3,-5,0],[2.7,-5,0],[-3,-8,0],[2.7,-8,0],[0,-10,Math.PI],[3,1,-Math.PI/2],[-3,1,Math.PI/2]]){const copy=city.clone();copy.traverse(o=>{if(o.isMesh&&o.material.name.startsWith('Snow')){const geometry=o.geometry.clone(),positions=geometry.attributes.position,index=geometry.index,keep=[];for(let n=0;n<index.count;n+=3){const a=index.getX(n),b=index.getX(n+1),c=index.getX(n+2);if(Math.max(positions.getY(a),positions.getY(b),positions.getY(c))>.90)keep.push(a,b,c);}geometry.setIndex(keep);o.geometry=geometry;}});copy.traverse(o=>{if(o.isMesh)o.castShadow=false;});copy.position.set(x,0,z);copy.rotation.y=rotation;architecture.add(copy);}
   const trees=model.getObjectByName('TREES');if(trees)for(const [x,z]of [[-2,-3],[2,-3]]){const copy=trees.clone();copy.position.set(x,0,z);outer.add(copy);}
  });
- const sky=new THREE.Mesh(new THREE.SphereGeometry(55,24,16),new THREE.MeshBasicMaterial({color:0x8c9eaf,side:THREE.BackSide,transparent:true,opacity:0,depthWrite:false}));scene.add(sky);
+ // Existing wide AI artwork is a curved distant backdrop, not a surveyed 360 panorama.
+ // The visible head-look range stays within its front 252 degrees; no image edge is exposed.
+ const skyGeometry=new THREE.SphereGeometry(55,96,48),skyUV=skyGeometry.attributes.uv,skyP=skyGeometry.attributes.position;
+ for(let i=0;i<skyUV.count;i++){
+  const angle=Math.atan2(skyP.getX(i),-skyP.getZ(i)),elevation=Math.asin(THREE.MathUtils.clamp(skyP.getY(i)/55,-1,1));
+  skyUV.setXY(i,THREE.MathUtils.clamp(.5+angle/4.4,0,1),.55+elevation*.75);
+ }
+ const sky=new THREE.Mesh(skyGeometry,new THREE.MeshBasicMaterial({color:0x8c9eaf,side:THREE.BackSide,transparent:true,opacity:0,depthWrite:false,toneMapped:false}));scene.add(sky);sky.visible=false;
+ // Fade the top of this non-360 image into winter sky instead of stretching its edge.
+ sky.material.onBeforeCompile=shader=>{
+  shader.uniforms.winterSky={value:new THREE.Color(0x9faab8)};
+  shader.fragmentShader='uniform vec3 winterSky;\n'+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n#ifdef USE_MAP\ndiffuseColor.rgb=mix(diffuseColor.rgb,winterSky,smoothstep(.80,.98,vMapUv.y));\n#endif');
+ };
+ let cityBackdropLoaded=false,cityBackdropSize=null;
+ new THREE.TextureLoader().load('./assets/redraw-v4/new-york-wide.png',texture=>{
+  texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  sky.material.map=texture;sky.material.color.setHex(0xffffff);sky.material.needsUpdate=true;
+  cityBackdropLoaded=true;cityBackdropSize=[texture.image.width,texture.image.height];
+ },undefined,()=>{container.dataset.backgroundWarning='뉴욕 배경을 읽지 못해 기본 하늘을 표시합니다.';});
  const cityCount=1800,cityPos=new Float32Array(cityCount*3),citySpeeds=new Float32Array(cityCount);for(let i=0;i<cityCount;i++){const near=i<650;cityPos[i*3]=(Math.random()-.5)*(near?4:22);cityPos[i*3+1]=.9+Math.random()*(near?4:10);cityPos[i*3+2]=near?-.9+Math.random()*2:(Math.random()-.5)*24;citySpeeds[i]=.23+Math.random()*.45;}
- const cityGeo=new THREE.BufferGeometry();cityGeo.setAttribute('position',new THREE.BufferAttribute(cityPos,3));const citySize=Float32Array.from({length:cityCount},()=>.018+Math.random()*.0345);cityGeo.setAttribute('size',new THREE.BufferAttribute(citySize,1));const citySnowMat=snowMat.clone();citySnowMat.uniforms.opacity.value=.92;const cityFlakes=new THREE.Points(cityGeo,citySnowMat);scene.add(cityFlakes);cityFlakes.visible=false;
+ const cityGeo=new THREE.BufferGeometry();cityGeo.setAttribute('position',new THREE.BufferAttribute(cityPos,3));const citySize=Float32Array.from({length:cityCount},()=>.045+Math.random()*.08625);cityGeo.setAttribute('size',new THREE.BufferAttribute(citySize,1));const citySnowMat=snowMat.clone();citySnowMat.uniforms.opacity.value=.92;const cityFlakes=new THREE.Points(cityGeo,citySnowMat);scene.add(cityFlakes);cityFlakes.visible=false;
  const startPos=new THREE.Vector3(0,2.9,9.5),endPos=new THREE.Vector3(-.20,1.13,1.12),startAim=new THREE.Vector3(0,1.60,0),endAim=new THREE.Vector3(-.10,1.40,-.42),aim=new THREE.Vector3(),inv=new THREE.Quaternion(),g=new THREE.Vector3(),v=new THREE.Vector3();
  const smooth=x=>x*x*(3-2*x);
  function resize(){const w=container.clientWidth,h=container.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();startPos.z=camera.aspect<1?12.5:9.5;}
@@ -81,7 +100,7 @@ export function createScene(container){
   renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2&&quality===1){quality=.75;renderer.setPixelRatio(1);resize();snowMat.uniforms.pixelRatio.value=1;citySnowMat.uniforms.pixelRatio.value=1;}
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);
  },
- stats(){return {artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
+ stats(){return {artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
  };
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 연결이 중단되었습니다. 새로고침해주세요.'}));});
  return api;
