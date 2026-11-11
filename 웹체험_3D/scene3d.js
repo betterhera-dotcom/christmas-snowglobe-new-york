@@ -70,7 +70,22 @@ export function createScene(container){
   skyline.material.map=texture;skyline.material.needsUpdate=true;skylineLoaded=true;cityBackdropLoaded=skyLoaded;cityBackdropSize=[texture.image.width,texture.image.height];resolve();
  },undefined,()=>{container.dataset.backgroundWarning='뉴욕 원경을 읽지 못했습니다.';resolve();})));
  const cityCount=1800,cityPos=new Float32Array(cityCount*3),citySpeeds=new Float32Array(cityCount);for(let i=0;i<cityCount;i++){const near=i<650;cityPos[i*3]=(Math.random()-.5)*(near?4:22);cityPos[i*3+1]=.9+Math.random()*(near?4:10);cityPos[i*3+2]=near?-.9+Math.random()*2:(Math.random()-.5)*24;citySpeeds[i]=.23+Math.random()*.45;}
- const cityGeo=new THREE.BufferGeometry();cityGeo.setAttribute('position',new THREE.BufferAttribute(cityPos,3));const citySize=Float32Array.from({length:cityCount},()=>.045+Math.random()*.08625);cityGeo.setAttribute('size',new THREE.BufferAttribute(citySize,1));const citySnowMat=snowMat.clone();citySnowMat.uniforms.opacity.value=.92;const cityFlakes=new THREE.Points(cityGeo,citySnowMat);scene.add(cityFlakes);cityFlakes.visible=false;
+ const cityGeo=new THREE.BufferGeometry();cityGeo.setAttribute('position',new THREE.BufferAttribute(cityPos,3));
+ const citySeed=Float32Array.from({length:cityCount},()=>Math.random());
+ const citySize=Float32Array.from(citySeed,n=>.035+n*n*.075);cityGeo.setAttribute('size',new THREE.BufferAttribute(citySize,1));cityGeo.setAttribute('seed',new THREE.BufferAttribute(citySeed,1));
+ const citySnowMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{pixelRatio:{value:renderer.getPixelRatio()},time:{value:0}},
+ vertexShader:`attribute float size;attribute float seed;uniform float pixelRatio;varying float flakeSeed;varying float viewDepth;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);viewDepth=-mv.z;flakeSeed=seed;gl_Position=projectionMatrix*mv;gl_PointSize=clamp(size*560.*pixelRatio/max(.25,viewDepth),1.5*pixelRatio,54.*pixelRatio);}`,
+ fragmentShader:`uniform float time;varying float flakeSeed;varying float viewDepth;void main(){
+ vec2 p=(gl_PointCoord-.5)*2.;float angle=flakeSeed*6.283+time*(.22+flakeSeed*.4);float c=cos(angle),s=sin(angle);p=mat2(c,-s,s,c)*p;
+ p.x*=1.+.45*sin(time*.7+flakeSeed*12.);p.y*=1.15;
+ float soft=(1.-smoothstep(.6,3.,viewDepth));float grain=sin(p.x*19.+flakeSeed*31.)*sin(p.y*23.+flakeSeed*17.);
+ float r=length(p)+(.06*(1.-soft))*grain;
+ float core=1.-smoothstep(.23,.72+soft*.18,r);
+ float lobe=exp(-18.*dot(p-vec2(.25,.12),p-vec2(.25,.12)))+exp(-23.*dot(p+vec2(.20,.14),p+vec2(.20,.14)));
+ float alpha=clamp(core*.76+lobe*.18,0.,1.)*(.48+flakeSeed*.32)*smoothstep(.22,.65,viewDepth);
+ if(alpha<.015)discard;gl_FragColor=vec4(mix(vec3(.83,.88,.93),vec3(.98,.98,.94),flakeSeed),alpha);
+ }`});
+ const cityFlakes=new THREE.Points(cityGeo,citySnowMat);scene.add(cityFlakes);cityFlakes.visible=false;
  const startPos=new THREE.Vector3(0,2.9,9.5),endPos=new THREE.Vector3(-.20,1.13,1.12),startAim=new THREE.Vector3(0,1.60,0),endAim=new THREE.Vector3(-.10,1.40,-.42),aim=new THREE.Vector3(),inv=new THREE.Quaternion(),g=new THREE.Vector3(),v=new THREE.Vector3();
  const smooth=x=>x*x*(3-2*x);
  function resize(){const w=container.clientWidth,h=container.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();startPos.z=camera.aspect<1?12.5:9.5;}
@@ -102,7 +117,7 @@ export function createScene(container){
   inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);if(travel<.55){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;}
   look+=(targetLook-look)*(1-Math.exp(-dt*3));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*3));
   setView(travel);
-  if(cityFlakes.visible){for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=Math.sin(time*.3+i)*dt*.03;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;}cityGeo.attributes.position.needsUpdate=true;}
+  if(cityFlakes.visible){citySnowMat.uniforms.time.value=time;for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=(.045+Math.sin(time*.8+i*2.4)*(.025+citySeed[i]*.065))*dt;cityPos[i*3+2]+=Math.cos(time*.65+i*1.7)*dt*.035;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;if(cityPos[i*3+2]>12)cityPos[i*3+2]=-12;if(cityPos[i*3+2]<-12)cityPos[i*3+2]=12;}cityGeo.attributes.position.needsUpdate=true;}
   if(shop.visible){for(let i=0;i<350;i++){shopSnowPos[i*3+1]-=dt*(.12+(i%7)*.025);if(shopSnowPos[i*3+1]<.15)shopSnowPos[i*3+1]=4.9;}shopSnowGeo.attributes.position.needsUpdate=true;}
   renderer.shadowMap.autoUpdate=travel<.60;if(travelLast===0)renderer.shadowMap.needsUpdate=true;
   const now=performance.now();renderer.render(scene,camera);frameMs+=(performance.now()-now-frameMs)*.03;

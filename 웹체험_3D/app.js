@@ -126,7 +126,7 @@ function frame(now){
     lastDetection=now;lastVideo=$('webcam').currentTime;
     try{
       const returnHand=tracker.detectForVideo($('webcam'),now);
-      if(fistReturn.update(returnHand.worldLandmarks?.[0]||returnHand.landmarks[0],time)){setMode('camera');carol.reset();feedback('매장으로 돌아왔어요');status('C자 모양으로 다시 잡아보세요');}
+      if(fistReturn.update(returnHand.worldLandmarks?.[0]||returnHand.landmarks[0],time)){setMode('camera');carol.reset();feedback('처음으로 돌아왔어요');status('C자 모양으로 다시 잡아보세요');}
       else {
       const face=faceTracker.detectForVideo($('webcam'),now).faceLandmarks[0];
       const horizontal=headLook.update(face);scene?.lookAt(horizontal,headLook.vertical);
@@ -140,7 +140,7 @@ function frame(now){
   if(phase==='globe'&&mode!=='idle'&&motion.burst>0&&scene?.stats().holding){phase='entering';carol.effect('enter');document.body.dataset.phase=phase;$('hand-cursor').hidden=true;$('prompt').textContent='눈보라 너머, 뉴욕으로';$('hint').textContent='이제 손을 멈추고 작은 겨울 속으로 들어가요.';feedback('겨울 여행이 열립니다');}
   if(phase==='entering'){
     travel=Math.min(1,travel+dt/3.6);
-    if(travel===1){phase='city';headLook.reset();fistReturn.reset(time);document.body.dataset.phase=phase;completeStep(2,'NEW YORK · 도착했어요');document.querySelector('.step').textContent='03 / A WINTER IN NEW YORK';$('prompt').textContent='손안의 뉴욕에 도착했어요';$('hint').textContent=mode==='camera'?'잠시 정면을 본 뒤 고개를 상하좌우로 돌려 둘러보세요. 주먹을 1초간 쥐면 매장으로 돌아갑니다.':'마우스를 상하좌우로 움직여 둘러보세요. 카메라 체험에서는 고개로 조절합니다.';$('reset').textContent='매장으로 돌아가기';status('뉴욕의 겨울을 감상해보세요',true);}
+    if(travel===1){phase='city';headLook.reset();fistReturn.reset(time);document.body.dataset.phase=phase;completeStep(2,'NEW YORK · 도착했어요');document.querySelector('.step').textContent='03 / A WINTER IN NEW YORK';$('prompt').textContent='손안의 뉴욕에 도착했어요';$('hint').textContent=mode==='camera'?'잠시 정면을 본 뒤 고개를 상하좌우로 돌려 둘러보세요. 주먹을 1초간 쥐면 처음으로 돌아갑니다.':'마우스를 상하좌우로 움직여 둘러보세요. 카메라 체험에서는 고개로 조절합니다.';$('reset').textContent='처음으로 돌아가기';status('뉴욕의 겨울을 감상해보세요',true);}
   }
   carol.update(dt,mode==='idle'||phase==='city'?0:motion.energy);carol.stir(phase==='globe'?motion.energy:0);scene?.update(dt,time,motion,travel);
   $('energy-bar').style.width=`${motion.energy*100}%`;document.querySelector('.meter').setAttribute('aria-valuenow',Math.round(motion.energy*100));$('bpm').textContent=Math.round(carol.bpm);
