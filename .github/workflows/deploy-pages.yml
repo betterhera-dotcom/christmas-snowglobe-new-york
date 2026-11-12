@@ -1,4 +1,5 @@
 name: Deploy snowglobe and developer preview
+# experiment2 release: 4086d8ef72736e9c91954302e179a9dc839c287c
 
 on:
   push:
@@ -52,6 +53,9 @@ jobs:
           node _lite/웹체험_3D/verification/check-snow-entry.mjs
           node _lite/웹체험_3D/verification/check-city-timing.mjs
           node _lite/웹체험_3D/verification/check-lite.mjs
+          node _experiment/experiment2/verification/check-startup.mjs
+          node _experiment/experiment2/verification/check-response-trial.mjs
+          node _experiment/experiment2/verification/check-hand-target-bridge.mjs
       - name: Prepare public and developer URLs
         run: |
           mkdir -p _site/verification
