@@ -2,6 +2,8 @@
 
 **[▶ 작품 바로 체험하기](https://betterhera-dotcom.github.io/christmas-snowglobe-new-york/)**
 
+**[개발자 모드 · 실험 체험](https://betterhera-dotcom.github.io/christmas-snowglobe-new-york/experiment/)** — `codex/experiment` 브랜치. 손 윤곽·웹캠·예상 거리·입자 채움 기준 전환을 검수합니다. 기본 주소는 `main` 작품을 유지합니다. 실험 브랜치 푸시 후 Actions의 `Deploy snowglobe and developer preview`를 main에서 실행하면 두 주소를 함께 갱신합니다.
+
 설치 없이 브라우저에서 열 수 있습니다. 카메라 또는 마우스·터치로 체험하세요.
 
 뉴욕을 시작으로 제작하는 1인 인터랙티브 미디어아트입니다. MediaPipe 손·얼굴 추적과 Blender/Three.js 3D 도시, 실시간 눈, 속도가 변하는 캐롤을 연결합니다.

@@ -26,12 +26,19 @@ console.log('PASS: short enjoyment window, pauses/resume/reset, opaque transitio
 for(const fps of [15,30,60])for(const direction of ['horizontal','vertical','circle']){
  const motion=new ShakeMotion();let enteredAt=null;
  for(let f=0;f<fps*8;f++){
-  const time=f/fps,offset=.14*Math.sin(time*2*Math.PI*1.2);
+  const time=f/fps,offset=.18*Math.sin(time*2*Math.PI*1.7);
   const x=direction==='vertical'?.5:.5+offset;
-  const y=direction==='horizontal'?.5:direction==='vertical'?.5+offset:.5+.10*Math.cos(time*2*Math.PI*1.2);
+  const y=direction==='horizontal'?.5:direction==='vertical'?.5+offset:.5+.15*Math.cos(time*2*Math.PI*1.7);
   motion.sample(x,y,time);motion.update(1/fps,time);
   if(motion.burst>0){enteredAt=time;break;}
  }
- assert.ok(enteredAt>=5&&enteredAt<8,`${direction} moderate shaking at ${fps}fps should enter in 5–8s; got ${enteredAt}`);
- console.log('PASS moderate entry',{fps,direction,enteredAt});
+ assert.ok(enteredAt>4.5&&enteredAt<8,`${direction} deliberate shaking at ${fps}fps should enter after the introduction and fresh effort; got ${enteredAt}`);
+ console.log('PASS deliberate entry',{fps,direction,enteredAt});
 }
+
+for(const [amplitude,frequency] of [[.14,1.2],[.04,10]]){
+ const test=new ShakeMotion();for(let f=0;f<60*30;f++){const t=f/60;test.sample(.5+amplitude*Math.sin(t*2*Math.PI*frequency),.5,t);test.update(1/60,t);assert.equal(test.burst,0,'gentle movement and rapid small shakes never enter');}
+}
+const intro=new ShakeMotion();for(let f=0;f<60*3;f++){const t=f/60;intro.sample(.5+.2*Math.sin(t*2*Math.PI*2),.5,t);intro.update(1/60,t);assert.equal(intro.entryTime,0,'first three seconds cannot charge entry');}
+intro.release();assert.equal(intro.entryTime,0);assert.equal(intro.entrySpan,0);
+console.log('PASS: three-second introduction, fresh deliberate effort, no gentle or small-fast entry');

@@ -1,6 +1,18 @@
 // Monocular range estimate: calibrate a single viewer at a measured 2.3 m mark.
 // Face size is only a distance proxy, not a depth-camera measurement.
 export const CALIBRATION_METERS=2.3,MAX_VIEWER_METERS=3;
+// Uncalibrated fallback assumes a face height of .22 of the image at 1m.
+// Camera field of view and individual face size make this a rough estimate only.
+export function estimateViewerDistance(faceSize,reference=null){
+ if(!Number.isFinite(faceSize)||faceSize<=0)return null;
+ return (reference?reference*CALIBRATION_METERS:.22)/faceSize;
+}
+// Convert projected camera movement toward a one-metre reference scale.
+// Without calibration this is sensitivity compensation, not a metre estimate.
+export function cameraMotionScale(faceSize,reference=null){
+ if(!Number.isFinite(faceSize)||faceSize<=0)return 1;
+ return Math.max(.75,Math.min(3,estimateViewerDistance(faceSize,reference)));
+}
 function describe(points,index){
  if(!points?.length)return null;
  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;

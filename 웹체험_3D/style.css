@@ -137,3 +137,29 @@ body[data-phase="ending"] #winter-wish[data-stage="fading"] .wish-frost{opacity:
 .intro-copy .intro-actions small{margin-top:8px;color:#ffffffb3;font-size:12px}
 .intro-copy #intro-status{max-width:520px;font-size:12px;min-height:2em;margin:20px auto 0;color:#fff}
 @media(max-width:650px){.intro-actions{flex-direction:column;gap:12px}.intro-copy{padding:20px}.intro-star{margin:8px}.intro-copy h2{font-size:32px}.intro-copy .intro-actions button{width:100%;min-height:72px}.intro-copy #intro-status{max-width:300px}}
+
+/* Experiment: one instruction at the top, with a separate lower-right self-view. */
+#hand-outline{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}#hand-outline[hidden]{display:none}
+#hand-cursor,#snow-hand .virtual-palm,#snow-hand .palm-detail{display:none}
+body.active header{top:16px;left:24px;right:24px;padding:0;min-height:0}
+body.active .title h1{font-size:15px}body.active .title p{display:none}
+#motion-guide{top:78px;left:50%;right:auto;transform:translateX(-50%);width:min(820px,calc(100% - 48px));padding:12px 16px;background:none;border:0;border-radius:0;box-shadow:none;text-align:center;color:white;text-shadow:0 2px 5px #000,0 0 25px #0009;display:flex;flex-direction:column;align-items:center;gap:12px}
+.motion-copy{order:0}.motion-copy strong{display:block;font:500 clamp(23px,3vw,40px)/1.45 Arial,'Malgun Gothic',sans-serif;word-break:keep-all;letter-spacing:-.03em}
+.motion-heading{order:1;justify-content:center;gap:14px;margin:0;font-size:11px}#tracking-state,#motion-guide[data-tracking=true] #tracking-state{color:white}#tracking-mode{font-size:10px}
+#tracking-map{order:2;float:none;width:55px;height:42px;margin:0;fill:white}#tracking-lines{stroke:white}
+.motion-copy p,.motion-steps,#palm-caption{display:none}
+#snow-progress{order:2;width:min(280px,100%)}.snow-progress-label{margin:0 0 6px}
+body.active .instruction .guide,body.active .instruction .readout,body.active #feedback{display:none}
+body.active .instruction,body.active.city-settled .instruction{background:none;backdrop-filter:none;border:0;padding:0;left:24px;right:24px;bottom:68px;width:auto;transform:none;max-width:none}
+body[data-phase=entering] .instruction{top:100px;bottom:auto;pointer-events:none;text-align:center}
+body[data-phase=entering] .instruction .guide{display:block}
+body[data-phase=entering] .instruction h2{font:500 clamp(23px,3vw,40px)/1.45 Arial,'Malgun Gothic',sans-serif;color:white;text-shadow:0 2px 5px #000}
+body[data-phase=entering] .instruction #hint{display:none}
+#camera-preview,body.city-settled #camera-preview{position:fixed;right:18px;bottom:70px;top:auto;width:220px;max-width:calc(100vw - 28px);padding:8px 10px;border:1px solid #ffffff55;border-radius:8px;background:#10171ce8;color:white;font:11px/1.5 Arial,'Malgun Gothic',sans-serif}
+#camera-preview summary{min-height:20px}#camera-preview p{display:none}#webcam{display:block;width:100%;max-width:100%;border-radius:4px;margin:6px 0 0}
+#viewer-calibration{top:auto;right:18px;bottom:295px;max-width:220px;font-size:10px}
+@media(max-width:650px){body.active header{top:18px;left:16px;right:16px}body.active .title h1{font-size:12px}#motion-guide{top:62px;left:50%;right:auto;width:calc(100% - 28px);padding:10px 4px;gap:8px}.motion-copy strong{font-size:24px}.motion-heading{font-size:10px}#camera-preview,body.city-settled #camera-preview{width:142px;right:12px;bottom:62px}#viewer-calibration{right:12px;bottom:225px;max-width:180px}body[data-phase=entering] .instruction{top:85px}}
+#camera-preview #viewer-calibration{position:static;max-width:none;padding:8px 0 0;border:0;background:none;margin:0;color:#e7edf1}
+#viewer-distance{display:block;font-size:15px;font-weight:500;margin:10px 0 5px;font-variant-numeric:tabular-nums}
+#camera-preview #viewer-calibration small{display:block;font-size:9px;line-height:1.5;color:#aebcc5}
+#tracking-map{display:none!important}

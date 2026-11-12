@@ -66,5 +66,17 @@ export class GlobeSnow{
    }
   }
  }
- stats(){let airborne=0,upper=0;for(let i=0;i<this.count;i++){const k=i*3;if(this.p[k+1]>.95&&Math.hypot(this.v[k],this.v[k+1],this.v[k+2])>.005){airborne++;if(this.p[k+1]>2.1)upper++;}}return {airborne,upper,snowCount:this.count,currentStrength:Math.round((Math.hypot(...this.flow)+Math.hypot(...this.spin)+this.turbulence)*100)/100};}
+ stats(){
+  let airborne=0,upper=0,top=0;const regions=Array(8).fill(0);
+  for(let i=0;i<this.count;i++){
+   const k=i*3,x=this.p[k],y=this.p[k+1],z=this.p[k+2];
+   if(y>.95&&Math.hypot(this.v[k],this.v[k+1],this.v[k+2])>.005){
+    airborne++;if(y>2.1)upper++;if(y>2.65)top++;
+    regions[(x>0?1:0)+(y>1.8?2:0)+(z>0?4:0)]++;
+   }
+  }
+  // A floor cloud or a thin ribbon cannot count as a filled globe.
+  const globeFill=this.count?Math.min(1,airborne/(this.count*.8),upper/(this.count*.28),top/(this.count*.025),Math.min(...regions)/(this.count*.035)):0;
+  return {airborne,upper,snowCount:this.count,globeFill,currentStrength:Math.round((Math.hypot(...this.flow)+Math.hypot(...this.spin)+this.turbulence)*100)/100};
+ }
 }

@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>손끝에서 열리는 크리스마스 · 스노우볼 세계여행</title>
+  <title>개발자 모드 · 손끝에서 열리는 크리스마스</title>
+  <meta name="robots" content="noindex,nofollow">
   <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
 </head>
 <body data-phase="globe">
@@ -28,11 +29,12 @@
     <div class="scene-caption"><span>THE CHRISTMAS ATELIER</span><p>작은 유리구 속, 또 하나의 겨울</p></div>
     <div id="feedback" role="status" aria-live="polite" hidden></div>
     <div id="hand-cursor" hidden aria-hidden="true">✦</div>
+    <canvas id="hand-outline" width="640" height="480" hidden aria-hidden="true"></canvas>
     <aside id="motion-guide" hidden aria-label="동작 인식 가이드">
       <div class="motion-heading"><span id="tracking-state" role="status">손을 보여주세요</span><span id="tracking-mode">카메라</span></div>
       <svg id="tracking-map" viewBox="0 0 120 90" aria-hidden="true"><path id="tracking-lines"/><g id="tracking-joints"></g></svg>
       <div class="motion-copy"><strong id="motion-title">손을 C자로 만들어 잡아주세요</strong><p id="motion-help">얼굴과 손이 카메라에 함께 보이게 해주세요.</p></div>
-      <div id="snow-progress" hidden><div class="snow-progress-label"><span>손에 쌓인 눈</span><span id="snow-percent">0%</span></div><div id="snow-meter" role="progressbar" aria-label="손에 쌓인 눈" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
+      <div id="snow-progress" hidden><div class="snow-progress-label"><span id="snow-progress-label">손에 쌓인 눈</span><span id="snow-percent">0%</span></div><div id="snow-meter" role="progressbar" aria-label="손에 쌓인 눈" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
       <ol class="motion-steps"><li id="guide-hold">1 잡기</li><li id="guide-shake">2 흔들기</li><li id="guide-snow">3 눈 받기</li></ol>
     </aside>
     <div id="snow-hand" hidden aria-hidden="true">
@@ -49,7 +51,7 @@
       <div class="readout"><div class="signal"><i id="status-dot"></i><span id="status">시작 방법을 선택해주세요</span></div><span id="mode-label">READY</span><div class="energy"><span>SNOW</span><div class="meter" role="progressbar" aria-label="눈을 깨우는 힘" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="energy-bar"></div></div></div><span class="tempo"><span id="bpm">1.00</span> <small>× SPEED</small></span></div>
       <p id="error" role="alert" hidden></p>
     </section>
-    <footer><span class="footer-title">스노우볼 세계여행 <span>· CHRISTMAS EDITION</span></span><div><button id="catch-snow" hidden>눈 받기 테스트</button><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset">처음으로</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
+    <footer><span class="footer-title">개발자 모드 · EXPERIMENT</span><div><button id="catch-snow" hidden>눈 받기 테스트</button><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset">처음으로</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
     <div id="winter-wish" hidden data-stage="grow">
       <div class="wish-frost" aria-hidden="true"></div>
       <svg id="caught-snowflake" viewBox="-60 -60 120 120" aria-hidden="true">
@@ -59,8 +61,7 @@
       <div class="wish-radiance" aria-hidden="true"></div>
       <div class="wish-card"><div class="wish-star" aria-hidden="true">✧</div><span class="wish-caption">크리스마스가 건네는 새해의 행운</span><h2 id="wish-title"></h2><p id="wish-message" role="status" aria-live="polite"></p><p id="wish-token"></p><p class="ending-note">체험이 끝났어요 · 잠시 후 첫 화면으로 돌아갑니다</p><button id="wish-close">처음부터 다시 체험</button></div>
     </div>
-    <aside id="viewer-calibration" hidden><label class="viewer-mode"><input id="distance-limit" type="checkbox">전시 모드 · 3m 거리 제한</label><p id="viewer-status" role="status">테스트 모드 · 거리 제한 없이 한 사람만 조작합니다.</p><button id="calibrate-distance" hidden>2.3m 기준 맞추기</button><small>전시 모드 권장 2.3m / 최대 3m · 얼굴 크기로 추정</small></aside>
-    <details id="camera-preview"><summary>카메라 인식 확인</summary><video id="webcam" autoplay playsinline muted></video><p>영상은 이 기기에서만 처리하며 저장하지 않습니다. 카메라 위치나 줌을 바꾸면 2.3m 기준을 다시 맞춰주세요.</p></details>
+    <details id="camera-preview"><summary>내 모습 · 웹캠</summary><video id="webcam" autoplay playsinline muted></video><strong id="viewer-distance">예상 거리 · 얼굴 감지 대기</strong><aside id="viewer-calibration" hidden><label class="viewer-mode"><input id="distance-limit" type="checkbox">전시 모드 · 3m 거리 제한</label><p id="viewer-status" role="status">테스트 모드 · 거리 제한 없이 한 사람만 조작합니다.</p><button id="calibrate-distance">2.3m 기준 맞추기</button><small>얼굴 크기로 추정 · 카메라 위치·줌 변경 시 다시 보정</small></aside></details>
     <canvas id="storm-particles" aria-hidden="true"></canvas><div id="blizzard" aria-hidden="true"></div>
     <noscript>이 작품을 실행하려면 Chrome에서 JavaScript를 허용해주세요.</noscript>
   </main>

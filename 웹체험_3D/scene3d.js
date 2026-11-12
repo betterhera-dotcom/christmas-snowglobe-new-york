@@ -181,14 +181,29 @@ export function createScene(container){
   setView(0);renderer.render(scene,camera);loaded=true;lastTick=previousTick=performance.now();
   container.dataset.loaded='true';return true;
  }).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 준비를 완료하지 못했습니다. 다시 불러와주세요.'}));return false;});
- const api={canvas:renderer.domElement,ready,lookAt(x,y=.5){targetLook=THREE.MathUtils.clamp((x-.5)*2,-1,1);targetLookY=THREE.MathUtils.clamp((y-.5)*2,-1,1);},
+ const api={canvas:renderer.domElement,ready,
+ handOverGlobe(x,y){
+  if(!loaded||travelLast>0)return false;
+  const box=new THREE.Box3();for(const glass of groups.GLASS||[])box.expandByObject(glass);
+  if(box.isEmpty())return false;
+  let left=1,right=0,top=1,bottom=0;
+  for(const xx of [box.min.x,box.max.x])for(const yy of [box.min.y,box.max.y])for(const zz of [box.min.z,box.max.z]){
+   const p=new THREE.Vector3(xx,yy,zz).project(camera),sx=(p.x+1)/2,sy=(1-p.y)/2;
+   left=Math.min(left,sx);right=Math.max(right,sx);top=Math.min(top,sy);bottom=Math.max(bottom,sy);
+  }
+  const rx=(right-left)*.55,ry=(bottom-top)*.55;
+  return rx>0&&ry>0&&((x-(left+right)/2)/rx)**2+((y-(top+bottom)/2)/ry)**2<=1;
+ },
+ lookAt(x,y=.5){targetLook=THREE.MathUtils.clamp((x-.5)*2,-1,1);targetLookY=THREE.MathUtils.clamp((y-.5)*2,-1,1);},
  reset(){pose.reset();physics.reset();targetLook=targetLookY=look=lookY=travelLast=0;},
  update(dt,time,motion,travel=0){
   if(!loaded){container.dataset.state=JSON.stringify(api.stats());return;}
   const tick=performance.now();if(travel>0&&travel<1){if(travelLast===0)transitionFrames.length=0;if(previousTick)transitionFrames.push(tick-previousTick);}previousTick=tick;frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
   pivot.position.set(pose.position[0]*settle,1.5+pose.position[1]*settle,pose.position[2]*settle);pivot.rotation.set(pose.rotation[0]*settle,pose.rotation[1]*settle,pose.rotation[2]*settle);
   if(baseBounds){let lowest=Infinity;for(const x of [baseBounds.min.x,baseBounds.max.x])for(const y of [baseBounds.min.y,baseBounds.max.y])for(const z of [baseBounds.min.z,baseBounds.max.z]){v.set(x,y+model.position.y,z).applyQuaternion(pivot.quaternion).add(pivot.position);lowest=Math.min(lowest,v.y);}if(lowest<0)pivot.position.y-=lowest;contactGap=Math.max(0,lowest);}
-  inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);if(travel<.42){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
+  inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);
+  if(motion.followHand&&pose.held)v.multiplyScalar(Math.max(.75,Math.min(3,motion.cameraScale||1)));
+  if(travel<.42){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
   look+=(targetLook-look)*(1-Math.exp(-dt*3));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*3));
   setView(travel);
   if(cityFlakes.visible){citySnowMat.uniforms.time.value=time;for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=(.045+Math.sin(time*.8+i*2.4)*(.025+citySeed[i]*.065))*dt;cityPos[i*3+2]+=Math.cos(time*.65+i*1.7)*dt*.035;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;if(cityPos[i*3+2]>12)cityPos[i*3+2]=-12;if(cityPos[i*3+2]<-12)cityPos[i*3+2]=12;}cityGeo.attributes.position.needsUpdate=true;}
