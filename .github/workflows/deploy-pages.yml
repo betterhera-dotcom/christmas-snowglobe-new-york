@@ -40,7 +40,7 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Check public and developer experiences
         run: |
-          for source in 웹체험_3D _experiment/웹체험_3D _lite/웹체험_3D; do
+          for source in 웹체험_3D _experiment/웹체험_3D _lite/웹체험_3D _experiment/experiment2; do
             node --check "$source/app.js"
             node --check "$source/scene3d.js"
             for check in liquid-snow snow-filling snow-surface carol hand-tracking tracking-client motion audience snow-wish; do
@@ -68,6 +68,11 @@ jobs:
           cp _lite/웹체험_3D/*.html _lite/웹체험_3D/*.css _lite/웹체험_3D/*.js _lite/웹체험_3D/*.mjs _site/experiment-lite/
           cp -R _lite/웹체험_3D/assets _lite/웹체험_3D/vendor _site/experiment-lite/
           git -C _lite rev-parse HEAD > _site/experiment-lite/version.txt
+          mkdir -p _site/experiment2/verification
+          cp _experiment/experiment2/*.html _experiment/experiment2/*.css _experiment/experiment2/*.js _experiment/experiment2/*.mjs _site/experiment2/
+          cp -R _experiment/experiment2/assets _experiment/experiment2/vendor _site/experiment2/
+          cp _experiment/experiment2/verification/liquid-preview.html _site/experiment2/verification/
+          git -C _experiment rev-parse HEAD > _site/experiment2/version.txt
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v4
         with:
