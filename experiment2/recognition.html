@@ -1,0 +1,33 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>몸 · 손 · 얼굴 인식 비교</title>
+<style>body{background:#10241f;color:#fff;font:18px system-ui;max-width:1100px;margin:30px auto;padding:0 20px}button{font:inherit;padding:12px;margin:8px 8px 8px 0}video,canvas{max-width:100%}.view{position:relative;width:min(100%,900px)}video{display:block;width:100%;transform:scaleX(-1)}#overlay{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)}pre{white-space:pre-wrap;font:16px system-ui}#comparison{border:1px solid #83f7ce;padding:16px}</style>
+<h1>몸 · 손 · 얼굴 인식 비교</h1><p>3D 없이 실제 카메라 인식만 확인합니다. 영상은 이 컴퓨터 안에서만 처리합니다.</p>
+<button id="start">카메라 시작</button><button id="stop" disabled>카메라 끄기</button><button id="compare" disabled>같은 장면으로 전체 / 확대 비교</button><a href="./?muted=1" style="color:#fff">스노우볼로 돌아가기</a>
+<div class="view"><video id="video" autoplay muted playsinline></video><canvas id="overlay"></canvas></div><p id="status">시작 대기</p><pre id="metrics"></pre><pre id="comparison">비교 버튼은 같은 한 장을 전체 화면과 확대 영역으로 각각 분석합니다. 실제 거리(m)는 카메라로 측정하지 않습니다.</pre><details><summary>몸 선택 진단</summary><pre id="bodies"></pre></details>
+<script type="module">
+import {TrackingClient} from './tracking-client.mjs';
+import {TrackingSchedule} from './tracking-schedule.mjs';
+import {trackingRegion} from './tracking-region.mjs';
+import {AudienceGate} from './audience.mjs';
+import {WebcamDebug} from './webcam-debug.js';
+const $=id=>document.getElementById(id),video=$('video'),debug=new WebcamDebug($('overlay'),$('status'),$('metrics')),audience=new AudienceGate(),schedule=new TrackingSchedule();
+let client,stream,comparing=false,stopping=false;
+function bodyStats(){return audience.bodies.map(b=>({selected:b===audience.selected,index:b.index,shoulderWidth:+b.size.toFixed(4),x:+b.x.toFixed(3),y:+b.y.toFixed(3),nose:b.points[0],wrists:b.wrists}));}
+function stop(){stopping=true;stream?.getTracks().forEach(t=>t.stop());stream=null;client?.close();client=null;video.srcObject=null;audience.reset();debug.reset();$('start').disabled=false;$('stop').disabled=$('compare').disabled=true;}
+$('start').onclick=async()=>{stopping=false;$('start').disabled=true;$('status').textContent='카메라 연결 중';try{stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30}},audio:false});video.srcObject=stream;await video.play();client=new TrackingClient();await client.ready;client.prepareFace();schedule.reset();$('stop').disabled=$('compare').disabled=false;requestAnimationFrame(loop);}catch(e){stop();$('status').textContent=e.message;}};
+$('stop').onclick=stop;window.addEventListener('pagehide',stop);
+async function loop(now){if(!client||stopping)return;try{if(!client.busy&&!comparing&&video.readyState>=2){const kind=schedule.next(now,video.currentTime,{allowed:audience.allowed,diagnostics:true,faceReady:!!client.delegates.face});if(kind){const region=trackingRegion(kind,audience.selected,video.videoWidth,video.videoHeight);const p=await client.detect(kind,video,performance.now(),raw=>{if(kind==='face')raw.owned=audience.ownsFace(raw.result.faceLandmarks[0],raw.timestamp/1000);debug.record(raw);},region);if(kind==='body'&&p){audience.update(p.result.landmarks,p.timestamp/1000);$('bodies').textContent=JSON.stringify(bodyStats(),null,2);}}}if(client)debug.draw(performance.now(),{video,allowed:audience.allowed,selected:audience.selected?.index,analysisOnly:true,delegates:client.delegates,faceError:client.faceError,dropped:client.metrics.dropped});}catch(e){$('status').textContent=e.message;}if(client)requestAnimationFrame(loop);}
+$('compare').onclick=async()=>{
+ if(comparing||!client)return;comparing=true;$('compare').disabled=true;
+ try{
+ while(client.busy)await new Promise(r=>setTimeout(r,20));
+ if(!client.delegates.face)throw Error('얼굴 모델 준비 후 비교해주세요.');
+ const frame=document.createElement('canvas');frame.width=video.videoWidth;frame.height=video.videoHeight;frame.getContext('2d').drawImage(video,0,0);
+ const lines=[`동일 장면 비교 · ${frame.width}×${frame.height}`];
+ for(const kind of ['hand','face'])for(const crop of [false,true]){
+  const region=crop?trackingRegion(kind,audience.selected,frame.width,frame.height):null;
+  await client.detect(kind,frame,performance.now(),raw=>{const shapes=kind==='face'?raw.result.faceLandmarks:raw.result.landmarks;const owned=kind==='face'?audience.ownsFace(shapes[0],raw.timestamp/1000):audience.handIndex(shapes,raw.timestamp/1000,{remember:false})>=0;lines.push(`${kind==='hand'?'손':'얼굴'} ${crop?'확대':'전체'}: ${shapes.length}개 · 조작자 연결 ${owned?'성공':'대기'} · ${Math.round(raw.inferenceMs)}ms · 입력 영역 ${region?region.width+'×'+region.height:'전체'}`);},region);
+ }
+ $('comparison').textContent=lines.join('\n');
+ }catch(e){$('comparison').textContent=e.message;}finally{comparing=false;$('compare').disabled=!client;}
+};
+</script></html>
