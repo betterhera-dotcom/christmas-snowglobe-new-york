@@ -4,11 +4,42 @@
   "baselineCommit": "28c4e37",
   "scope": "Local CPU benchmark and synthetic pointer browser test; not exhibition hardware or live camera",
   "physicsMedianMs": [
-    {"dt": 0.0166667, "original": 9.10, "lite": 2.21},
-    {"dt": 0.0333333, "original": 12.56, "lite": 2.06},
-    {"dt": 0.05, "original": 20.94, "lite": 2.25}
+    {
+      "dt": 0.0166667,
+      "original": 9.1,
+      "lite": 2.21
+    },
+    {
+      "dt": 0.0333333,
+      "original": 12.56,
+      "lite": 2.06
+    },
+    {
+      "dt": 0.05,
+      "original": 20.94,
+      "lite": 2.25
+    }
   ],
-  "browserObserved": {"globeFps":60,"cityFpsRange":[58,60],"globeDrawCalls":41,"globeTriangles":499702,"citySnowCollectionPercent":45,"consoleErrors":0},
-  "tradeoffs": ["Existing shop image replaces the 3D room; composition differs", "No real refraction or dynamic shadows", "6000 decorative flakes do not collide with roofs; 3000 physical flakes do", "Hand results older than 250ms are display-only, so very slow inference may still interrupt control"],
-  "unchanged": ["Journey timing", "City receiving hand and palm snow assets", "Public experiment deployment"]
+  "browserObserved": {
+    "globeFps": 60,
+    "cityFpsRange": [
+      58,
+      60
+    ],
+    "globeDrawCalls": 41,
+    "globeTriangles": 499702,
+    "citySnowCollectionPercent": 45,
+    "consoleErrors": 0
+  },
+  "tradeoffs": [
+    "Existing shop image replaces the 3D room; composition differs",
+    "No real refraction or dynamic shadows",
+    "6000 decorative flakes do not collide with roofs; 3000 physical flakes do",
+    "Hand results older than 250ms are display-only, so very slow inference may still interrupt control"
+  ],
+  "unchanged": [
+    "City receiving hand and palm snow assets",
+    "Public experiment deployment"
+  ],
+  "entryPolicy": "8 elapsed seconds after first pickup, then 1 accumulated second of moderate shaking; 4 second travel"
 }

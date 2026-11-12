@@ -29,7 +29,7 @@ export function updateGuide({mode,phase,cityLookIntro=false,playTime=0,globeFill
  $('snow-progress').hidden=city?cityLookIntro:playTime<MIN_PLAY_SECONDS;
  $('snow-progress-label').textContent=city?'손에 쌓인 눈':'글로브 속 눈';
  $('snow-meter').setAttribute('aria-label',city?'손에 쌓인 눈':'글로브 속 눈 채움');
- $('motion-title').textContent=city?(receiving?'그대로 유지해 눈을 받아주세요':cityLookIntro?(camera?'고개를 돌려 둘러보세요':'마우스로 움직여 둘러보세요'):camera?'이제 손을 올리고 잠깐 가만히 있어주세요':'이제 화면을 4초간 눌러 눈을 받아주세요'):held?(playTime<MIN_PLAY_SECONDS?'편하게 흔들며 음악과 눈을 즐겨보세요':'뉴욕으로 떠나려면 세게 흔들어주세요'):camera?'손을 C 모양으로 만들어 잡아주세요':'스노우볼 위로 손을 옮겨 눌러주세요';
+ $('motion-title').textContent=city?(receiving?'그대로 유지해 눈을 받아주세요':cityLookIntro?(camera?'고개를 돌려 둘러보세요':'마우스로 움직여 둘러보세요'):camera?'이제 손을 올리고 잠깐 가만히 있어주세요':'이제 화면을 4초간 눌러 눈을 받아주세요'):held?(playTime<MIN_PLAY_SECONDS?'편하게 흔들며 음악과 눈을 즐겨보세요':'뉴욕으로 떠나려면 가볍게 흔들어주세요'):camera?'손을 C 모양으로 만들어 잡아주세요':'스노우볼 위로 손을 옮겨 눌러주세요';
  if(camera&&handPreview&&!handControllable)$('motion-title').textContent=handPreview.delayed?'손 위치를 확인했어요 · 분석이 늦어 조작 대기 중':'손 위치를 확인했어요 · 조작 연결 중';
  $('motion-help').textContent=city?(camera?'고개를 돌려 둘러보세요 · 한 손을 올려 유지 · 약 4초간 눈 받기 → 행운 카드':test?'눈 받는 중 · 다시 누르면 멈춥니다':'화면을 4초간 누르거나 아래 눈 받기를 누르세요'):(camera?'C 모양으로 잡고 손을 올리거나 흔들어주세요. 손을 펼치면 내려놓습니다.':'화면을 누른 채 흔들어보세요. 놓으면 내려놓습니다.');
  if(!city&&held)$('motion-help').textContent='빠르게 흔들면 음악도 빨라져요 · 천천히 흔들면 느려져요';

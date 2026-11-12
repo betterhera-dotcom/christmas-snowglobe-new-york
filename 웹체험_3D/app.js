@@ -1,13 +1,13 @@
 import {handLift} from './hand-height.mjs';
 import {trackingRegion} from './tracking-region.mjs';
-import {ENTRY_DURATION_MS,MIN_PLAY_SECONDS,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,citySnowReady,transitionVeil} from './journey.mjs';
-import { createScene } from './scene3d.js?hand=lite-v1';
+import {ENTRY_DURATION_MS,MIN_PLAY_SECONDS,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,citySnowReady,transitionVeil} from './journey.mjs?lite=2';
+import { createScene } from './scene3d.js?hand=lite-v2';
 import { ShakeMotion } from './motion.mjs';
 import { HeadLook } from './head-look.mjs';
 import {HandPickup} from './hand-pickup.mjs';
 import {SnowCollection,RaisedHandHold,isReceivingSnow,WINTER_WISHES,nextWish} from './snow-wish.mjs';
 import {AudienceGate,cameraMotionScale} from './audience.mjs';
-import {SnowEntry} from './snow-entry.mjs';
+import {SnowEntry} from './snow-entry.mjs?lite=2';
 import {TrackingSchedule} from './tracking-schedule.mjs';
 import {TrackingClient} from './tracking-client.mjs';
 import {getHandPreview} from './hand-preview.mjs';
@@ -247,7 +247,7 @@ function applyTrackingResult(inference,result,now){
       }
  }
 function frame(now){
-  const time=now/1000,dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+  const time=now/1000,frameElapsed=Math.max(0,(now-lastFrame)/1000),dt=Math.min(.05,frameElapsed);lastFrame=now;
   if(starting){requestAnimationFrame(frame);return;}
   if(mode==='camera'&&tracker?.facePreparing){
     webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:false,delegates:tracker.delegates});
@@ -289,9 +289,9 @@ function frame(now){
   if(phase==='globe'&&mode!=='idle')carol.followShake(dt,!!scene?.stats().holding&&motion.keepHeld,motion.raw).catch(()=>error('소리를 시작하지 못했어요. 소리 버튼을 눌러주세요.'));
   if(phase==='globe'&&mode!=='idle'&&scene?.stats().holding){completeStep(0,'스노우볼을 들었어요');}
   if(phase==='globe'&&scene?.stats().holding&&motion.energy>.12)completeStep(1,'눈이 깨어났어요!');
-  if(phase==='globe'&&mode!=='idle'&&motion.keepHeld&&motion.raw>.18&&motion.last&&time-(motion.last.receivedAt??motion.last.t)<(motion.followHand?.35:.16))globeEnjoyTime+=dt;
+  if(phase==='globe'&&mode!=='idle'&&milestones[0])globeEnjoyTime+=frameElapsed;
   const fillState=scene?.stats();
-  if(snowEntry.update(dt,{ready:phase==='globe'&&mode!=='idle'&&globeEnjoyTime>=MIN_PLAY_SECONDS,strong:motion.keepHeld&&motion.raw>.55&&motion.entrySpan>.12&&!!motion.last&&time-(motion.last.receivedAt??motion.last.t)<(motion.followHand?.35:.16)}))enterCity();
+  if(snowEntry.update(dt,{ready:phase==='globe'&&mode!=='idle'&&globeEnjoyTime>=MIN_PLAY_SECONDS,strong:motion.keepHeld&&motion.raw>.3&&motion.entrySpan>.08&&!!motion.last&&time-(motion.last.receivedAt??motion.last.t)<(motion.followHand?.35:.16)}))enterCity();
   if(phase==='entering'){
     travel=Math.min(1,(now-entryStartedAt)/ENTRY_DURATION_MS);
     if(travel===1){phase='city';cityArrivedAt=now;carol.startCity().catch(()=>error('도시 음악을 시작하지 못했어요. 소리 버튼을 눌러 다시 켜주세요.'));pointerHeld=false;pointerCatchAt=null;testSnow=false;receivingSnow=false;headLook.reset();snowCatch.reset();raisedHandHold.reset();document.body.dataset.phase=phase;completeStep(2,'NEW YORK · 도착했어요');document.querySelector('.step').textContent='03 / A WINTER IN NEW YORK';$('prompt').textContent='손안의 뉴욕에 도착했어요';$('hint').textContent=mode==='camera'?'먼저 고개를 돌려 5초 동안 도시를 둘러보세요':'먼저 마우스를 움직여 5초 동안 도시를 둘러보세요';$('catch-snow').hidden=true;$('reset').textContent='처음으로 돌아가기';status('뉴욕의 겨울을 감상해보세요',true);}
@@ -334,7 +334,7 @@ function frame(now){
     const holding=scene?.stats().holding;
     if(holding)$('hint').textContent='빠르게 흔들면 음악도 빨라져요 · 천천히 흔들면 느려져요';
     document.querySelector('.step').textContent=holding?'02 / SHAKE A LITTLE MAGIC':'01 / LIFT THE SNOWGLOBE';
-    $('prompt').textContent=!milestones[0]?'손을 C 모양으로 만들어 잡아주세요':!holding?'한 손을 다시 보여주세요':globeEnjoyTime<MIN_PLAY_SECONDS?'빠르게, 느리게 · 음악과 눈을 즐겨보세요':'뉴욕으로 떠나려면 세게 흔들어주세요';
+    $('prompt').textContent=!milestones[0]?'손을 C 모양으로 만들어 잡아주세요':!holding?'한 손을 다시 보여주세요':globeEnjoyTime<MIN_PLAY_SECONDS?'빠르게, 느리게 · 음악과 눈을 즐겨보세요':'뉴욕으로 떠나려면 가볍게 흔들어주세요';
   }
   requestAnimationFrame(frame);
 }
