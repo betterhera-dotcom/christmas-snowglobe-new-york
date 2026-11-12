@@ -1,6 +1,6 @@
 // Intro chimes crossfade to the user's recording. Rate changes never seek/restart it.
 export class Carol {
-  constructor(track,cityTrack){this.track=track;this.cityTrack=cityTrack;this.cityTrack.loop=true;this.cityTrack.playbackRate=1;this.cityTrack.preservesPitch=true;this.context=null;this.muted=false;this.bpm=116;this.rate=1;this.songVolume=.12;this.startTime=0;this.beat=0;this.note=0;this.mode='intro';if(track){track.playbackRate=1;track.preservesPitch=true;track.webkitPreservesPitch=true;track.mozPreservesPitch=true;track.loop=false;track.addEventListener('loadedmetadata',()=>{if(this.mode==='intro')track.currentTime=this.startTime;});track.addEventListener('ended',()=>{if(this.mode==='song'){track.currentTime=this.startTime;track.play().catch(()=>{});}});}}
+  constructor(track,cityTrack){this.track=track;this.cityTrack=cityTrack;this.cityTrack.loop=true;this.cityTrack.playbackRate=1;this.cityTrack.preservesPitch=true;this.context=null;this.muted=false;this.bpm=116;this.rate=1;this.songVolume=.05;this.songLevel=.05;this.startTime=0;this.beat=0;this.note=0;this.mode='intro';if(track){track.playbackRate=1;track.preservesPitch=true;track.webkitPreservesPitch=true;track.mozPreservesPitch=true;track.loop=false;track.addEventListener('loadedmetadata',()=>{if(this.mode==='intro')track.currentTime=this.startTime;});track.addEventListener('ended',()=>{if(this.mode==='song'){track.currentTime=this.startTime;track.play().catch(()=>{});}});}}
   resumeContext(){
     if(!this.context){this.context=new AudioContext();this.master=this.context.createGain();this.master.gain.value=this.muted?0:.14;this.master.connect(this.context.destination);this.beat=0;
      this.melody=this.context.createGain();this.melody.connect(this.master);
@@ -46,7 +46,7 @@ export class Carol {
   }
   async unlockTrack(){const resumed=this.resumeContext();if(this.mode==='intro')this.track.currentTime=this.startTime;try{await Promise.all([resumed,this.track.play(),this.cityTrack.play()]);}finally{if(this.mode==='intro'){this.track.pause();this.track.currentTime=this.startTime;this.cityTrack.pause();this.cityTrack.currentTime=0;}}}
   async start(){
-   const resumed=this.resumeContext(),fresh=this.mode!=='song';this.mode='song';if(fresh){this.track.currentTime=this.startTime;this.songVolume=.12;this.songElapsed=0;this.rate=.68;this.track.playbackRate=.68;}
+   const resumed=this.resumeContext(),fresh=this.mode!=='song';this.mode='song';if(fresh){this.track.currentTime=this.startTime;this.songVolume=.05;this.songLevel=.05;this.songElapsed=0;this.rate=.68;this.track.playbackRate=.68;this.songGain.gain.cancelScheduledValues(this.context.currentTime);this.songGain.gain.setValueAtTime(0,this.context.currentTime);}
    try{await Promise.all([resumed,this.track.play()]);}catch(e){this.startIntro().catch(()=>{});throw e;}
    if(this.mode!=='song'){this.track.pause();return;}
    this.melody.gain.setTargetAtTime(0,this.context.currentTime,.45);this.songGain.gain.setTargetAtTime(this.muted?0:this.songVolume,this.context.currentTime,.7);
@@ -71,7 +71,11 @@ export class Carol {
     const tempoEase=targetRate>this.rate?2.5:1.8;
     this.rate=shaking?this.rate+(targetRate-this.rate)*(1-Math.exp(-dt/tempoEase)):1;
     const volume=shaking?.12+strength**.8*.60:.4;
-    this.songVolume+=(volume-this.songVolume)*(1-Math.exp(-dt/1.2));
+    this.songLevel+=(volume-this.songLevel)*(1-Math.exp(-dt/1.2));
+    // Keep the opening envelope separate so per-frame shake updates cannot bypass it.
+    const fade=Math.min(1,Math.max(0,(this.songElapsed||0)/3));
+    const fadeMix=fade*fade*(3-2*fade);
+    this.songVolume=shaking?.05+(this.songLevel-.05)*fadeMix:this.songLevel;
     if(this.songGain&&this.mode==='song')this.songGain.gain.setTargetAtTime(this.muted?0:this.songVolume,this.context.currentTime,.15);
     if(this.mode==='city'&&this.context?.currentTime>=this.globeStopAt&&!this.track.paused)this.track.pause();
     if(this.mode==='ending'&&this.context?.currentTime>=this.fadeEnd){this.track.pause();this.cityTrack.pause();this.songGain.gain.setValueAtTime(0,this.context.currentTime);this.cityGain.gain.setValueAtTime(0,this.context.currentTime);}

@@ -24,8 +24,15 @@ assert.equal(track.paused,true,'holding without shaking keeps instrumental intro
 for(let f=0;f<4;f++)await carol.followShake(1/60,true,1);
 await carol.followShake(1/60,true,0);assert.equal(track.paused,true,'one brief tracking bump cannot start the song');
 for(let f=0;f<12;f++)await carol.followShake(1/60,true,.1);
-assert.equal(track.paused,false,'held movement starts the recording');assert.equal(track.currentTime,carol.startTime,'start at the user-specified chorus');assert.equal(carol.songGain.gain.value,.12,'song starts quietly');assert.equal(track.playbackRate,.68,'first audible sample starts slowly');
-for(let f=0;f<120;f++)carol.update(1/60,1);
+assert.equal(track.paused,false,'held movement starts the recording');assert.equal(track.currentTime,carol.startTime,'start at the user-specified chorus');assert.equal(carol.songGain.gain.value,.05,'song starts quietly');assert.equal(track.playbackRate,.68,'first audible sample starts slowly');
+let previousGain=carol.songVolume;
+for(let f=0;f<120;f++){
+ carol.update(1/60,1);
+ assert.ok(carol.songVolume>=previousGain,'opening grows smoothly under strong shaking');
+ if(f<30)assert.ok(carol.songVolume<.08,'first half-second stays quiet even with strongest shake');
+ if(f<60)assert.ok(carol.songVolume<.17,'first second cannot jump to full volume');
+ previousGain=carol.songVolume;
+}
 assert.ok(Math.abs(track.playbackRate-.68)<.001,'even a strong first shake preserves two seconds of slow opening');
 for(let f=0;f<240;f++)carol.update(1/60,1);
 assert.ok(track.playbackRate>1.0&&track.playbackRate<1.1,'after the opening the song responds to strong shakes');
@@ -65,6 +72,9 @@ carol.context.currentTime+=3;carol.update(1/60,1,'ending');assert.equal(track.pa
 await carol.pause();await carol.resume();assert.equal(track.paused,true,'returning to ending never restarts the song');assert.equal(city.paused,true);
 events.ended();assert.equal(track.paused,true,'ending cannot restart the chorus loop');
 carol.reset();await carol.startIntro();assert.equal(track.paused,true);assert.equal(carol.mode,'intro');assert.equal(city.paused,true);assert.equal(sources,2,'one source per recording across repeated visits');
-console.log('PASS: chorus cue preserved, quiet start, 0.68–1.15x tempo, gradual acceleration and deceleration, separate city song, magical effects, mute, resume, ending and reset');
+await carol.start();assert.equal(carol.songVolume,.05,'replay starts quietly after a loud previous session');
+carol.update(.5,1);const elapsed=carol.songElapsed;track.currentTime=8;await carol.pause();await carol.resume();assert.equal(carol.songElapsed,elapsed,'resume preserves fade progress');assert.equal(track.currentTime,8);
+carol.mute(true);carol.update(.1,1);assert.equal(carol.songGain.gain.value,0);carol.mute(false);assert.ok(carol.songGain.gain.value<.1,'unmuting during opening respects fade');
+console.log('PASS: three-second fade-in, quiet replay, chorus cue preserved, quiet start, 0.68–1.15x tempo, gradual acceleration and deceleration, separate city song, magical effects, mute, resume, ending and reset');
 
 carol.mode='song';carol.songElapsed=10;carol.rate=.68;for(let i=0;i<600;i++){carol.update(1/60,100,'globe');assert.ok(track.playbackRate<=1.15,'extreme shaking never exceeds elegant tempo cap');}

@@ -3,7 +3,7 @@ import {Carol} from '../audio.js';
 const track={playbackRate:1,currentTime:0,dataset:{},addEventListener(type,fn){this[type]=fn;},play:async()=>{},pause(){}};
 const city={play:async()=>{},pause(){}};
 const carol=new Carol(track,city);
-const gain={gain:{setTargetAtTime(){}}};
+const gain={gain:{setTargetAtTime(){},cancelScheduledValues(){},setValueAtTime(){}}};
 carol.resumeContext=()=>{carol.context={currentTime:0,state:'running'};carol.melody=gain;carol.songGain=gain;return Promise.resolve();};
 await carol.unlockTrack();assert.equal(track.currentTime,0,'unlock keeps the trimmed-file zero-second cue');
 track.currentTime=0;track.loadedmetadata();assert.equal(track.currentTime,0,'late metadata restores the cue');

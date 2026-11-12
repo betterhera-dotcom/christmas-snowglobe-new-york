@@ -13,7 +13,7 @@ import {TrackingSchedule} from './tracking-schedule.mjs';
 import {TrackingClient} from './tracking-client.mjs';
 import {getHandPreview} from './hand-preview.mjs';
 import {BODY_HOLD_SECONDS,HAND_HOLD_SECONDS} from './tracking-policy.mjs';
-import { Carol } from './audio.js?cue=trimmed20-smooth-v7';
+import { Carol } from './audio.js?cue=soft-fade-v8';
 import {showIntro,openIntro,updateGuide} from './experience-guide.js';
 import {createHandRenderer,pointerHand} from './hand-shape.js';
 import {WebcamDebug} from './webcam-debug.js';
