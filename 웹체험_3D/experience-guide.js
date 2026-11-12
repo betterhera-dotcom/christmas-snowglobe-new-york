@@ -12,11 +12,11 @@ export function openIntro(){
 }
 const connections=[[0,1,2,3,4],[0,5,6,7,8],[5,9,10,11,12],[9,13,14,15,16],[13,17,18,19,20],[0,17]];
 for(let i=0;i<21;i++){const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');dot.setAttribute('r','2');$('tracking-joints').append(dot);}
-export function updateGuide({mode,phase,hand,held,receiving,progress,point,test}){
+export function updateGuide({mode,phase,trackingHz=0,hand,held,receiving,progress,point,test}){
  const active=mode!=='idle'&&(phase==='globe'||phase==='city');$('motion-guide').hidden=!active;
  if(!active){$('snow-hand').hidden=true;return;}
  const camera=mode==='camera',seen=!!hand,percent=Math.round(progress*100),city=phase==='city';
- $('tracking-mode').textContent=camera?'실시간 인식':'마우스 테스트';
+ $('tracking-mode').textContent=camera?(trackingHz?`손 분석 ${trackingHz}회/초`:'손 추적 준비'):'마우스 테스트';
  $('tracking-state').textContent=camera?(seen?'● 손 인식 중':'○ 얼굴과 손을 보여주세요'):'● 마우스 연결됨';
  $('motion-guide').dataset.tracking=seen||!camera?'true':'false';$('tracking-map').style.display=seen?'':'none';
  if(seen){

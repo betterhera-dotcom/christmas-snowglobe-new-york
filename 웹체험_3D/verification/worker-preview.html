@@ -1,0 +1,25 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>손 추적 작업 분리 검증</title>
+<style>body{background:#15211d;color:white;font:16px system-ui;padding:32px}button{font:inherit;padding:12px}pre{white-space:pre-wrap}</style>
+<h1>손 추적 작업 분리 검증</h1><p>카메라 권한 없이 빈 캔버스로 실제 모델과 작업 분리를 검사합니다. 실제 손 인식 검사가 아닙니다.</p>
+<button id="run">모델 검사 시작</button><pre id="result">준비</pre><p id="frames"></p>
+<script type="module">
+import {TrackingClient} from '../tracking-client.mjs';
+const output=document.querySelector('#result');let ticks=0,last=performance.now(),maxGap=0,client;
+function frame(now){ticks++;maxGap=Math.max(maxGap,now-last);last=now;document.querySelector('#frames').textContent=`화면 갱신 ${ticks}회`;requestAnimationFrame(frame);}requestAnimationFrame(frame);
+document.querySelector('#run').onclick=async()=>{
+ document.querySelector('#run').disabled=true;output.textContent='모델 준비 중';
+ try{
+  client=new TrackingClient();await client.ready;
+  const canvas=document.createElement('canvas');canvas.width=640;canvas.height=480;canvas.getContext('2d').fillRect(0,0,640,480);
+  const start=ticks;maxGap=0;let accepted=0,dropped=0;
+  for(let i=0;i<12;i++){
+   const result=await client.detect(i%3?'hand':'face',canvas,performance.now());
+   if(result){accepted++;if((result.result.landmarks||result.result.faceLandmarks).length)throw Error('빈 화면에서 잘못된 검출');}else dropped++;
+   await new Promise(resolve=>setTimeout(resolve,20));
+  }
+  output.textContent=JSON.stringify({passed:accepted>0,delegates:client.delegates,accepted,dropped,renderedDuringInference:ticks-start,maxFrameGapMs:Math.round(maxGap),last:client.metrics},null,2);
+ }catch(e){output.textContent=`실패: ${e.stack||e.message}`;}
+ finally{client?.close();document.querySelector('#run').disabled=false;}
+};
+addEventListener('pagehide',()=>client?.close());
+</script></html>

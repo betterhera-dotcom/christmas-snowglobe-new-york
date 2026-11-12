@@ -34,6 +34,8 @@ jobs:
           node 웹체험_3D/verification/check-snow-filling.mjs
           node 웹체험_3D/verification/check-snow-surface.mjs
           node 웹체험_3D/verification/check-carol.mjs
+          node 웹체험_3D/verification/check-hand-tracking.mjs
+          node 웹체험_3D/verification/check-tracking-client.mjs
           node 웹체험_3D/verification/check-motion.mjs
           node 웹체험_3D/verification/check-audience.mjs
           node 웹체험_3D/verification/check-snow-wish.mjs
