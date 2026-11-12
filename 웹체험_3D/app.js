@@ -6,10 +6,30 @@ import { Grip } from './grip.mjs';
 import {SnowCollection,isReceivingSnow,WINTER_WISHES,nextWish} from './snow-wish.mjs';
 import {AudienceGate} from './audience.mjs';
 import { Carol } from './audio.js';
-import {showIntro,updateGuide} from './experience-guide.js';
+import {showIntro,openIntro,updateGuide} from './experience-guide.js';
 
-const $=id=>document.getElementById(id),motion=new ShakeMotion(),carol=new Carol(),grip=new Grip(),headLook=new HeadLook(),snowCatch=new SnowCollection();
-let wristBase=0;let demoTime=null;
+const $=id=>document.getElementById(id),motion=new ShakeMotion(),carol=new Carol($('carol-track')),grip=new Grip(),headLook=new HeadLook(),snowCatch=new SnowCollection();
+const previewMuted=new URLSearchParams(location.search).has('muted');
+carol.mute(previewMuted);$('sound').textContent=previewMuted?'소리 꺼짐':'소리 켜짐';$('sound').setAttribute('aria-pressed',String(previewMuted));
+let introStarting=false;
+async function beginExperience(kind){
+ if(introStarting)return;introStarting=true;
+ $('intro-camera').disabled=$('intro-pointer').disabled=true;
+ $('intro-status').textContent='작은 겨울을 준비하고 있어요…';
+ carol.startIntro().catch(()=>{});
+ const unlocked=carol.unlockTrack().catch(()=>{});
+ try{
+  if(!await scene?.ready)throw new Error('스노우볼을 불러오지 못했어요. 새로고침 후 다시 시작해주세요.');
+  await unlocked;
+  const ok=await (kind==='camera'?startCamera():startPointer());
+  if(ok){carol.effect('curtain');openIntro();}
+ }catch(e){$('intro-status').textContent=e.message;}
+ finally{introStarting=false;if(!$('intro').classList.contains('opening'))$('intro-camera').disabled=$('intro-pointer').disabled=false;}
+}
+document.addEventListener('click',event=>{if(event.target.closest('button')&&!carol.muted)carol.resumeContext().then(()=>carol.effect('touch')).catch(()=>{});});
+$('intro-camera').addEventListener('click',()=>beginExperience('camera'));
+$('intro-pointer').addEventListener('click',()=>beginExperience('pointer'));
+let wristBase=0;let demoTime=null,demoFrequency=10;
 let pointerHeld=false;
 let scene,mode='idle',phase='globe',travel=0,tracker=null,faceTracker=null,stream=null,lastVideo=-1,lastDetection=0,lastHand=0,lastFrame=performance.now(),generation=0,starting=false;
 let milestones=[false,false,false],feedbackUntil=0,cityArrivedAt=0;
@@ -46,11 +66,12 @@ function showWish(x=.5,y=.5){
   $('wish-title').textContent=WINTER_WISHES[lastWish].title;$('wish-token').textContent=WINTER_WISHES[lastWish].token;
   $('snow-hand').hidden=true;testSnow=false;
   const overlay=$('winter-wish');overlay.style.setProperty('--catch-x',`${x*100}%`);overlay.style.setProperty('--catch-y',`${y*100}%`);overlay.dataset.stage='shimmer';overlay.hidden=false;
-  document.body.classList.add('wish-active');$('catch-snow').disabled=true;carol.effect('catch');
+  document.body.classList.add('wish-active');$('catch-snow').disabled=true;carol.end();
 }
 $('catch-snow').addEventListener('click',()=>{if(phase!=='city')return;testSnow=!testSnow;palmPoint=[.5,.64];$('catch-snow').textContent=testSnow?'눈 받기 멈추기':'눈 받기 테스트';});
 $('wish-close').addEventListener('click',resetExperience);
 showIntro();
+carol.startIntro().catch(()=>{});
 const questNames=['스노우볼 들기','눈 깨우기','뉴욕 도착'],questIds=['quest-hold','quest-snow','quest-city'];
 function feedback(text){$('feedback').textContent=text;$('feedback').hidden=false;feedbackUntil=performance.now()+2300;}
 function completeStep(index,text){if(milestones[index])return;milestones[index]=true;if(index===0)carol.effect('lift');if(index===2)carol.effect('arrival');$(questIds[index]).classList.add('done');$(questIds[index]).setAttribute('aria-label',`${questNames[index]}: 완료`);$('quest-count').textContent=milestones.filter(Boolean).length;feedback(text);}
@@ -76,8 +97,8 @@ function drawStorm(time){
   stormContext.strokeStyle=`rgba(196,214,226,${fade*.7})`;stormContext.lineCap='round';
   for(const streak of streaks){const r=((streak.offset+time*.8)%1)**2*radius,length=(12+travel*100)*r/radius,x=storm.width/2+Math.cos(streak.angle)*r,y=storm.height/2+Math.sin(streak.angle)*r;stormContext.lineWidth=streak.size*(.5+r/radius);stormContext.beginPath();stormContext.moveTo(x,y);stormContext.lineTo(x+Math.cos(streak.angle)*length,y+Math.sin(streak.angle)*length);stormContext.stroke();}
 }
-function status(text,active=false){$('status').textContent=text;$('status-dot').classList.toggle('active',active);}
-function error(text){$('error').textContent=text;$('error').hidden=!text;}
+function status(text,active=false){if(introStarting)$('intro-status').textContent=text;$('status').textContent=text;$('status-dot').classList.toggle('active',active);}
+function error(text){if(text&&!$('intro').hidden)$('intro-status').textContent=text;$('error').textContent=text;$('error').hidden=!text;}
 function loadingFailed(message){error(message);$('loading').hidden=false;$('loading-message').textContent=message;$('loading').querySelector('small').textContent='연결을 확인한 후 다시 불러와주세요.';$('retry-load').hidden=false;}
 $('retry-load').addEventListener('click',()=>location.reload());
 window.addEventListener('art-error',event=>loadingFailed(event.detail));
@@ -96,7 +117,7 @@ function setMode(value){
 async function startCamera(){
   if(starting||!scene?.stats().artLoaded)return;const token=++generation;starting=true;$('camera').disabled=true;error('');stopCamera();setMode('idle');status('손 인식을 준비하고 있습니다…');
   try{
-    carol.start().catch(()=>{});
+    carol.startIntro().catch(()=>{});
     if(!navigator.mediaDevices?.getUserMedia)throw new Error('LOCALHOST');
     if(!tracker){
       const {FilesetResolver,HandLandmarker}=await import('./vendor/mediapipe/vision_bundle.mjs');
@@ -124,15 +145,16 @@ async function startCamera(){
     setMode('camera');$('camera-preview').dataset.active='true';$('viewer-calibration').hidden=false;$('calibrate-distance').disabled=false;
     const settings=stream.getVideoTracks()[0].getSettings();distanceKey=`snowglobe-range-2.3m-v1:${settings.deviceId||'default'}:${settings.width}x${settings.height}`;audience.reference=null;
     try{const saved=JSON.parse(localStorage.getItem(distanceKey));if(saved)audience.calibrate(saved.size);}catch{}
-    status(audience.rangeLimited?'3m 이내에서 한 사람씩 체험해주세요 · 권장 2.3m':'테스트 모드 · 위치 제한 없이 체험해주세요');
+    await carol.startIntro().catch(()=>error('소리를 시작하지 못했어요. 소리 버튼을 눌러주세요.'));
+    status(audience.rangeLimited?'3m 이내에서 한 사람씩 체험해주세요 · 권장 2.3m':'테스트 모드 · 위치 제한 없이 체험해주세요');return true;
   }catch(e){
-    if(token!==generation)return;stopCamera();setMode('idle');await carol.pause();status('카메라를 시작하지 못했습니다');
+    if(token!==generation)return;stopCamera();setMode('idle');carol.startIntro().catch(()=>{});status('카메라를 시작하지 못했습니다');
     const messages={NotAllowedError:'카메라 권한이 필요합니다. Chrome 주소창의 카메라 설정에서 허용한 뒤 다시 시작해주세요.',NotFoundError:'연결된 카메라가 없습니다. 웹캠을 연결하거나 마우스로 먼저 체험해주세요.',NotReadableError:'다른 앱이 카메라를 사용 중일 수 있습니다. 카메라 사용 앱을 닫고 다시 시작해주세요.'};
     error(messages[e.name]||(e.message==='LOCALHOST'?'‘스노우볼 실행.command’로 열어주세요. 파일을 직접 열면 카메라 인식이 작동하지 않습니다.':'손 인식을 불러오지 못했습니다. 실행 창을 확인하거나 마우스로 먼저 체험해주세요.'));console.warn(e);
   }finally{if(token===generation){starting=false;$('camera').disabled=false;}}
 }
 $('camera').addEventListener('click',startCamera);
-async function startPointer(){if(!scene?.stats().artLoaded)return;starting=false;$('camera').disabled=false;generation++;stopCamera();setMode('pointer');error('');status('마우스를 누른 채 움직여주세요',true);feedback('손을 C자 모양으로 만들어 스노우볼을 잡아보세요');try{await carol.start();}catch{error('소리를 시작하지 못했습니다. 소리 버튼을 눌러주세요.');}}
+async function startPointer(){if(!scene?.stats().artLoaded)return;starting=false;$('camera').disabled=false;generation++;stopCamera();setMode('pointer');error('');status('마우스를 누른 채 움직여주세요',true);feedback('손을 C자 모양으로 만들어 스노우볼을 잡아보세요');try{await carol.resume();}catch{error('소리를 시작하지 못했습니다. 소리 버튼을 눌러주세요.');}return true;}
 $('pointer').addEventListener('click',startPointer);
 function enterCity(){
   detectHandNext=false;
@@ -151,22 +173,22 @@ $('enter-city').addEventListener('click',()=>{
   enterCity();
 });
 function samplePointer(event){if(phase==='city'&&mode==='pointer'&&pointerHeld){palmPoint=[event.clientX/innerWidth,event.clientY/innerHeight];return;}const r=$('scene').getBoundingClientRect(),x=(event.clientX-r.left)/r.width;if(phase==='city'){if(mode==='pointer'&&wishStartedAt===null)scene?.lookAt(x,(event.clientY-r.top)/r.height);return;}if(mode!=='pointer'||phase!=='globe'||!pointerHeld)return;motion.sample(x,(event.clientY-r.top)/r.height,performance.now()/1000);}
-$('scene').addEventListener('pointerdown',event=>{if(phase!=='globe'&&phase!=='city')return;if(mode==='idle'&&!starting)startPointer();if(mode==='pointer'){pointerHeld=true;$('scene').setPointerCapture(event.pointerId);if(phase==='city'){const r=$('scene').getBoundingClientRect();pointerCatchPoint=[(event.clientX-r.left)/r.width,(event.clientY-r.top)/r.height];palmPoint=pointerCatchPoint;pointerCatchAt=performance.now();testSnow=false;return;}motion.keepHeld=true;samplePointer(event);}});
+$('scene').addEventListener('pointerdown',event=>{if(phase!=='globe'&&phase!=='city')return;if(mode==='idle'&&!starting)startPointer();if(mode==='pointer'){pointerHeld=true;$('scene').setPointerCapture(event.pointerId);carol.effect('touch');if(phase==='city'){const r=$('scene').getBoundingClientRect();pointerCatchPoint=[(event.clientX-r.left)/r.width,(event.clientY-r.top)/r.height];palmPoint=pointerCatchPoint;pointerCatchAt=performance.now();testSnow=false;return;}motion.keepHeld=true;samplePointer(event);}});
 $('scene').addEventListener('pointermove',samplePointer);
 function releasePointer(){pointerCatchAt=null;if(mode==='camera')return;pointerHeld=false;motion.keepHeld=false;motion.release();}
 $('scene').addEventListener('pointerup',releasePointer);
 $('scene').addEventListener('pointercancel',releasePointer);
 $('scene').addEventListener('lostpointercapture',releasePointer);
 $('scene').addEventListener('pointerleave',()=>{if(mode==='pointer'&&!pointerHeld)motion.release();});
-$('sound').addEventListener('click',async()=>{carol.mute(!carol.muted);$('sound').textContent=carol.muted?'소리 꺼짐':'소리 켜짐';$('sound').setAttribute('aria-pressed',String(carol.muted));feedback(carol.muted?'캐롤을 잠시 쉬어요':'캐롤이 다시 흘러요');if(mode!=='idle'&&!carol.muted)await carol.start();});
-function resetExperience(){generation++;starting=false;$('camera').disabled=false;stopCamera();setMode('idle');carol.pause();carol.reset();error('');status('시작 방법을 선택해주세요');showIntro();}
+$('sound').addEventListener('click',async()=>{carol.mute(!carol.muted);$('sound').textContent=carol.muted?'소리 꺼짐':'소리 켜짐';$('sound').setAttribute('aria-pressed',String(carol.muted));feedback(carol.muted?'캐롤을 잠시 쉬어요':'캐롤이 다시 흘러요');if(!carol.muted)await carol.resume().catch(()=>error('소리를 시작하지 못했어요. 다시 눌러주세요.'));});
+function resetExperience(){generation++;starting=false;$('camera').disabled=false;stopCamera();setMode('idle');carol.reset();carol.startIntro().catch(()=>{});error('');status('시작 방법을 선택해주세요');$('intro-status').textContent='시작 방법을 누르면 음악과 함께 커튼이 열립니다';showIntro();}
 $('reset').addEventListener('click',resetExperience);
 $('fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{error('전체 화면은 Chrome 메뉴에서도 켤 수 있습니다.');}});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){motion.reset();carol.pause();pointerCatchAt=null;pointerHeld=false;testSnow=false;receivingSnow=false;snowCatch.reset();}else if(mode!=='idle'){carol.start().catch(()=>{});lastFrame=performance.now();if(phase==='entering')entryStartedAt=lastFrame-travel*ENTRY_DURATION_MS;}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){motion.reset();carol.pause();pointerCatchAt=null;pointerHeld=false;testSnow=false;receivingSnow=false;snowCatch.reset();}else if(carol.context){carol.resume().catch(()=>{});lastFrame=performance.now();if(phase==='entering')entryStartedAt=lastFrame-travel*ENTRY_DURATION_MS;}});
 window.addEventListener('pagehide',()=>{generation++;stopCamera();tracker?.close();faceTracker?.close();carol.pause();});
 function frame(now){
   const time=now/1000,dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
-  if(demoTime!==null&&phase==='globe'){const t=time-demoTime;motion.keepHeld=true;motion.sample(.5+.19*Math.sin(t*10),.5+.10*Math.cos(t*8),time);if(t>32){demoTime=null;releasePointer();}}
+  if(demoTime!==null&&phase==='globe'){const t=time-demoTime;motion.keepHeld=true;motion.sample(.5+.19*Math.sin(t*demoFrequency),.5+.10*Math.cos(t*demoFrequency*.8),time);if(t>32){demoTime=null;releasePointer();}}
   if(demoTime!==null&&phase==='city'){demoTime=null;releasePointer();}
   if(phase!=='entering'&&mode==='camera'&&tracker&&faceTracker&&stream&&$('webcam').readyState>=2&&now-lastDetection>60&&$('webcam').currentTime!==lastVideo){
     lastDetection=now;lastVideo=$('webcam').currentTime;
@@ -202,6 +224,7 @@ function frame(now){
   }
   if(mode==='camera'&&phase!=='entering'&&(!audience.allowed||time-audience.lastSeen>.35))releaseAudience();
   motion.update(dt,time);
+  if(phase==='globe'&&mode!=='idle')carol.followShake(dt,!!scene?.stats().holding&&motion.keepHeld,motion.raw).catch(()=>error('소리를 시작하지 못했어요. 소리 버튼을 눌러주세요.'));
   if(phase==='globe'&&mode!=='idle'&&scene?.stats().holding){completeStep(0,'스노우볼을 들었어요');}
   if(phase==='globe'&&scene?.stats().holding&&motion.energy>.12)completeStep(1,'눈이 깨어났어요!');
   if(phase==='globe'&&mode!=='idle'&&motion.burst>0&&scene?.stats().holding)enterCity();
@@ -222,8 +245,8 @@ function frame(now){
   }
   updateGuide({mode,phase,hand:time-trackedAt<=.35&&audience.allowed?trackedHand:null,held:motion.keepHeld,receiving:receivingSnow,progress:snowCatch.progress,point:palmPoint,test:testSnow});
   if(wishStartedAt!==null){const elapsed=now-wishStartedAt;if(elapsed>=19500)resetExperience();else if(elapsed>=18000)$('winter-wish').dataset.stage='fading';else if(elapsed>=2300&&$('winter-wish').dataset.stage!=='message'){$('winter-wish').dataset.stage='message';$('wish-message').textContent=WINTER_WISHES[lastWish].message;}else if(elapsed>=1400&&$('winter-wish').dataset.stage==='grow')$('winter-wish').dataset.stage='shimmer';}
-  carol.update(dt,mode==='idle'||phase==='city'?0:motion.energy);carol.stir(phase==='globe'?motion.energy:0);scene?.update(dt,time,motion,travel);
-  $('energy-bar').style.width=`${motion.energy*100}%`;document.querySelector('.meter').setAttribute('aria-valuenow',Math.round(motion.energy*100));$('bpm').textContent=Math.round(carol.bpm);
+  carol.update(dt,mode==='idle'?0:motion.energy,phase);carol.stir(phase==='globe'&&motion.keepHeld?motion.raw:0);scene?.update(dt,time,motion,travel);
+  $('energy-bar').style.width=`${motion.energy*100}%`;document.querySelector('.meter').setAttribute('aria-valuenow',Math.round(motion.energy*100));$('bpm').textContent=carol.rate.toFixed(2);
   $('blizzard').style.opacity=phase==='entering'?transitionVeil(travel):0;
   drawStorm(time);drawWinter(dt,time);if(now>feedbackUntil)$('feedback').hidden=true;
   if(mode!=='idle'&&phase==='globe'){
@@ -235,14 +258,15 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 // Read-only diagnostics for local verification; never stores camera frames.
-window.snowglobe={getState:()=>({mode,phase,travel,energy:motion.energy,bpm:carol.bpm,burst:motion.burst,strokes:motion.strokes,playTime:motion.playTime,progress:milestones.filter(Boolean).length,modelLoaded:!!tracker,faceModelLoaded:!!faceTracker,cameraActive:!!stream,handSeen:!!trackedHand,snowProgress:snowCatch.progress,...scene?.stats()} )};
+window.snowglobe={getState:()=>({mode,phase,travel,energy:motion.energy,bpm:carol.bpm,playbackRate:carol.rate,burst:motion.burst,strokes:motion.strokes,playTime:motion.playTime,progress:milestones.filter(Boolean).length,modelLoaded:!!tracker,faceModelLoaded:!!faceTracker,cameraActive:!!stream,handSeen:!!trackedHand,snowProgress:snowCatch.progress,...scene?.stats()} )};
 
 // Explicit local verification controls: synthetic pointer input, never presented as webcam evidence.
 if(new URLSearchParams(location.search).has('verify')){
  const bar=document.createElement('div');bar.style.cssText='position:fixed;top:120px;left:20px;z-index:99;background:#15251bd9;padding:8px';bar.id='verification-controls';
  for(const [label,action] of [
  ['들고 유지',()=>{demoTime=null;startPointer();pointerHeld=true;motion.keepHeld=true;motion.sample(.5,.5,performance.now()/1000);}],['내려놓기',()=>{demoTime=null;releasePointer();}],
- ['자동 흔들기 검증',()=>{startPointer();demoTime=performance.now()/1000;}],
+ ['천천히 흔들기 검증',()=>{startPointer();demoFrequency=2;demoTime=performance.now()/1000;}],
+ ['자동 흔들기 검증',()=>{startPointer();demoFrequency=10;demoTime=performance.now()/1000;}],
  ['왼쪽 위 보기',()=>scene.lookAt(0,0)],['오른쪽 아래 보기',()=>scene.lookAt(1,1)],
  ['정면 보기',()=>scene.lookAt(.5,.5)],['복귀 검증',()=>{demoTime=null;setMode('pointer');carol.reset();}]
  ]){const b=document.createElement('button');b.textContent=label;b.onclick=action;bar.append(b);}

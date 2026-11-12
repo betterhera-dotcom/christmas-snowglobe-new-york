@@ -129,3 +129,11 @@ body[data-phase="ending"] #winter-wish[data-stage="fading"] .wish-frost{opacity:
 #blizzard{background:radial-gradient(ellipse,#f6f8f3,#e6edf1);mix-blend-mode:normal}
 
 #storm-particles{z-index:4}
+
+/* First-touch choice stays on the curtain, with no second start screen. */
+.intro-actions{display:flex;justify-content:center;gap:14px;margin-top:28px}
+.intro-copy .intro-actions button{margin:0;min-width:220px;min-height:82px;padding:16px 24px;background:#ffffff0a;color:#fff;border:1px solid #ffffffad;border-radius:3px;touch-action:manipulation}
+.intro-copy .intro-actions button:hover,.intro-copy .intro-actions button:focus-visible{background:#ffffff24;outline:2px solid #fff;outline-offset:4px}
+.intro-copy .intro-actions small{margin-top:8px;color:#ffffffb3;font-size:12px}
+.intro-copy #intro-status{max-width:520px;font-size:12px;min-height:2em;margin:20px auto 0;color:#fff}
+@media(max-width:650px){.intro-actions{flex-direction:column;gap:12px}.intro-copy{padding:20px}.intro-star{margin:8px}.intro-copy h2{font-size:32px}.intro-copy .intro-actions button{width:100%;min-height:72px}.intro-copy #intro-status{max-width:300px}}

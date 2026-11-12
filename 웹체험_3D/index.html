@@ -9,7 +9,7 @@
   <main id="experience">
     <section id="intro" aria-label="겨울 여행 인트로">
       <div class="curtain curtain-left" aria-hidden="true"></div><div class="curtain curtain-right" aria-hidden="true"></div>
-      <div class="intro-copy"><span>CHRISTMAS IN YOUR HANDS</span><p class="intro-star" aria-hidden="true">✧</p><h2>손끝에서 열리는<br>크리스마스</h2><p>작은 겨울을 흔들고,<br>손안에 내려앉는 행운을 만나세요.</p><button id="begin-journey">겨울 여행 시작</button><small>버튼을 누르면 커튼이 열립니다</small></div>
+      <div class="intro-copy"><span>CHRISTMAS IN YOUR HANDS</span><p class="intro-star" aria-hidden="true">✧</p><h2>손끝에서 열리는<br>크리스마스</h2><p>작은 겨울을 흔들고,<br>손안에 내려앉는 행운을 만나세요.</p><div class="intro-actions"><button id="intro-camera">카메라로 시작<small>손으로 잡고 흔들어요</small></button><button id="intro-pointer">터치·마우스로 시작<small>화면을 누르고 움직여요</small></button></div><p id="intro-status" role="status" aria-live="polite">시작 방법을 누르면 음악과 함께 커튼이 열립니다</p></div>
     </section>
     <div id="shop" aria-hidden="true"></div>
     <canvas id="window-snow" aria-hidden="true"></canvas>
@@ -46,7 +46,7 @@
     <section class="instruction arcade-panel">
       <div class="guide"><span class="step">01 / LIFT THE SNOWGLOBE</span><h2 id="prompt">손으로 작은 겨울을 들어보세요</h2><p id="hint">손을 C자 모양으로 만들어 잡고 자유롭게 흔들어보세요. 손을 완전히 펴서 1초간 유지하면 내려놓습니다.</p></div>
       <div class="actions"><button id="camera" class="primary">카메라로 시작 <span aria-hidden="true">▶</span></button><button id="pointer">마우스 · 터치로 체험</button><button id="enter-city" class="test-entry" disabled title="흔들기 없이 도시 화면 테스트">도시 들어가기</button></div>
-      <div class="readout"><div class="signal"><i id="status-dot"></i><span id="status">시작 방법을 선택해주세요</span></div><span id="mode-label">READY</span><div class="energy"><span>SNOW</span><div class="meter" role="progressbar" aria-label="눈을 깨우는 힘" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="energy-bar"></div></div></div><span class="tempo"><span id="bpm">56</span> <small>BPM</small></span></div>
+      <div class="readout"><div class="signal"><i id="status-dot"></i><span id="status">시작 방법을 선택해주세요</span></div><span id="mode-label">READY</span><div class="energy"><span>SNOW</span><div class="meter" role="progressbar" aria-label="눈을 깨우는 힘" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="energy-bar"></div></div></div><span class="tempo"><span id="bpm">1.00</span> <small>× SPEED</small></span></div>
       <p id="error" role="alert" hidden></p>
     </section>
     <footer><span class="footer-title">스노우볼 세계여행 <span>· CHRISTMAS EDITION</span></span><div><button id="catch-snow" hidden>눈 받기 테스트</button><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset">처음으로</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
@@ -64,6 +64,7 @@
     <canvas id="storm-particles" aria-hidden="true"></canvas><div id="blizzard" aria-hidden="true"></div>
     <noscript>이 작품을 실행하려면 Chrome에서 JavaScript를 허용해주세요.</noscript>
   </main>
+  <audio id="carol-track" preload="auto" src="assets/audio/jingle-bells-vocals.mp3" hidden></audio>
   <script type="module" src="app.js"></script>
 </body>
 </html>

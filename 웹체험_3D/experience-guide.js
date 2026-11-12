@@ -1,14 +1,15 @@
 const $=id=>document.getElementById(id);
 let introTimer;
 export function showIntro(){
- clearTimeout(introTimer);$('intro').hidden=false;$('intro').classList.remove('opening');$('begin-journey').disabled=false;
+ clearTimeout(introTimer);$('intro').hidden=false;$('intro').classList.remove('opening');
+ $('intro-camera').disabled=$('intro-pointer').disabled=false;
  for(const child of $('experience').children)if(child.id!=='intro')child.inert=true;
- $('begin-journey').focus();
+ $('intro-pointer').focus();
 }
-$('begin-journey').addEventListener('click',()=>{
- $('begin-journey').disabled=true;$('intro').classList.add('opening');
- introTimer=setTimeout(()=>{$('intro').hidden=true;for(const child of $('experience').children)child.inert=false;$('camera').focus();},matchMedia('(prefers-reduced-motion: reduce)').matches?100:1500);
-});
+export function openIntro(){
+ $('intro-camera').disabled=$('intro-pointer').disabled=true;$('intro').classList.add('opening');
+ introTimer=setTimeout(()=>{$('intro').hidden=true;for(const child of $('experience').children)child.inert=false;$('scene').tabIndex=-1;$('scene').focus();},matchMedia('(prefers-reduced-motion: reduce)').matches?100:1500);
+}
 const connections=[[0,1,2,3,4],[0,5,6,7,8],[5,9,10,11,12],[9,13,14,15,16],[13,17,18,19,20],[0,17]];
 for(let i=0;i<21;i++){const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');dot.setAttribute('r','2');$('tracking-joints').append(dot);}
 export function updateGuide({mode,phase,hand,held,receiving,progress,point,test}){

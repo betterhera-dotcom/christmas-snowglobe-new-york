@@ -1,42 +1,115 @@
-// A small synthesized Jingle Bells refrain: tempo changes note timing, never pitch.
-// No third-party recording is used. Final exhibition audio remains to be selected.
+// Intro chimes crossfade to the user's recording. Rate changes never seek/restart it.
 export class Carol {
-  constructor(){this.context=null;this.muted=false;this.bpm=56;this.beat=0;this.note=0;}
-  async start(){
-    if(!this.context){this.context=new AudioContext();this.master=this.context.createGain();this.master.gain.value=.14;this.master.connect(this.context.destination);this.beat=0;}
+  constructor(track){this.track=track;this.context=null;this.muted=false;this.bpm=116;this.rate=1;this.songVolume=.12;this.startTime=20;this.beat=0;this.note=0;this.mode='intro';if(track){track.preservesPitch=false;track.webkitPreservesPitch=false;track.mozPreservesPitch=false;track.loop=false;track.addEventListener('ended',()=>{if(this.mode==='song'){track.currentTime=this.startTime;track.play().catch(()=>{});}});}}
+  resumeContext(){
+    if(!this.context){this.context=new AudioContext();this.master=this.context.createGain();this.master.gain.value=this.muted?0:.14;this.master.connect(this.context.destination);this.beat=0;
+     this.melody=this.context.createGain();this.melody.connect(this.master);
+     this.songGain=this.context.createGain();this.songGain.gain.value=0;this.songGain.connect(this.context.destination);
+     this.source=this.context.createMediaElementSource(this.track);
+     // A light, intimate music-box colour for the whole recording. This is an
+     // audio effect, not voice separation or a replacement child singer.
+     const lowCut=this.context.createBiquadFilter();lowCut.type='highpass';lowCut.frequency.value=160;lowCut.Q.value=.7;
+     const sparkle=this.context.createBiquadFilter();sparkle.type='peaking';sparkle.frequency.value=2200;sparkle.Q.value=.65;sparkle.gain.value=2.5;
+     const soften=this.context.createBiquadFilter();soften.type='lowpass';soften.frequency.value=6400;soften.Q.value=.6;
+     this.source.connect(lowCut);lowCut.connect(sparkle);sparkle.connect(soften);soften.connect(this.songGain);
+     // Quiet, short reflections suggest a small glass object without masking words.
+     const echo=this.context.createDelay(.5),echoGain=this.context.createGain();echo.delayTime.value=.095;echoGain.gain.value=.13;
+     const echoTone=this.context.createBiquadFilter();echoTone.type='lowpass';echoTone.frequency.value=3800;
+     soften.connect(echo);echo.connect(echoTone);echoTone.connect(echoGain);echoGain.connect(this.songGain);
+    }
     if(!this.noise){
  const buffer=this.context.createBuffer(1,this.context.sampleRate*2,this.context.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.4;
  this.noise=this.context.createBufferSource();this.noise.buffer=buffer;this.noise.loop=true;
  this.filter=this.context.createBiquadFilter();this.filter.type='lowpass';this.filter.frequency.value=900;this.wind=this.context.createGain();this.wind.gain.value=0;this.noise.connect(this.filter);this.filter.connect(this.wind);this.wind.connect(this.master);this.noise.start();
  }
- await this.context.resume();
+ return this.context.resume();
   }
-  mute(value){this.muted=value;if(this.master)this.master.gain.setTargetAtTime(value?0:.14,this.context.currentTime,.08);}
-  update(dt,energy){
-    const target=56+Math.min(1,energy/.78)**.75*136;this.bpm+=(target-this.bpm)*(1-Math.exp(-dt/.28));
+  startIntro(){this.mode='intro';this.shakeBeats=0;const resumed=this.resumeContext();this.track.pause();this.songGain.gain.setTargetAtTime(0,this.context.currentTime,.2);this.melody.gain.setTargetAtTime(1,this.context.currentTime,.3);return resumed;}
+  resume(){return this.mode==='ending'?this.resumeContext():this.mode==='song'?this.start():this.startIntro();}
+  end(){
+   if(this.mode==='ending')return;
+   this.mode='ending';
+   if(!this.context){this.track?.pause();return;}
+   const now=this.context.currentTime;this.fadeEnd=now+2.5;
+   this.songGain.gain.cancelScheduledValues(now);this.songGain.gain.setTargetAtTime(0,now,.45);
+   this.melody.gain.setTargetAtTime(0,now,.3);this.wind?.gain.setTargetAtTime(0,now,.3);
+   this.effect('ending');
+  }
+  async followShake(dt,held,energy){
+   if(this.mode!=='intro')return;
+   this.shakeBeats=held&&energy>.035?(this.shakeBeats||0)+dt:0;
+   if(this.shakeBeats<.15)return;
+   await this.start();
+  }
+  async unlockTrack(){const resumed=this.resumeContext();await Promise.all([resumed,this.track.play()]);if(this.mode==='intro'){this.track.pause();this.track.currentTime=0;}}
+  async start(){
+   const resumed=this.resumeContext(),fresh=this.mode!=='song';this.mode='song';if(fresh){this.track.currentTime=this.startTime;this.songVolume=.12;this.rate=1;this.track.playbackRate=1;}
+   try{await Promise.all([resumed,this.track.play()]);}catch(e){this.startIntro().catch(()=>{});throw e;}
+   this.melody.gain.setTargetAtTime(0,this.context.currentTime,.45);this.songGain.gain.setTargetAtTime(this.muted?0:this.songVolume,this.context.currentTime,.7);
+  }
+  mute(value){this.muted=value;if(this.track)this.track.muted=value;if(this.master){this.master.gain.setTargetAtTime(value?0:.14,this.context.currentTime,.08);this.songGain.gain.setTargetAtTime(value||this.mode!=='song'?0:this.songVolume,this.context.currentTime,.08);}}
+  update(dt,energy,phase='globe'){
+    const strength=Math.min(1,Math.max(0,energy)/.85),shaking=this.mode==='song'&&phase==='globe';
+    // Most ordinary movement stays at the recording's original speed. Only
+    // deliberate vigorous shaking opens the fast-forward range.
+    const fast=Math.max(0,Math.min(1,(energy-.72)/.28));
+    const target=shaking?(energy<.035?.85+energy/.035*.15:1+fast*fast*2.4):1;
+    this.rate+=(target-this.rate)*(1-Math.exp(-dt/.85));
+    const volume=shaking?.12+strength**.8*.60:.4;
+    this.songVolume+=(volume-this.songVolume)*(1-Math.exp(-dt/1.2));
+    if(this.songGain&&this.mode==='song')this.songGain.gain.setTargetAtTime(this.muted?0:this.songVolume,this.context.currentTime,.15);
+    if(this.mode==='ending'&&this.context?.currentTime>=this.fadeEnd&&!this.track.paused){this.track.pause();this.songGain.gain.setValueAtTime(0,this.context.currentTime);}
+    if(this.track){this.track.dataset.audioMode=this.mode;this.track.dataset.audioContext=this.context?.state||'none';this.track.dataset.gain=this.muted||this.mode==='ending'?'0':this.songVolume.toFixed(3);}
+    if(this.track&&Math.abs(this.track.playbackRate-this.rate)>.003)this.track.playbackRate=this.rate;
     if(!this.context||this.context.state!=='running')return;
+    if(this.mode!=='intro')return;
     this.beat-=dt*this.bpm/60;
     if(this.beat<=0){
       const melody=[[76,1],[76,1],[76,2],[76,1],[76,1],[76,2],[76,1],[79,1],[72,1.5],[74,.5],[76,4],[77,1],[77,1],[77,1.5],[77,.5],[77,1],[76,1],[76,1],[76,.5],[76,.5],[76,1],[74,1],[74,1],[76,1],[74,2],[79,2],[76,1],[76,1],[76,2],[76,1],[76,1],[76,2],[76,1],[79,1],[72,1.5],[74,.5],[76,4],[77,1],[77,1],[77,1.5],[77,.5],[77,1],[76,1],[76,1],[76,.5],[76,.5],[79,1],[79,1],[77,1],[74,1],[72,4]];
       const [pitch,length]=melody[this.note++%melody.length];this.beat+=length;
-      const now=this.context.currentTime;
-      for(const [multiple,volume] of [[1,.72],[2,.18],[3,.07]]){
-        const oscillator=this.context.createOscillator(),gain=this.context.createGain();
-        oscillator.type='sine';oscillator.frequency.value=440*2**((pitch-69)/12)*multiple;
-        gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(volume,now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+Math.min(1.3,60/this.bpm*1.2));
-        oscillator.connect(gain);gain.connect(this.master);oscillator.start(now);oscillator.stop(now+1.4);
-        oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
+      for(const [multiple,volume] of [[1,.48],[2,.07],[3,.02]]){
+        this.introTone(pitch+12*Math.log2(multiple),volume,Math.min(.95,60/this.bpm*1.6),'sine');
       }
     }
   }
-  stir(energy){if(this.context&&this.context.currentTime<(this.enterUntil||0))return;if(this.wind)this.wind.gain.setTargetAtTime(Math.min(.15,energy*.15),this.context.currentTime,.18);}
-  effect(type){
+  introTone(pitch,volume,duration,type){
+   const now=this.context.currentTime,o=this.context.createOscillator(),g=this.context.createGain();
+   o.type=type;o.frequency.value=440*2**((pitch-69)/12);
+   g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(volume,now+.012);g.gain.exponentialRampToValueAtTime(.0001,now+duration);
+   o.connect(g);g.connect(this.melody);o.start(now);o.stop(now+duration+.03);o.onended=()=>{o.disconnect();g.disconnect();};
+  }
+  stir(energy){
    if(!this.context||this.context.state!=='running')return;
    const now=this.context.currentTime;
-   if(type==='enter'){this.enterUntil=now+2;this.wind?.gain.setTargetAtTime(.25,now,.15);this.wind?.gain.setTargetAtTime(0,now+2,.8);}
-   const notes=type==='arrival'?[60,64,67,72]:type==='lift'?[84]:[72,79,84];
-   notes.forEach((midi,i)=>{const t=now+i*.10,o=this.context.createOscillator(),g=this.context.createGain();o.type='sine';o.frequency.value=440*2**((midi-69)/12);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.20,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+1.4);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+1.5);o.onended=()=>{o.disconnect();g.disconnect();};});
+   if(now<(this.enterUntil||0))return;
+   // A quiet filtered swish follows the moving liquid; tiny glass grains
+   // accent active shakes instead of sounding continuously while at rest.
+   if(this.wind){this.filter.frequency.setTargetAtTime(500+energy*1600,now,.18);this.wind.gain.setTargetAtTime(Math.min(.28,energy*.28),now,.15);}
+   if(energy>.08&&now>=(this.nextGrain||0)){
+    this.nextGrain=now+.32+(1-energy)*.3;
+    this.magicTone(82+(this.grainIndex||0)%3*5,now,.22,.035+energy*.055);
+    this.grainIndex=(this.grainIndex||0)+1;
+   }
   }
-  async pause(){if(this.context)await this.context.suspend();}
-  reset(){this.enterUntil=0;if(this.wind)this.wind.gain.cancelScheduledValues(this.context.currentTime);this.note=0;this.beat=0;this.bpm=56;}
+  magicTone(pitch,time,duration,volume){
+   for(const [ratio,level] of [[1,1],[2.76,.16],[5.4,.035]]){
+    const o=this.context.createOscillator(),g=this.context.createGain();o.type='sine';o.frequency.value=440*2**((pitch-69)/12)*ratio;
+    g.gain.setValueAtTime(.0001,time);g.gain.exponentialRampToValueAtTime(volume*level,time+.025);g.gain.exponentialRampToValueAtTime(.0001,time+duration);
+    o.connect(g);g.connect(this.master);o.start(time);o.stop(time+duration+.03);o.onended=()=>{o.disconnect();g.disconnect();};
+   }
+  }
+  effect(type){
+   if(!this.context||this.context.state!=='running'||this.muted)return;
+   const now=this.context.currentTime;
+   if(type==='touch'){
+    if(now<(this.nextTouch||0))return;this.nextTouch=now+.12;
+    this.magicTone(88,now,.34,.16);return;
+   }
+   if(type==='enter'||type==='curtain'){this.enterUntil=now+2;this.wind?.gain.setTargetAtTime(.19,now,.35);this.wind?.gain.setTargetAtTime(0,now+1.5,.65);}
+   const ending=type==='ending',notes=ending?[72,79,84,88,91,96]:type==='arrival'?[72,79,83,88]:type==='lift'?[79,91]:[76,83,90,95];
+   notes.forEach((midi,i)=>this.magicTone(midi,now+i*(ending?.32:.19),ending?3.4:1.9,.16/(1+i*.22)));
+   if(this.track)this.track.dataset.lastEffect=type;
+  }
+  async pause(){this.track?.pause();if(this.context)await this.context.suspend();}
+  reset(){this.enterUntil=0;this.nextGrain=0;this.grainIndex=0;if(this.wind){this.wind.gain.cancelScheduledValues(this.context.currentTime);this.wind.gain.setValueAtTime(0,this.context.currentTime);}this.track?.pause();if(this.track)this.track.currentTime=0;this.mode='intro';this.rate=1;this.note=0;this.beat=0;this.shakeBeats=0;this.bpm=116;}
 }

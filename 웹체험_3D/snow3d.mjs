@@ -1,19 +1,27 @@
 // A viscous, shared fluid velocity field inside a filled globe (not a full fluid solver).
 export class GlobeSnow{
- constructor(count=7000,random=Math.random){this.count=count;this.random=random;this.p=new Float32Array(count*3);this.v=new Float32Array(count*3);this.depth=Float32Array.from({length:count},()=>random());this.drift=Float32Array.from({length:count*3},()=>random()*Math.PI*2);this.angle=new Float32Array(count);this.boxes=[];this.surface=null;this.reset();}
+ constructor(count=12000,random=Math.random){this.count=count;this.random=random;this.p=new Float32Array(count*3);this.v=new Float32Array(count*3);this.depth=Float32Array.from({length:count},()=>random());this.drift=Float32Array.from({length:count*3},()=>random()*Math.PI*2);this.angle=new Float32Array(count);this.boxes=[];this.surface=null;this.reset();}
  floorHeight(x,z){
   if(!this.surface)return .875;
   const {size,min,max,heights}=this.surface,gx=Math.max(0,Math.min(size-1.001,(x-min)/(max-min)*(size-1))),gz=Math.max(0,Math.min(size-1.001,(z-min)/(max-min)*(size-1))),ix=Math.floor(gx),iz=Math.floor(gz),tx=gx-ix,tz=gz-iz,k=iz*size+ix;
   return (heights[k]*(1-tx)+heights[k+1]*tx)*(1-tz)+(heights[k+size]*(1-tx)+heights[k+size+1]*tx)*tz;
  }
- reset(){for(let i=0;i<this.count;i++){const a=this.random()*Math.PI*2,r=Math.sqrt(this.random())*1.07,x=Math.cos(a)*r,z=Math.sin(a)*r;this.p.set([x,this.floorHeight(x,z)+.005+this.random()*.035,z],i*3);this.angle[i]=this.drift[i*3];}this.v.fill(0);this.previousVelocity=[0,0,0];this.flow=[0,0,0];this.displacement=[0,0,0];this.spin=[0,0,0];this.turbulence=0;this.agitation=0;this.time=0;}
+ // Stable individual layers make a dense, uneven deposit instead of one flat sheet.
+ deposit(i,x,z){return .004+this.depth[i]**2*(.045+.045*(.5+.5*Math.sin(x*7+Math.cos(z*8))));}
+ reset(){for(let i=0;i<this.count;i++){const a=this.random()*Math.PI*2,r=Math.sqrt(this.random())*1.07;let x=Math.cos(a)*r,z=Math.sin(a)*r,floor=this.floorHeight(x,z);
+  // Coat the miniature rooftops as well as the ground before the first shake.
+  if(this.boxes.length&&i%4===0){const b=this.boxes[Math.floor(this.random()*this.boxes.length)];x=b.min[0]+this.random()*(b.max[0]-b.min[0]);z=b.min[2]+this.random()*(b.max[2]-b.min[2]);floor=b.max[1];}
+  for(const b of this.boxes)if(x>b.min[0]&&x<b.max[0]&&z>b.min[2]&&z<b.max[2])floor=Math.max(floor,b.max[1]);
+  this.p.set([x,floor+this.deposit(i,x,z),z],i*3);this.angle[i]=this.drift[i*3];}this.v.fill(0);this.previousVelocity=[0,0,0];this.flow=[0,0,0];this.displacement=[0,0,0];this.spin=[0,0,0];this.turbulence=0;this.agitation=0;this.shakePower=0;this.time=0;}
  update(dt,time,velocity,gravity=[0,-1,0]){
   if(!(dt>0))return;
   dt=Math.min(dt,.05);
   // Acceleration supplies an impulse; a damped liquid displacement carries it
   // through a direction change instead of instantly reversing every flake.
-  const kick=velocity.map((v,i)=>Math.max(-3,Math.min(3,this.previousVelocity[i]-v))*.70);this.previousVelocity=[...velocity];
-  const speed=Math.hypot(...kick),stir=speed*Math.min(1,speed/(dt*8));this.turbulence=Math.min(1.4,this.turbulence+stir*.40);this.agitation=Math.min(1,this.agitation+stir*.16);
+  const power=Math.min(1,Math.hypot(...velocity)/1.8)**2;
+  this.shakePower+=(power-this.shakePower)*(1-Math.exp(-dt/.32));
+  const kick=velocity.map((v,i)=>Math.max(-3,Math.min(3,this.previousVelocity[i]-v))*(.22+.7*this.shakePower));this.previousVelocity=[...velocity];
+  const speed=Math.hypot(...kick),stir=speed*Math.min(1,speed/(dt*8));this.turbulence=Math.min(1.8,this.turbulence+stir*.45);this.agitation=Math.min(1,this.agitation+stir*.23*this.shakePower);
   for(let a=0;a<3;a++)this.flow[a]=Math.max(-2.4,Math.min(2.4,this.flow[a]+kick[a]));
   const turn=[-kick[2]*1.1,kick[0]*.25-kick[2]*.35,kick[0]*1.1];
   for(let a=0;a<3;a++)this.spin[a]=Math.max(-2,Math.min(2,this.spin[a]+turn[a]));
@@ -42,12 +50,12 @@ export class GlobeSnow{
    for(let a=0;a<3;a++){this.v[k+a]+=(target[a]+gravity[a]*settling-this.v[k+a])*drag;this.p[k+a]+=this.v[k+a]*h;}
    let dx=this.p[k],dy=this.p[k+1]-1.78,dz=this.p[k+2],len=Math.hypot(dx,dy,dz);
    if(len>1.43){const nx=dx/len,ny=dy/len,nz=dz/len;this.p[k]=nx*1.429;this.p[k+1]=1.78+ny*1.429;this.p[k+2]=nz*1.429;const d=this.v[k]*nx+this.v[k+1]*ny+this.v[k+2]*nz;if(d>0){this.v[k]-=1.12*d*nx;this.v[k+1]-=1.12*d*ny;this.v[k+2]-=1.12*d*nz;}}
-   const landing=this.floorHeight(this.p[k],this.p[k+2]);
+   const layer=this.deposit(i,this.p[k],this.p[k+2]),landing=this.floorHeight(this.p[k],this.p[k+2])+layer;
    if(this.p[k+1]<landing){this.p[k+1]=landing;if(this.v[k+1]<0)this.v[k+1]=0;this.v[k]*=Math.exp(-h*4);this.v[k+2]*=Math.exp(-h*4);}
    for(const b of this.boxes){
     // Keep roof contact continuous instead of repeatedly falling across the
     // collision clearance and bouncing back. Upward water flow can lift it again.
-    if(this.p[k]>b.min[0]&&this.p[k]<b.max[0]&&this.p[k+2]>b.min[2]&&this.p[k+2]<b.max[2]&&this.v[k+1]<=0&&y>=b.max[1]-.003&&this.p[k+1]<=b.max[1]+.003){this.p[k+1]=b.max[1]+.003;this.v[k+1]=0;}
+    if(this.p[k]>b.min[0]&&this.p[k]<b.max[0]&&this.p[k+2]>b.min[2]&&this.p[k+2]<b.max[2]&&this.v[k+1]<=0&&y>=b.max[1]-.003&&this.p[k+1]<=b.max[1]+layer){this.p[k+1]=b.max[1]+layer;this.v[k+1]=0;}
     if(this.p[k]>b.min[0]&&this.p[k]<b.max[0]&&this.p[k+1]>b.min[1]&&this.p[k+1]<b.max[1]&&this.p[k+2]>b.min[2]&&this.p[k+2]<b.max[2]){
      let best=Infinity,axis=0,edge=0;for(let a=0;a<3;a++)for(const side of [0,1]){const e=(side?b.max:b.min)[a],d=Math.abs(this.p[k+a]-e);if(d<best){best=d;axis=a;edge=e+(side?.003:-.003);}}
      this.p[k+axis]=edge;this.v[k+axis]*=-.08;
