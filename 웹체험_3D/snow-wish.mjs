@@ -25,13 +25,13 @@ export class SnowCatch {
 
 // Only consecutive, valid palm samples add snow. Missing tracking never fills it.
 export class SnowCollection {
- constructor(){this.reset();}
+ constructor(){this.maxGap=.35;this.reset();}
  reset(){this.progress=0;this.lastTime=null;this.lastReceiving=false;this.lastReceived=-Infinity;this.receiving=false;}
  update(receiving,time){
   const gap=this.lastTime===null?0:Math.max(0,time-this.lastTime);
   this.receiving=!!receiving;
   if(receiving){
-   if(this.lastReceiving&&gap<=.35)this.progress=Math.min(1,this.progress+gap/4);
+   if(this.lastReceiving&&gap<=this.maxGap)this.progress=Math.min(1,this.progress+gap/4);
    this.lastReceived=time;
   }else if(time-this.lastReceived>.8){this.progress=Math.max(0,this.progress-Math.min(gap,.15)/2);}
   this.lastTime=time;this.lastReceiving=!!receiving;

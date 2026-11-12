@@ -5,19 +5,24 @@ import {ShakeMotion} from '../motion.mjs';
 import {HeldPose} from '../pose.mjs';
 
 for(const fps of [30,60])for(const phase of ['globe','city']){
- const schedule=new TrackingSchedule(),count={face:0,hand:0};let lastFace=0,maxFaceGap=0;
+ const schedule=new TrackingSchedule(),count={body:0,face:0,hand:0};let lastBody=0,maxBodyGap=0;
  for(let f=0;f<fps*3;f++){
-  const now=f*1000/fps,kind=schedule.next(now,f/fps,{allowed:true,phase});
-  if(kind){count[kind]++;assert.equal(schedule.next(now+1,f/fps,{allowed:true,phase}),null,'never process a stale video frame');}
-  if(kind==='face'){maxFaceGap=Math.max(maxFaceGap,now-lastFace);lastFace=now;}
+  const now=f*1000/fps,kind=schedule.next(now,f/fps,{allowed:true,phase,faceReady:true});
+  if(kind){count[kind]++;assert.equal(schedule.next(now+1,f/fps,{allowed:true,phase}),null);}
+  if(kind==='body'){maxBodyGap=Math.max(maxBodyGap,now-lastBody);lastBody=now;}
  }
- assert.ok(count.hand>=3*(phase==='city'?20:25),'hands get frequent updates even on 30 fps cameras');
- assert.ok(count.hand<=90,'hand inference capped at 30 per second');
- assert.ok(maxFaceGap<250,'face ownership refresh stays inside 350ms safety timeout');
- console.log('PASS scheduling', {fps,phase,handHz:count.hand/3,faceHz:count.face/3});
+ assert.ok(count.hand>=75&&count.hand<=90);assert.ok(maxBodyGap<750);
+ assert.equal(count.face>0,phase==='city','face analysis only in the city');
+ console.log('PASS scheduling',{fps,phase,...count});
 }
-for(const options of [{allowed:false},{allowed:true,calibrating:true}]){
- const schedule=new TrackingSchedule();for(let f=0;f<120;f++)assert.notEqual(schedule.next(f*1000/60,f/60,options),'hand','no hand control without a valid viewer or while calibrating');
+for(const options of [{allowed:false}]){
+ const schedule=new TrackingSchedule();for(let f=0;f<120;f++)assert.notEqual(schedule.next(f*1000/60,f/60,options),'hand');
+}
+for(const interval of [220,600]){
+ const schedule=new TrackingSchedule(),kinds=[];
+ for(let now=0;now<6000;now+=interval)kinds.push(schedule.next(now,now/1000,{allowed:true,phase:'city',faceReady:true}));
+ assert.ok(kinds.filter(k=>k==='hand').length>=4);assert.ok(kinds.includes('body'));
+ for(let i=1;i<kinds.length;i++)if(kinds[i-1]!=='hand')assert.equal(kinds[i],'hand','expensive models cannot starve hands');
 }
 function cHand(x,y){
  const h=Array.from({length:21},()=>({x:0,y:0,z:0}));
@@ -39,9 +44,3 @@ assert.ok(fastError<oldError*.7,'camera globe follows fast movement with substan
 const last=motion.last;motion.sample(.99,.99,last.t+.02);assert.equal(motion.inputSpeed,0,'a tracking jump clears speed instead of launching the globe');
 motion.release();assert.equal(motion.inputSpeed,0,'release clears speed');
 console.log('PASS: fast C grip, brief loss, measured movement speed and reduced following lag',{errorRatio:fastError/oldError,maxSpeed});
-
-const prioritized=new TrackingSchedule(),priorityCount={face:0,hand:0};
-for(let f=0;f<180;f++){const kind=prioritized.next(f*1000/60,f/60,{allowed:true,diagnostics:true,prioritizeHands:true});if(kind)priorityCount[kind]++;}
-assert.ok(priorityCount.face<=7&&priorityCount.face>=6);assert.ok(priorityCount.hand>=85);
-assert.equal(prioritized.next(3100,3.1,{allowed:false,diagnostics:true,prioritizeHands:true}),'face','lost viewer resumes rapid full search');
-console.log('PASS: selected viewer hand priority and periodic audience search',priorityCount);

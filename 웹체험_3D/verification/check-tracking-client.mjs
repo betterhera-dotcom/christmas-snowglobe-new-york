@@ -15,7 +15,7 @@ let diagnostic=null;
 job=client.detect('hand',{},performance.now(),raw=>diagnostic=raw);await Promise.resolve();client.reset();worker.respond();assert.equal(await job,null,'old viewer/mode result discarded after reset');assert.equal(diagnostic,null,'old session never reaches the overlay');
 job=client.detect('face',{},performance.now()-600,raw=>diagnostic=raw);await Promise.resolve();worker.respond();assert.equal(await job,null,'old images cannot move the globe');assert.equal(client.metrics.dropped,1);
 assert.equal(diagnostic.stale,true,'slow raw result remains available to diagnose a missing hand UI');assert.equal(diagnostic.kind,'face');
-for(const [kind,age,accepted] of [['face',350,true],['hand',220,true],['hand',350,false],['face',650,false]]){
+for(const [kind,age,accepted] of [['face',350,true],['hand',220,true],['hand',350,true],['hand',650,true],['hand',800,false],['body',1000,true],['body',1300,false],['face',650,false]]){
  job=client.detect(kind,{},performance.now()-age);await Promise.resolve();worker.respond();assert.equal(!!(await job),accepted,`${kind} latency policy at ${age}ms`);
 }
 globalThis.createImageBitmap=async()=>{throw Error('capture failed');};await assert.rejects(client.detect('hand',{},performance.now()),/capture failed/);assert.equal(client.busy,false);

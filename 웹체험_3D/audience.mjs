@@ -1,58 +1,61 @@
-// Monocular range estimate: calibrate a single viewer at a measured 2.3 m mark.
-// Face size is only a distance proxy, not a depth-camera measurement.
-export const CALIBRATION_METERS=2.3,MAX_VIEWER_METERS=3;
-// Uncalibrated fallback assumes a face height of .22 of the image at 1m.
-// Camera field of view and individual face size make this a rough estimate only.
-export function estimateViewerDistance(faceSize,reference=null){
- if(!Number.isFinite(faceSize)||faceSize<=0)return null;
- return (reference?reference*CALIBRATION_METERS:.22)/faceSize;
+// Select the frontmost-looking body by projected shoulder span, not metric depth.
+import {BODY_HOLD_SECONDS} from './tracking-policy.mjs';
+// Relative movement compensation only; no metre estimate or distance cutoff.
+export function cameraMotionScale(size){
+ if(!Number.isFinite(size)||size<=0)return 1;
+ return Math.max(.75,Math.min(3,.35/size));
 }
-// Convert projected camera movement toward a one-metre reference scale.
-// Without calibration this is sensitivity compensation, not a metre estimate.
-export function cameraMotionScale(faceSize,reference=null){
- if(!Number.isFinite(faceSize)||faceSize<=0)return 1;
- return Math.max(.75,Math.min(3,estimateViewerDistance(faceSize,reference)));
-}
+const visible=p=>p&&Number.isFinite(p.x+p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1&&(p.visibility??0)>=.5&&(p.presence??1)>=.5;
 function describe(points,index){
- if(!points?.length)return null;
- let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
- for(const p of points){if(!Number.isFinite(p.x+p.y))return null;x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}
- // Face height changes less than width when the viewer turns to look around.
- const width=x1-x0,height=y1-y0,size=height;
- return size>.005?{index,points,x:(x0+x1)/2,y:(y0+y1)/2,width,height,size}:null;
+ if(points?.length!==33||!visible(points[11])||!visible(points[12]))return null;
+ const a=points[11],b=points[12],size=Math.hypot(a.x-b.x,a.y-b.y);
+ // Neither the face landmarks nor legs need to be in the frame.
+ if(size<.005)return null;
+ return {index,points,size,x:(a.x+b.x)/2,y:(a.y+b.y)/2,wrists:[points[15],points[16]].filter(visible)};
 }
 export class AudienceGate {
- constructor(){this.reference=null;this.rangeLimited=false;this.reset();}
- reset(){this.faces=[];this.selected=null;this.allowed=false;this.distance=null;this.lastSeen=-Infinity;this.handAnchor=null;}
- calibrate(size){if(!Number.isFinite(size)||size<.015||size>.6)return false;this.reference=size;return true;}
+ constructor(){this.reset();}
+ reset(){this.bodies=[];this.selected=null;this.allowed=false;this.lastSeen=-Infinity;this.handAnchor=null;}
  update(landmarks,time){
-  const previous=this.selected;
-  this.faces=landmarks.map(describe).filter(Boolean);
-  let selected=this.faces.reduce((best,face)=>!best||face.size>best.size?face:best,null);
-  // Avoid exchanging control when two similarly distant faces jitter in size.
-  if(previous&&selected){const match=this.faces.find(f=>Math.hypot(f.x-previous.x,f.y-previous.y)<previous.size*.5);if(match&&selected.size<match.size*1.12)selected=match;}
-  const changed=!!previous!==!!selected||!!(previous&&selected&&Math.hypot(previous.x-selected.x,previous.y-selected.y)>previous.size*.7);
+  const previous=time-this.lastSeen<=BODY_HOLD_SECONDS?this.selected:null;
+  this.bodies=landmarks.map(describe).filter(Boolean);
+  let selected=this.bodies.reduce((best,body)=>!best||body.size>best.size?body:best,null);
+  // Detection order can change. Match by position/size, then retain the current
+  // viewer while similarly sized candidates jitter; a clearly larger newcomer wins.
+  const match=previous?this.bodies.filter(b=>Math.hypot(b.x-previous.x,b.y-previous.y)<previous.size*.65&&b.size/previous.size>.6&&b.size/previous.size<1.6)
+   .sort((a,b)=>Math.hypot(a.x-previous.x,a.y-previous.y)/previous.size+Math.abs(Math.log(a.size/previous.size))*.25-(Math.hypot(b.x-previous.x,b.y-previous.y)/previous.size+Math.abs(Math.log(b.size/previous.size))*.25))[0]:null;
+  if(match&&selected.size<match.size*1.12)selected=match;
+  const changed=!!previous!==!!selected||!!(previous&&selected&&selected!==match);
   if(changed)this.handAnchor=null;
-  this.selected=selected;this.distance=selected&&this.reference?CALIBRATION_METERS*this.reference/selected.size:null;
-  this.allowed=!!selected&&(!this.rangeLimited||(this.distance!==null&&this.distance<=MAX_VIEWER_METERS+1e-6));
+  this.selected=selected;this.allowed=!!selected;
   if(selected)this.lastSeen=time;
-  return {selected,allowed:this.allowed,changed,distance:this.distance};
+  return {selected,allowed:this.allowed,changed};
  }
- handIndex(hands,time){
-  if(!this.allowed||time-this.lastSeen>.9){this.handAnchor=null;return -1;}
+ ownsFace(points,time){
+  if(!this.allowed||time-this.lastSeen>BODY_HOLD_SECONDS||!points?.length)return false;
+  const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+  const x=(Math.min(...xs)+Math.max(...xs))/2,y=(Math.min(...ys)+Math.max(...ys))/2;
+  const owners=this.bodies.map(body=>{const head=visible(body.points[0])?body.points[0]:{x:body.x,y:body.y-body.size*.5};return {body,score:Math.hypot(x-head.x,y-head.y)/body.size};}).filter(o=>o.score<.8).sort((a,b)=>a.score-b.score);
+  return owners[0]?.body===this.selected&&(!owners[1]||owners[1].score>owners[0].score*1.25+.08);
+ }
+ handIndex(hands,time,{remember=true}={}){
+  if(!this.allowed||time-this.lastSeen>BODY_HOLD_SECONDS){if(remember)this.handAnchor=null;return -1;}
   const candidates=[];
   for(const [index,hand] of hands.entries()){
    if(hand?.length!==21)continue;
-   const wrist=hand[0],owners=[];
-   for(const face of this.faces){const dx=(wrist.x-face.x)/face.size,dy=(wrist.y-face.y)/face.size;if(Math.abs(dx)>2.3||dy< -1.6||dy>4)continue;owners.push({face,score:dx*dx+Math.max(0,Math.abs(dy)-.8)**2*.3});}
+   const wrist=hand[0];if(!wrist||!Number.isFinite(wrist.x+wrist.y))continue;
+   const owners=[];
+   for(const body of this.bodies){
+    // Allow motion since the less-frequent body scan, but require a visible body wrist nearby.
+    const score=Math.min(...body.wrists.map(p=>Math.hypot(wrist.x-p.x,wrist.y-p.y)/body.size));
+    if(score<=1.25)owners.push({body,score});
+   }
    owners.sort((a,b)=>a.score-b.score);
-   if(owners[0]?.face.index!==this.selected.index)continue;
+   if(owners[0]?.body.index!==this.selected.index)continue;
    if(owners[1]&&owners[1].score<owners[0].score*1.25+.08)continue;
-   const distance=this.handAnchor?Math.hypot(wrist.x-this.handAnchor.x,wrist.y-this.handAnchor.y):owners[0].score;
-   candidates.push({index,wrist,distance});
+   candidates.push({index,wrist,distance:this.handAnchor?Math.hypot(wrist.x-this.handAnchor.x,wrist.y-this.handAnchor.y):owners[0].score});
   }
-  candidates.sort((a,b)=>a.distance-b.distance);
-  this.handAnchor=candidates[0]?.wrist||null;
+  candidates.sort((a,b)=>a.distance-b.distance);if(remember)this.handAnchor=candidates[0]?.wrist||null;
   return candidates[0]?.index??-1;
  }
 }

@@ -3,7 +3,6 @@ import {readFileSync} from 'node:fs';
 import {SnowEntry} from '../snow-entry.mjs';
 import {GlobeSnow} from '../snow3d.mjs';
 import {HeldPose} from '../pose.mjs';
-import {estimateViewerDistance} from '../audience.mjs';
 const entry=new SnowEntry();
 for(let i=0;i<180;i++)assert.equal(entry.update(1/60,{ready:false,fill:1}),false,'intro blocks even a full globe');
 for(let i=0;i<600;i++)assert.equal(entry.update(1/60,{ready:true,fill:.99}),false,'gesture duration alone cannot enter');
@@ -23,6 +22,4 @@ function simulate(frequency){
 }
 assert.equal(simulate(1.5),null,'a low, slow cloud does not fill the globe');
 for(const frequency of [6,10]){const enteredAt=simulate(frequency);assert.ok(enteredAt>=3&&enteredAt<10,'real strong particle distribution can enter');console.log({frequency,enteredAt});}
-assert.equal(estimateViewerDistance(.11),2,'uncalibrated value is explicitly a rough estimate');
-assert.equal(estimateViewerDistance(.11,.11),2.3);assert.equal(estimateViewerDistance(0),null);
-console.log('PASS: visible fill, intro, debounce, reset and rough/calibrated distance');
+console.log('PASS: visible fill, intro, debounce, reset');

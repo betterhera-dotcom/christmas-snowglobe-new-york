@@ -176,8 +176,8 @@ export function createScene(container){
  }
  const ready=Promise.all([modelReady,cityReady,...backgroundJobs]).then(async([ok])=>{
   if(!ok)return false;
-  // Prepare both light/fog variants and upload city geometry before enabling interaction.
-  for(const travel of [0,.46,.52,.6,1]){setView(travel);await renderer.compileAsync(scene,camera);renderer.render(scene,camera);}
+  // Prepare only the opening view. City variants compile when that view is entered.
+  setView(0);await renderer.compileAsync(scene,camera);
   setView(0);renderer.render(scene,camera);loaded=true;lastTick=previousTick=performance.now();
   container.dataset.loaded='true';return true;
  }).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 준비를 완료하지 못했습니다. 다시 불러와주세요.'}));return false;});

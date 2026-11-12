@@ -1,22 +1,18 @@
-// Process fresh frames only. Hands get the frequent slots; faces still refresh
-// before the audience ownership guard expires. Never run both models per tick.
+// One fresh frame at a time. A slow body/face scan must always give hands a turn.
 export class TrackingSchedule{
  constructor(){this.reset();}
- reset(){this.videoTime=-1;this.lastHand=-Infinity;this.lastFace=-Infinity;this.lastKind=null;this.handTimes=[];}
- next(now,videoTime,{allowed,phase='globe',calibrating=false,diagnostics=false,prioritizeHands=false}){
+ reset(){this.videoTime=-1;this.lastHand=-Infinity;this.lastBody=-Infinity;this.lastFace=-Infinity;this.lastKind=null;this.handTimes=[];}
+ next(now,videoTime,{allowed,phase='globe',diagnostics=false,faceReady=false}){
   if(videoTime===this.videoTime)return null;
-  const faceInterval=calibrating||!allowed?100:prioritizeHands?(phase==='city'?300:450):phase==='city'?100:200;
+  const bodyInterval=allowed?700:350;
   let kind=null;
-  // Diagnostic hands remain visible without a selected face. Alternate overdue
-  // models on slower devices so repeated face checks cannot starve hand checks.
-  if(diagnostics&&!calibrating&&this.lastKind==='face'&&now-this.lastHand>=(allowed?1000/30-1:250))kind='hand';
-  else if(now-this.lastFace>=faceInterval-1)kind='face';
-  else if(allowed&&!calibrating&&now-this.lastHand>=1000/30-1)kind='hand';
+  if((allowed||diagnostics)&&this.lastKind!=='hand'&&this.lastKind!==null&&now-this.lastHand>=1000/30-1)kind='hand';
+  else if(now-this.lastBody>=bodyInterval-1)kind='body';
+  else if(phase==='city'&&allowed&&faceReady&&now-this.lastFace>=700)kind='face';
+  else if((allowed||diagnostics)&&now-this.lastHand>=(allowed?1000/30-1:250))kind='hand';
   if(!kind)return null;
-  this.videoTime=videoTime;
-  this.lastKind=kind;
-  if(kind==='face')this.lastFace=now;
-  else this.lastHand=now;
+  this.videoTime=videoTime;this.lastKind=kind;
+  if(kind==='body')this.lastBody=now;else if(kind==='face')this.lastFace=now;else this.lastHand=now;
   return kind;
  }
  recordHand(now){this.handTimes.push(now);this.handTimes=this.handTimes.filter(t=>now-t<1000);}

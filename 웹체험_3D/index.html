@@ -15,7 +15,7 @@
     <div id="shop" aria-hidden="true"></div>
     <canvas id="window-snow" aria-hidden="true"></canvas>
     <div id="scene" data-loaded="false" aria-busy="true" aria-label="크리스마스 매장에서 손으로 들고 흔드는 뉴욕 스노우볼"></div>
-    <div id="loading" role="status"><p id="loading-message">작은 겨울을 준비하고 있어요</p><small>스노우볼과 매장을 불러오는 중입니다.</small><button id="retry-load" hidden>다시 불러오기</button></div>
+    <div id="loading" role="status"><p id="loading-message">작은 겨울을 준비하고 있어요</p><small>스노우볼과 매장을 불러오는 중입니다.</small><button id="cancel-start" hidden>카메라 대기 취소 · 마우스로 시작</button><button id="retry-load" hidden>다시 불러오기</button></div>
     <div class="vignette" aria-hidden="true"></div>
     <header class="arcade-panel">
       <div class="title"><h1>손끝에서 열리는 크리스마스</h1><p>스노우볼 세계여행</p></div>
@@ -33,7 +33,7 @@
     <aside id="motion-guide" hidden aria-label="동작 인식 가이드">
       <div class="motion-heading"><span id="tracking-state" role="status">손을 보여주세요</span><span id="tracking-mode">카메라</span></div>
       <svg id="tracking-map" viewBox="0 0 120 90" aria-hidden="true"><path id="tracking-lines"/><g id="tracking-joints"></g></svg>
-      <div class="motion-copy"><strong id="motion-title">손을 C자로 만들어 잡아주세요</strong><p id="motion-help">얼굴과 손이 카메라에 함께 보이게 해주세요.</p></div>
+      <div class="motion-copy"><strong id="motion-title">손을 C자로 만들어 잡아주세요</strong><p id="motion-help">어깨와 손이 카메라에 함께 보이게 해주세요.</p></div>
       <div id="snow-progress" hidden><div class="snow-progress-label"><span id="snow-progress-label">손에 쌓인 눈</span><span id="snow-percent">0%</span></div><div id="snow-meter" role="progressbar" aria-label="손에 쌓인 눈" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
       <ol class="motion-steps"><li id="guide-hold">1 잡기</li><li id="guide-shake">2 흔들기</li><li id="guide-snow">3 눈 받기</li></ol>
     </aside>
@@ -61,7 +61,7 @@
       <div class="wish-radiance" aria-hidden="true"></div>
       <div class="wish-card"><div class="wish-star" aria-hidden="true">✧</div><span class="wish-caption">크리스마스가 건네는 새해의 행운</span><h2 id="wish-title"></h2><p id="wish-message" role="status" aria-live="polite"></p><p id="wish-token"></p><p class="ending-note">체험이 끝났어요 · 잠시 후 첫 화면으로 돌아갑니다</p><button id="wish-close">처음부터 다시 체험</button></div>
     </div>
-    <details id="camera-preview"><summary>내 모습 · 웹캠</summary><div class="webcam-frame"><video id="webcam" autoplay playsinline muted></video><canvas id="webcam-skeleton" aria-hidden="true"></canvas></div><button id="recognition-only" aria-pressed="false">인식만 비교 · 3D 정지</button><small id="comparison-status">3D 실행 중</small><strong id="tracking-status" role="status">영상 연결 후 분석 대기</strong><small id="tracking-metrics">얼굴 — · 손 —</small><strong id="viewer-distance">예상 거리 · 얼굴 감지 대기</strong><aside id="viewer-calibration" hidden><label class="viewer-mode"><input id="distance-limit" type="checkbox">전시 모드 · 3m 거리 제한</label><p id="viewer-status" role="status">테스트 모드 · 거리 제한 없이 한 사람만 조작합니다.</p><button id="calibrate-distance">2.3m 기준 맞추기</button><small>얼굴 크기로 추정 · 카메라 위치·줌 변경 시 다시 보정</small></aside></details>
+    <details id="camera-preview"><summary>내 모습 · 웹캠</summary><div class="webcam-frame"><video id="webcam" autoplay playsinline muted></video><canvas id="webcam-skeleton" aria-hidden="true"></canvas></div><button id="recognition-only" aria-pressed="false">인식만 비교 · 3D 정지</button><small id="comparison-status">3D 실행 중</small><strong id="tracking-status" role="status">영상 연결 후 분석 대기</strong><small id="tracking-metrics">몸 — · 손 —</small><p id="viewer-status" role="status">거리 제한 없이 앞쪽 관객 한 분의 손을 연결합니다.</p></details>
     <canvas id="storm-particles" aria-hidden="true"></canvas><div id="blizzard" aria-hidden="true"></div>
     <noscript>이 작품을 실행하려면 Chrome에서 JavaScript를 허용해주세요.</noscript>
   </main>

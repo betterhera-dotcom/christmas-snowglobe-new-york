@@ -13,10 +13,14 @@ document.querySelector('#run').onclick=async()=>{
   const canvas=document.createElement('canvas');canvas.width=640;canvas.height=480;canvas.getContext('2d').fillRect(0,0,640,480);
   const start=ticks;maxGap=0;let accepted=0,dropped=0;
   for(let i=0;i<12;i++){
-   const result=await client.detect(i%3?'hand':'face',canvas,performance.now());
+   const result=await client.detect(i%3?'hand':'body',canvas,performance.now());
    if(result){accepted++;if((result.result.landmarks||result.result.faceLandmarks).length)throw Error('빈 화면에서 잘못된 검출');}else dropped++;
    await new Promise(resolve=>setTimeout(resolve,20));
   }
+  client.prepareFace();
+  const deadline=performance.now()+30000;while(!client.delegates.face&&!client.faceError&&performance.now()<deadline)await new Promise(r=>setTimeout(r,100));
+  if(!client.delegates.face)throw Error(client.faceError||'face load timeout');
+  await client.detect('face',canvas,performance.now());
   output.textContent=JSON.stringify({passed:accepted>0,delegates:client.delegates,accepted,dropped,renderedDuringInference:ticks-start,maxFrameGapMs:Math.round(maxGap),last:client.metrics},null,2);
  }catch(e){output.textContent=`실패: ${e.stack||e.message}`;}
  finally{client?.close();document.querySelector('#run').disabled=false;}

@@ -1,3 +1,4 @@
+import {RESULT_MAX_AGE_MS} from './tracking-policy.mjs';
 // One in-flight image, no waiting queue. Reset makes old results ineligible.
 export class TrackingClient{
  constructor(worker=new Worker(new URL('./tracking-worker.js',import.meta.url))){
@@ -6,6 +7,8 @@ export class TrackingClient{
   this.initTimer=setTimeout(()=>this.fail(new Error('손 분석 준비 시간이 초과되었습니다.')),30000);
   worker.onmessage=({data})=>{
    if(data.type==='ready'){clearTimeout(this.initTimer);this.delegates=data.delegates;this.resolveReady();}
+   else if(data.type==='face-ready'){this.delegates.face=data.delegate;}
+   else if(data.type==='face-error'){this.faceError=data.message;}
    else if(data.type==='error')this.fail(new Error(data.message));
    else if(data.type==='result'&&this.pending?.id===data.id){clearTimeout(this.pending.timer);this.pending.resolve(data);this.pending=null;}
   };
@@ -26,13 +29,14 @@ export class TrackingClient{
     catch(e){clearTimeout(timer);this.pending=null;reject(e);}
    });
    if(this.closed||epoch!==this.epoch)return null;
-   const ageMs=performance.now()-timestamp,limitMs=kind==='face'?500:280;
+   const ageMs=performance.now()-timestamp,limitMs=RESULT_MAX_AGE_MS[kind];
    this.metrics={ageMs,inferenceMs:data.inferenceMs,dropped:this.metrics.dropped};
    onResult({kind,result:data.result,timestamp,ageMs,inferenceMs:data.inferenceMs,stale:ageMs>limitMs});
    if(ageMs>limitMs){this.metrics.dropped++;return null;}
    return {result:data.result,timestamp};
   }finally{image?.close();this.busy=false;}
  }
+ prepareFace(){if(this.closed||this.faceRequested)return;this.faceRequested=true;this.worker.postMessage({type:'prepare-face'});}
  reset(){this.epoch++;}
  close(){if(this.closed)return;this.closed=true;this.reset();this.fail(new Error('손 분석 종료'));this.worker.terminate();}
 }
