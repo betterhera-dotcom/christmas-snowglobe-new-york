@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {MIN_PLAY_SECONDS} from '../journey.mjs';
 import {ShakeMotion} from '../motion.mjs';
 import {HeldPose} from '../pose.mjs';
 import {cameraMotionScale} from '../audience.mjs';
@@ -13,7 +14,7 @@ function simulate(scale,compensated,amplitude=.18){
 }
 for(const scale of [2,1,.65,.4,.15,.08]){
  const before=simulate(scale,false),after=simulate(scale,true);
- assert.ok(after.entered>4.5&&after.entered<7,'same physical shake must trigger across projected sizes');
+ assert.ok(after.entered>MIN_PLAY_SECONDS+1.5&&after.entered<MIN_PLAY_SECONDS+4,'same physical shake must trigger across projected sizes');
  assert.ok(Math.abs(after.peak-simulate(1,true).peak)<.001,'compensated energy matches');
  assert.equal(simulate(scale,true,.001).entered,null,'small tracking jitter cannot trigger a journey');
  console.log({projectedScale:scale,before,after});

@@ -29,12 +29,13 @@ export function updateGuide({mode,phase,playTime=0,globeFill=0,trackingHz=0,hand
  $('snow-progress').hidden=!city&&playTime<MIN_PLAY_SECONDS;
  $('snow-progress-label').textContent=city?'손에 쌓인 눈':'글로브 속 눈';
  $('snow-meter').setAttribute('aria-label',city?'손에 쌓인 눈':'글로브 속 눈 채움');
- $('motion-title').textContent=city?(receiving?'그대로 유지해 눈을 받아주세요':camera?'손바닥을 펴서 눈을 받아주세요':'화면을 4초간 눌러 눈을 받아주세요'):held?(playTime<MIN_PLAY_SECONDS?'편하게 흔들며 음악과 눈을 즐겨보세요':'눈이 가득 차도록 세게 흔들어주세요'):camera?'손을 스노우볼 위에 올려주세요':'스노우볼 위로 손을 옮겨 눌러주세요';
+ $('motion-title').textContent=city?(receiving?'그대로 유지해 눈을 받아주세요':camera?'손바닥을 펴서 눈을 받아주세요':'화면을 4초간 눌러 눈을 받아주세요'):held?(playTime<MIN_PLAY_SECONDS?'편하게 흔들며 음악과 눈을 즐겨보세요':'눈이 가득 차도록 세게 흔들어주세요'):camera?'손을 C 모양으로 만들어 잡아주세요':'스노우볼 위로 손을 옮겨 눌러주세요';
  if(camera&&handPreview&&!handControllable)$('motion-title').textContent=handPreview.delayed?'손 위치를 확인했어요 · 분석이 늦어 조작 대기 중':'손 위치를 확인했어요 · 조작 연결 중';
- $('motion-help').textContent=city?(camera?'고개를 돌려 둘러보세요 · 한 손으로 약 4초간 눈 받기 → 행운 카드':test?'자동 눈 받기 테스트 중 · 다시 누르면 멈춥니다':'화면을 4초간 누르거나 아래 눈 받기 테스트를 누르세요'):(camera?'한 손으로 잡고 흔들어주세요. 두 손이 보여도 움직이는 손으로 조작합니다.':'화면을 누른 채 흔들어보세요. 놓으면 내려놓습니다.');
+ $('motion-help').textContent=city?(camera?'고개를 돌려 둘러보세요 · 한 손으로 약 4초간 눈 받기 → 행운 카드':test?'자동 눈 받기 테스트 중 · 다시 누르면 멈춥니다':'화면을 4초간 누르거나 아래 눈 받기 테스트를 누르세요'):(camera?'C 모양으로 잡고 손을 올리거나 흔들어주세요. 손을 펼치면 내려놓습니다.':'화면을 누른 채 흔들어보세요. 놓으면 내려놓습니다.');
  $('snow-percent').textContent=`${percent}%`;$('snow-meter').setAttribute('aria-valuenow',percent);$('snow-meter').firstElementChild.style.width=`${percent}%`;
  for(const [id,on]of [['guide-hold',!city&&!held],['guide-shake',!city&&held],['guide-snow',city]])$(id).classList.toggle('current',on);
- $('snow-hand').hidden=!city||!(camera?seen:receiving||progress>0);
+ $('snow-hand').hidden=!city||!(camera?seen||!!handPreview:receiving||progress>0);
+ $('snow-hand').style.opacity=camera&&!seen?'.45':'1';
  $('snow-hand').style.left=`${Math.max(.16,Math.min(.84,point[0]))*100}%`;$('snow-hand').style.top=`${Math.max(.38,Math.min(.72,point[1]))*100}%`;
  $('snow-hand').dataset.receiving=String(receiving);
  $('palm-snow').style.opacity=String(Math.min(1,progress*5));$('palm-snow').style.transform=`translateY(${(1-progress)*22}px) scale(${.58+progress*.42},${.12+progress*.88})`;

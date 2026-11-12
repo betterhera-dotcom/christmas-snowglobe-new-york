@@ -25,10 +25,10 @@ console.log('PASS: raw hand diagnostics without face, slow-device fairness, dela
 for(const [time,faceLandmarks,owned,stale,label] of [
  [4000,[],false,false,'얼굴 미감지'],
  [4200,[[{x:.5,y:.2}]],false,false,'조작자 얼굴 연결 대기'],
- [4400,[[{x:.5,y:.2}]],true,false,'고개 연결됨'],
+ [4400,[[{x:.5,y:.2}]],true,false,'얼굴 연결됨'],
  [4600,[[{x:.5,y:.2}]],true,true,'분석 지연']
 ]){
  debug.record({kind:'face',timestamp:time,ageMs:12,inferenceMs:8,owned,stale,result:{faceLandmarks}});
- debug.draw(time+20,options);assert.ok(metrics.textContent.includes('고개 보기 '+label),'face timing is not confused with successful head control');
+ debug.draw(time+20,options);assert.ok(metrics.textContent.includes('얼굴 상태: '+label),'face timing is not confused with successful head control');
 }
 console.log('PASS: city face absence, ownership, successful connection and stale result are distinguished');

@@ -18,10 +18,10 @@ const tick=()=>new Promise(r=>setImmediate(r));
 function setup(){
  const art=deferred(),permission=deferred(),model=deferred(),audio=deferred(),nodes=new Map(),events=[];let ready=false,models=0;const timers=new Map();let timerId=0;
  function element(id){if(nodes.has(id))return nodes.get(id);const classes=new Set();const e={id,hidden:false,disabled:false,dataset:{},style:{setProperty(){}},children:[],firstElementChild:{style:{}},classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(){}},addEventListener(type,fn){this[type]=fn;},setAttribute(){},removeAttribute(){},getContext:()=>({clearRect(){}}),play:()=>Promise.resolve(),querySelector:()=>element(id+' child'),focus(){}};nodes.set(id,e);return e;}
- class Noop{reset(){} pause(){} close(){} mute(){} update(){} startIntro(){return audio.promise;}unlockTrack(){return audio.promise;}resume(){return audio.promise;}effect(){} }
+ class Noop{prepareFace(){} reset(){} pause(){} close(){} mute(){} update(){} startIntro(){return audio.promise;}unlockTrack(){return audio.promise;}resume(){return audio.promise;}effect(){} }
  class FakeTracker extends Noop{constructor(){super();models++;this.ready=model.promise;} }
  const looks=[];
- const scene={ready:art.promise,stats:()=>({artLoaded:ready}),reset(){},resumeTiming(){},handOverGlobe:()=>true,lookAt:(x,y)=>looks.push([x,y])};
+ const scene={ready:art.promise,stats:()=>({artLoaded:ready}),reset(){},resumeTiming(){},handOverGlobe:()=>false,lookAt:(x,y)=>looks.push([x,y])};
  const context=vm.createContext({console:{warn(){},error(){}},performance,URLSearchParams,location:{search:'?muted=1'},document:{getElementById:element,querySelector:element,addEventListener(){},body:element('body')},window:{addEventListener(){}},navigator:{mediaDevices:{getUserMedia(){events.push('permission');return permission.promise;}}},localStorage:{getItem(){throw Error('removed range settings must not be read');}},requestAnimationFrame(){},setTimeout(fn,ms){const id=++timerId;timers.set(id,{fn,ms});return id;},clearTimeout(id){timers.delete(id);},innerWidth:1280,innerHeight:720,AudienceGate,cameraMotionScale,TrackingSchedule,getHandPreview,ShakeMotion,HandPickup,BODY_HOLD_SECONDS,HAND_HOLD_SECONDS,TrackingClient:FakeTracker,HeadLook,SnowCollection:Noop,SnowEntry:Noop,Carol:Noop,WebcamDebug:Noop,createHandRenderer:()=>()=>{},showIntro(){},openIntro(){events.push('curtain');},createScene:()=>scene});
  vm.runInContext(source,context);
  return {context,art,permission,model,events,element,fire(ms){for(const [id,timer]of [...timers])if(timer.ms===ms){timers.delete(id);timer.fn();}},scene,looks,get models(){return models;},loadArt(){ready=true;art.resolve(true);},run:code=>vm.runInContext(code,context)};
@@ -79,6 +79,8 @@ function cameraStream(){let stopped=false;const track={stop(){stopped=true;},get
 }
 console.log('PASS: stage visibility, permission/video/art deadlines, late-grant cleanup, immediate permission and curtain, denied permission, cancel/late grant, no audio dependency, preview before readiness, model failure cleanup');
 
+function gesture(closed,angle=0){const h=Array.from({length:21},()=>({x:0,y:0,z:0}));for(const [i,b] of [5,9,13,17].entries()){h[b]={x:(i-1.5)*.2,y:-1,z:0};h[b+1]={x:(i-1.5)*.2,y:-1.5,z:0};h[b+3]={x:(i-1.5)*.2+(closed?.35:.12),y:closed?-1.6:-2,z:closed?.1:0};}h[4]={x:-.15,y:-.75,z:0};return h.map(p=>({x:p.x*Math.cos(angle)-p.y*Math.sin(angle),y:p.x*Math.sin(angle)+p.y*Math.cos(angle),z:p.z}));}
+
 // Run the actual app input path: either moving hand drives the globe while
 // the other remains detected and still. A hand switch itself injects no force.
 for(const movingSide of [0,1]){
@@ -88,10 +90,10 @@ for(const movingSide of [0,1]){
   t.run("applyTrackingResult('body',packet,now)");
   let hands=[hand(.38),hand(.62)];hands[movingSide]=hand(x);
   if(Math.round(time*10)%2)hands.reverse();
-  t.context.packet={landmarks:hands};t.run("applyTrackingResult('hand',packet,now)");
+  t.context.packet={landmarks:hands,worldLandmarks:hands.map(()=>gesture(true))};t.run("applyTrackingResult('hand',packet,now)");
  }
  for(const time of [0,.1,.2,.3])feed(time,movingSide===0?.38:.62);
- assert.equal(t.run('grip.closed'),true,'one palm can pick up with two hands visible');
+ assert.equal(t.run('grip.closed'),true,'one C-shaped hand outside the globe can pick up with two hands visible');
  let switches=0,maxSpeed=0;
  for(let i=4;i<24;i++){
   const x=(movingSide===0?.38:.62)+.07*Math.sin((i-3)*.8);

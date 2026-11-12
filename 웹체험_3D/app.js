@@ -1,3 +1,4 @@
+import {trackingRegion} from './tracking-region.mjs';
 import {ENTRY_DURATION_MS,MIN_PLAY_SECONDS,transitionVeil} from './journey.mjs';
 import { createScene } from './scene3d.js';
 import { ShakeMotion } from './motion.mjs';
@@ -115,7 +116,7 @@ function setMode(value){
   questIds.forEach((id,i)=>{$(id).classList.remove('done');$(id).setAttribute('aria-label',`${questNames[i]}: 대기`);});$('quest-count').textContent='0';$('feedback').hidden=true;
   $('reset').textContent='처음으로';document.querySelector('.step').textContent='01 / LIFT THE SNOWGLOBE';document.body.classList.toggle('active',value!=='idle');
   $('mode-label').textContent=value==='camera'?'CAMERA':value==='pointer'?'TOUCH / MOUSE':'READY';$('prompt').textContent='손으로 작은 겨울을 들어보세요';
-  $('hint').textContent=value==='pointer'?'스노우볼 위를 눌러 잡고, 3초간 음악과 눈을 즐긴 뒤 안내에 따라 세게 흔들어주세요.':'손을 스노우볼 위에 올려 잡고, 3초간 음악과 눈을 즐긴 뒤 안내에 따라 세게 흔들어주세요.';$('hand-cursor').hidden=true;lastHand=0;
+  $('hint').textContent=value==='pointer'?'스노우볼 위를 눌러 잡고, 5초간 음악과 눈을 즐긴 뒤 안내에 따라 세게 흔들어주세요.':'한 손을 C 모양으로 만들어 잡습니다. 5초간 음악과 눈을 즐긴 뒤 안내에 따라 흔들어주세요.';$('hand-cursor').hidden=true;lastHand=0;
 }
 function startupDeadline(promise,ms,message){
  let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);})]).finally(()=>clearTimeout(timer));
@@ -126,7 +127,7 @@ async function startCamera(){
   $('camera-startup').hidden=false;$('retry-camera').hidden=true;$('camera-start-help').textContent='이미 허용한 카메라는 허용 창 없이 연결됩니다. 연결 중에는 3D 움직임을 잠시 멈춥니다.';
   try{
     if(!navigator.mediaDevices?.getUserMedia)throw new Error('LOCALHOST');
-    const request=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:30,max:30}}});
+    const request=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'user',width:{ideal:1280},height:{ideal:720},frameRate:{ideal:30,max:30}}});
     request.then(candidate=>{if(!acceptCamera||token!==generation)candidate.getTracks().forEach(t=>t.stop());}).catch(()=>{});
     status('1 / 3 · 카메라 연결 요청 중 · 브라우저의 허용 안내를 확인해주세요');
     permissionHint=setTimeout(()=>{if(token===generation)status('허용 창이 안 보이면 주소창 왼쪽 사이트 설정에서 카메라 권한을 확인해주세요. 마우스로도 시작할 수 있어요.');},5000);
@@ -141,7 +142,7 @@ async function startCamera(){
     stream.getVideoTracks()[0].addEventListener('ended',()=>{if(token===generation){generation++;starting=false;$('camera').disabled=false;$('cancel-start').hidden=true;stopCamera();setMode('idle');status('카메라 연결이 끊어졌습니다');error('카메라를 연결하고 ‘카메라로 시작’을 다시 눌러주세요.');}});
     status('3 / 3 · 카메라 영상 연결됨 · 몸과 손 인식을 준비하고 있습니다');
     if(!tracker)tracker=new TrackingClient();
-    await tracker.ready;if(token!==generation)return;
+    await tracker.ready;if(token!==generation)return;tracker.prepareFace();
     status('몸과 손 인식 준비됨 · 3D 화면을 준비하고 있습니다');
     const artReady=await startupDeadline(scene?.ready,60000,'ART_TIMEOUT');
     if(token!==generation)return;
@@ -229,7 +230,7 @@ function applyTrackingResult(inference,result,now){
         if(snowCatch.update(receivingSnow,time))showWish(...palmPoint);
       }else if(hand){
         const points=[hand[0],hand[5],hand[9],hand[13],hand[17]],x=1-points.reduce((s,p)=>s+p.x,0)/5,y=points.reduce((s,p)=>s+p.y,0)/5;
-        const wasClosed=grip.closed,closed=grip.update(result.worldLandmarks?.[index]||hand,time,scene?.handOverGlobe(x,y));
+        const wasClosed=grip.closed,closed=grip.update(result.worldLandmarks?.[index]||hand,time,true);
         const wristAngle=Math.atan2(hand[9].y-hand[0].y,hand[9].x-hand[0].x);
         if(closed&&(handChanged||!wasClosed||time-lastHand>HAND_HOLD_SECONDS))wristBase=wristAngle;
         if(closed&&wasClosed&&time-lastHand>HAND_HOLD_SECONDS)motion.gripRevision=(motion.gripRevision||0)+1;
@@ -238,13 +239,17 @@ function applyTrackingResult(inference,result,now){
           motion.pitch=Math.max(-.65,Math.min(.65,(points3D[9].z-points3D[0].z)/Math.max(.001,palm)));
         }
         motion.keepHeld=closed;
-        if(closed)motion.sample(x,y,time,performance.now()/1000);else motion.release();lastHand=time;status(closed?'스노우볼을 잡고 있어요':'한 손을 스노우볼 위에 올려 잡아주세요',closed);$('hand-cursor').hidden=phase==='city';$('hand-cursor').style.left=`${x*100}%`;$('hand-cursor').style.top=`${y*100}%`;
+        if(closed)motion.sample(x,y,time,performance.now()/1000);else motion.release();lastHand=time;status(closed?'스노우볼을 잡고 있어요':'손을 C 모양으로 만들어 잡아주세요',closed);$('hand-cursor').hidden=phase==='city';$('hand-cursor').style.left=`${x*100}%`;$('hand-cursor').style.top=`${y*100}%`;
       }else{const held=grip.update(null,time);motion.keepHeld=held;if(!held)motion.release();$('hand-cursor').hidden=true;status(held?'잡은 상태를 유지하고 있어요 · 손을 보여주세요':'손이 카메라에 보이도록 들어주세요');}
       }
  }
 function frame(now){
   const time=now/1000,dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
   if(starting){requestAnimationFrame(frame);return;}
+  if(mode==='camera'&&tracker?.facePreparing){
+    webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:false,delegates:tracker.delegates});
+    requestAnimationFrame(frame);return;
+  }
   $('recognition-only').disabled=phase==='entering'||phase==='ending';
   if(demoTime!==null&&phase==='globe'){const t=time-demoTime;motion.keepHeld=true;motion.sample(.5+.19*Math.sin(t*demoFrequency),.5+.10*Math.cos(t*demoFrequency*.8),time);if(t>32){demoTime=null;releasePointer();}}
   if(demoTime!==null&&phase==='city'){demoTime=null;releasePointer();}
@@ -252,6 +257,7 @@ function frame(now){
     const inference=trackingSchedule.next(now,$('webcam').currentTime,{allowed:audience.allowed,phase,diagnostics:true,faceReady:!!tracker.delegates?.face});
     if(inference){
       const token=generation,requestPhase=phase;
+      const video=$('webcam'),region=trackingRegion(inference,now/1000-audience.lastSeen<=BODY_HOLD_SECONDS?audience.selected:null,video.videoWidth,video.videoHeight);
       tracker.detect(inference,$('webcam'),now,raw=>{
         if(token===generation&&mode==='camera'&&phase===requestPhase&&!document.hidden){
          if(inference==='face')raw.owned=audience.ownsFace(raw.result.faceLandmarks?.[0],raw.timestamp/1000);
@@ -260,7 +266,7 @@ function frame(now){
           if(!recognitionOnly){trackingPressure=raw.ageMs>150?trackingPressure+1:Math.max(0,trackingPressure-1);if(trackingPressure>=12){scene?.reduceQuality();trackingPressure=0;}}
          }
         }
-      }).then(packet=>{
+      },region).then(packet=>{
         if(token!==generation||mode!=='camera'||phase!==requestPhase||document.hidden)return;
         if(packet&&(!recognitionOnly||inference==='body'))applyTrackingResult(inference,packet.result,packet.timestamp);
         document.body.dataset.tracking=JSON.stringify({...tracker.metrics,handHz:trackingSchedule.handHz(performance.now()),delegates:tracker.delegates});
@@ -275,7 +281,7 @@ function frame(now){
    const avg=comparisonSamples.length?Math.round(comparisonSamples.reduce((a,b)=>a+b,0)/comparisonSamples.length):null;
    $('comparison-status').textContent=`${recognitionOnly?'3D 정지 · 인식만 측정':'3D 실행 중'} · 화질 ${scene?.stats().quality===1?'기본':scene?.stats().quality===.75?'경량':'최소'}\n손 평균 지연 ${avg??'—'}ms (${comparisonSamples.length}회)${recognitionOnly?` · 정지 전 ${comparisonBefore??'—'}ms`:''}`;
   }
-  if(recognitionOnly){webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:false,delegates:tracker?.delegates,dropped:tracker?.metrics.dropped});handOutline.hidden=true;requestAnimationFrame(frame);return;}
+  if(recognitionOnly){webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:false,delegates:tracker?.delegates,faceError:tracker?.faceError,held:motion.keepHeld,phase,analysisOnly:recognitionOnly,dropped:tracker?.metrics.dropped});handOutline.hidden=true;requestAnimationFrame(frame);return;}
   motion.update(dt,time);
   if(phase==='globe'&&mode!=='idle')carol.followShake(dt,!!scene?.stats().holding&&motion.keepHeld,motion.raw).catch(()=>error('소리를 시작하지 못했어요. 소리 버튼을 눌러주세요.'));
   if(phase==='globe'&&mode!=='idle'&&scene?.stats().holding){completeStep(0,'스노우볼을 들었어요');}
@@ -304,12 +310,12 @@ function frame(now){
     if(!audience.selected)$('motion-title').textContent='어깨와 손이 카메라에 보이게 서주세요';
   }
   const showHand=!!preview;
-  if(mode==='camera')webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:handControllable,delegates:tracker?.delegates,dropped:tracker?.metrics.dropped,paused:phase==='entering'});
+  if(mode==='camera')webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:handControllable,delegates:tracker?.delegates,faceError:tracker?.faceError,held:motion.keepHeld,phase,analysisOnly:recognitionOnly,dropped:tracker?.metrics.dropped,paused:phase==='entering'});
   virtualCurl+=((pointerHeld&&phase==='globe'?1:0)-virtualCurl)*(1-Math.exp(-dt*16));
   const shownHand=showHand?preview.hand:mode==='pointer'&&(phase==='globe'||phase==='city')?pointerHand(...virtualPointer,virtualCurl,innerWidth/innerHeight):null;
-  handOutline.hidden=!shownHand;handOutline.style.opacity=showHand&&!handControllable?'.45':'1';
+  handOutline.hidden=!shownHand||phase==='city';handOutline.style.opacity=showHand&&!handControllable?'.45':'1';
   handOutline.dataset.state=showHand?(handControllable?'controlling':'preview'):shownHand?'pointer':'hidden';
-  if(shownHand){
+  if(shownHand&&phase!=='city'){
     const width=Math.min(960,innerWidth),height=Math.round(width*innerHeight/innerWidth),resized=handOutline.width!==width||handOutline.height!==height;
     if(resized){handOutline.width=width;handOutline.height=height;}
     if(resized||(mode==='camera'?outlinedAt!==preview?.timestamp:now-lastOutlineDraw>=32)){drawHandOutline([shownHand]);outlinedAt=preview?.timestamp;lastOutlineDraw=now;}
@@ -322,7 +328,7 @@ function frame(now){
   if(mode!=='idle'&&phase==='globe'){
     const holding=scene?.stats().holding;
     document.querySelector('.step').textContent=holding?'02 / SHAKE A LITTLE MAGIC':'01 / LIFT THE SNOWGLOBE';
-    $('prompt').textContent=!milestones[0]?'손을 C자 모양으로 만들어 스노우볼을 잡아보세요':!holding?'손을 C자 모양으로 만들어 스노우볼을 다시 잡아주세요':motion.playTime<MIN_PLAY_SECONDS?'빠르게, 느리게 · 음악과 눈을 즐겨보세요':motion.strokes>0?'눈이 모이면 뉴욕으로 떠나요':motion.energy>.55?'스노우볼을 조금 더 빠르게 흔들어요':motion.energy>.12?'손끝에서 눈이 피어나요':'상하·좌우·원을 그리며 흔들어보세요';
+    $('prompt').textContent=!milestones[0]?'손을 C 모양으로 만들어 잡아주세요':!holding?'한 손을 다시 보여주세요':motion.playTime<MIN_PLAY_SECONDS?'빠르게, 느리게 · 음악과 눈을 즐겨보세요':motion.strokes>0?'눈이 모이면 뉴욕으로 떠나요':motion.energy>.55?'스노우볼을 조금 더 빠르게 흔들어요':motion.energy>.12?'손끝에서 눈이 피어나요':'상하·좌우·원을 그리며 흔들어보세요';
   }
   requestAnimationFrame(frame);
 }
@@ -338,6 +344,7 @@ if(new URLSearchParams(location.search).has('verify')){
  ['천천히 흔들기 검증',()=>{startPointer();demoFrequency=2;demoTime=performance.now()/1000;}],
  ['자동 흔들기 검증',()=>{startPointer();demoFrequency=10;demoTime=performance.now()/1000;}],
  ['왼쪽 위 보기',()=>scene.lookAt(0,0)],['오른쪽 아래 보기',()=>scene.lookAt(1,1)],
+ ['도시 표시 검증',()=>{if(!starting&&phase==='globe'&&mode==='pointer')enterCity();}],
  ['정면 보기',()=>scene.lookAt(.5,.5)],['복귀 검증',()=>{demoTime=null;setMode('pointer');carol.reset();}]
  ]){const b=document.createElement('button');b.textContent=label;b.onclick=action;bar.append(b);}
  document.body.append(bar);

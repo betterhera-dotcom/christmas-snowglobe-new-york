@@ -6,7 +6,7 @@ export class TrackingSchedule{
   if(videoTime===this.videoTime)return null;
   const bodyInterval=allowed?700:350;
   const bodyDue=now-this.lastBody>=bodyInterval-1;
-  const faceDue=phase==='city'&&allowed&&faceReady&&now-this.lastFace>=300;
+  const faceDue=faceReady&&(allowed||diagnostics)&&now-this.lastFace>=(phase==='city'?300:600);
   let kind=null;
   if((allowed||diagnostics)&&this.lastKind!=='hand'&&this.lastKind!==null&&now-this.lastHand>=1000/30-1)kind='hand';
   else if(bodyDue&&(!faceDue||this.lastBody<=this.lastFace))kind='body';

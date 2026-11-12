@@ -12,7 +12,7 @@ for(const fps of [30,60])for(const phase of ['globe','city']){
   if(kind==='body'){maxBodyGap=Math.max(maxBodyGap,now-lastBody);lastBody=now;}
  }
  assert.ok(count.hand>=75&&count.hand<=90);assert.ok(maxBodyGap<750);
- assert.equal(count.face>0,phase==='city','face analysis only in the city');
+ assert.ok(count.face>=(phase==='city'?8:4),'face analysis runs from the globe and continues in the city');
  console.log('PASS scheduling',{fps,phase,...count});
 }
 for(const options of [{allowed:false}]){

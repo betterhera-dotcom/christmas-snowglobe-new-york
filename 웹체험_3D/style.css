@@ -179,3 +179,12 @@ body[data-phase=entering] .instruction #hint{display:none}
 #camera-startup{position:absolute;z-index:35;left:50%;bottom:85px;transform:translateX(-50%);width:min(600px,calc(100% - 32px));padding:20px;background:#10251cf5;border:1px solid #d9e7d399;border-radius:8px;color:#fff;text-align:center;box-sizing:border-box}
 #camera-startup[hidden],#retry-camera[hidden],#cancel-start[hidden]{display:none}
 #camera-startup p{margin:0 0 10px;font-size:18px;line-height:1.6}#camera-startup small{display:block;font-size:13px;line-height:1.6;color:#deeadf}#camera-startup>div{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px}#camera-startup button{font-size:15px;padding:10px 16px}
+
+/* Keep the camera head-look instruction visible after entering the city. */
+body[data-phase=city][data-input=camera] .motion-copy p{display:block;font-size:clamp(14px,1.4vw,20px);color:#fff;text-shadow:0 1px 5px #000}
+
+.recognition-link{display:block;color:#d5f2e5;text-align:center;padding:8px;text-decoration:underline}
+
+/* The city uses one visible palm beneath the snow mound. */
+body[data-phase=city] #snow-hand .virtual-palm{display:block;fill:none;stroke:#fff;stroke-width:2.4}
+body[data-phase=city] #snow-hand .palm-detail{display:block;stroke:#ffffff99}

@@ -1,3 +1,4 @@
+import {flattenDistantObject} from './city-impostor.js';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {RoomEnvironment} from './vendor/RoomEnvironment.js';
@@ -86,6 +87,7 @@ export function createScene(container){
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),new THREE.MeshStandardMaterial({color:0xe8edf1,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.position.y=.839;ground.receiveShadow=true;outer.add(ground);
  const architecture=new THREE.Group();outer.add(architecture);
  const cityFill=new THREE.DirectionalLight(0xc1d9ff,.85);cityFill.position.set(2,3,4);outer.add(cityFill);
+ const distantCards=[];
  const cityReady=modelReady.then(ok=>{if(!ok)return;
   // Match the miniature's counter-contact offset so the surrounding street meets its floor.
   outer.position.y=-baseMin;
@@ -112,6 +114,12 @@ export function createScene(container){
   const trees=model.getObjectByName('TREES');
   if(trees)for(const [x,z,scale,rotation]of [[-2,-1.1,.8,.2],[2.1,-1.4,.76,-.3],[-1.7,-3.7,.9,-.4],[1.8,-4,.85,.5],[-3.9,-1.5,.82,-.2],[3.8,-1.8,.92,.3]]){
    const copy=trees.clone();copy.scale.setScalar(scale);copy.position.set(x,.84*(1-scale),z);copy.rotation.y=rotation;outer.add(copy);
+  }
+  scene.updateMatrixWorld(true);
+  const eye=new THREE.Vector3(-.12,1.18,1.70);
+  for(const object of [...architecture.children,...outer.children.filter(o=>o!==architecture&&o.isGroup)]){
+   const card=flattenDistantObject(object,renderer,scene,eye);
+   if(card){card.visible=false;distantCards.push(card);}
   }
  });
  // Independent sky dome and distant skyline: buildings never stretch with sky elevation.
@@ -172,6 +180,7 @@ export function createScene(container){
   liquid.setTravel(travel);
   for(const o of groups.BASE||[])o.visible=travel<.5;
   for(const o of globeRailing)o.visible=travel<.55;
+  for(const card of distantCards)card.visible=travel>.55;
   flakes.visible=travel<.55;cityFlakes.visible=travel>.55;
  }
  const ready=Promise.all([modelReady,cityReady,...backgroundJobs]).then(async([ok])=>{
@@ -221,7 +230,7 @@ export function createScene(container){
   renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2)api.reduceQuality();
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);
  },
- stats(){const sorted=transitionFrames.slice().sort((a,b)=>a-b);return {...cityLightStats,...liquid.stats(),transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
+ stats(){const sorted=transitionFrames.slice().sort((a,b)=>a-b);return {...cityLightStats,...liquid.stats(),transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0),distantPlanes:distantCards.length,distantTrianglesRemoved:distantCards.reduce((n,c)=>n+c.userData.originalTriangles,0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
  };
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 연결이 중단되었습니다. 새로고침해주세요.'}));});
  return api;
