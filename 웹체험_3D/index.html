@@ -96,7 +96,7 @@
         status.textContent = '시작 준비가 늦어지고 있습니다. 연결을 확인하거나 다시 불러와주세요.';
         retry.hidden = false;
       }, 15000);
-      import('./app.js?release=white-follow-v15').then(() => {
+      import('./app.js?release=fast-follow-v16').then(() => {
         clearTimeout(timer);
         retry.hidden = true;
         buttons.forEach(button => button.disabled = false);

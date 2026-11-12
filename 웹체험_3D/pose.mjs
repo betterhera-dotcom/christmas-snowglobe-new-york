@@ -13,7 +13,13 @@ export class HeldPose{
   // Camera tracking follows fast arm motion more closely, while slow movement
   // retains gentle damping. Pointer behaviour stays unchanged.
   const follow=held&&m.followHand?20+12*Math.min(1,(m.inputSpeed||0)/1.6):10;
+  if(held&&m.followHand){
+   // One short smoothing pass, rather than a spring lagging behind camera input.
+   const alpha=1-Math.exp(-dt*32);
+   for(let i=0;i<3;i++){const delta=(this.target[i]-this.position[i])*alpha;this.position[i]+=delta;this.velocity[i]=dt>0?delta/dt:0;}
+  }else{
   for(let n=0;n<steps;n++)for(let i=0;i<3;i++){this.velocity[i]+=(follow*follow*(this.target[i]-this.position[i])-2*follow*this.velocity[i])*h;this.position[i]+=this.velocity[i]*h;}
+  }
   const goal=held?[Math.max(-.20,Math.min(.20,(m.pitch||0)*.25)),Math.max(-.12,Math.min(.12,(m.x-this.anchor.x)*gain*.3)),Math.max(-.14,Math.min(.14,(m.wristRoll||0)*.22))]:[0,0,0];
   for(let i=0;i<3;i++)this.rotation[i]+=(goal[i]-this.rotation[i])*(1-Math.exp(-dt*9));
   return this;

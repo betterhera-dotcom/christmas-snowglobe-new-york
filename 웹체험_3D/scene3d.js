@@ -1,10 +1,10 @@
-import {createVirtualHand} from './receiving-natural-hand.js?pose=white-follow-v15';
+import {createVirtualHand} from './receiving-natural-hand.js?pose=fast-follow-v16';
 import {flattenDistantObject} from './city-impostor.js';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {RoomEnvironment} from './vendor/RoomEnvironment.js';
 import {decorateCityLights,varyCityWindows,separateGlobeRailing} from './city-lighting.js';
-import {HeldPose} from './pose.mjs';
+import {HeldPose} from './pose.mjs?follow=fast-v16';
 import {GlobeSnow} from './snow3d.mjs';
 import {createLiquid} from './liquid-globe.js';
 import {sampleSnowSurface} from './snow-surface.js';
@@ -217,7 +217,7 @@ export function createScene(container){
  reset(){pose.reset();physics.reset();targetLook=targetLookY=look=lookY=travelLast=0;},
  update(dt,time,motion,travel=0){
   if(!loaded){container.dataset.state=JSON.stringify(api.stats());return;}
-  const tick=performance.now();if(travel>0&&travel<1){if(travelLast===0)transitionFrames.length=0;if(previousTick)transitionFrames.push(tick-previousTick);}previousTick=tick;frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
+  const tick=performance.now();if(travel>0&&travel<1){if(travelLast===0)transitionFrames.length=0;if(previousTick)transitionFrames.push(tick-previousTick);}previousTick=tick;const elapsed=Math.min(.25,Math.max(0,(tick-lastTick)/1000));frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
   pivot.position.set(pose.position[0]*settle,1.5+pose.position[1]*settle,pose.position[2]*settle);pivot.rotation.set(pose.rotation[0]*settle,pose.rotation[1]*settle,pose.rotation[2]*settle);
   if(baseBounds){let lowest=Infinity;for(const x of [baseBounds.min.x,baseBounds.max.x])for(const y of [baseBounds.min.y,baseBounds.max.y])for(const z of [baseBounds.min.z,baseBounds.max.z]){v.set(x,y+model.position.y,z).applyQuaternion(pivot.quaternion).add(pivot.position);lowest=Math.min(lowest,v.y);}if(lowest<0)pivot.position.y-=lowest;contactGap=Math.max(0,lowest);}
   inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);
@@ -227,9 +227,9 @@ export function createScene(container){
   setView(travel);
   if(cityFlakes.visible){citySnowMat.uniforms.time.value=time;for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=(.045+Math.sin(time*.8+i*2.4)*(.025+citySeed[i]*.065))*dt;cityPos[i*3+2]+=Math.cos(time*.65+i*1.7)*dt*.035;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;if(cityPos[i*3+2]>12)cityPos[i*3+2]=-12;if(cityPos[i*3+2]<-12)cityPos[i*3+2]=12;}cityGeo.attributes.position.needsUpdate=true;}
   const nextShadowPhase=travel<.5?0:travel<=.55?1:2;
-  renderer.shadowMap.autoUpdate=travel<.46&&(quality===1||renderedFrames%(quality===.75?4:8)===0);if(nextShadowPhase!==shadowPhase){renderer.shadowMap.needsUpdate=true;shadowPhase=nextShadowPhase;}
+  renderer.shadowMap.autoUpdate=travel<.46&&(renderedFrames%(quality===1?2:quality===.75?4:8)===0);if(nextShadowPhase!==shadowPhase){renderer.shadowMap.needsUpdate=true;shadowPhase=nextShadowPhase;}
   const now=performance.now();renderer.info.autoReset=false;renderer.info.reset();renderer.render(scene,camera);virtualHand.render(renderer,container.clientWidth,container.clientHeight);frameMs+=(performance.now()-now-frameMs)*.03;
-  renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2)api.reduceQuality();
+  renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+elapsed:Math.max(0,slowRenderSeconds-elapsed*2);if(slowRenderSeconds>2)api.reduceQuality();
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);
  },
  stats(){const sorted=transitionFrames.slice().sort((a,b)=>a-b);return {...cityLightStats,...liquid.stats(),transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0),distantPlanes:distantCards.length,distantTrianglesRemoved:distantCards.reduce((n,c)=>n+c.userData.originalTriangles,0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
