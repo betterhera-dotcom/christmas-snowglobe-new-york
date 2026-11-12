@@ -39,7 +39,7 @@ export class AudienceGate {
   return {selected,allowed:this.allowed,changed,distance:this.distance};
  }
  handIndex(hands,time){
-  if(!this.allowed||time-this.lastSeen>.35){this.handAnchor=null;return -1;}
+  if(!this.allowed||time-this.lastSeen>.9){this.handAnchor=null;return -1;}
   const candidates=[];
   for(const [index,hand] of hands.entries()){
    if(hand?.length!==21)continue;

@@ -11,8 +11,8 @@ self.onmessage=async({data})=>{
     try{return {task:await Task.createFromOptions(vision,{baseOptions,runningMode:'VIDEO',...options}),delegate:'GPU'};}
     catch{baseOptions.delegate='CPU';return {task:await Task.createFromOptions(vision,{baseOptions,runningMode:'VIDEO',...options}),delegate:'CPU'};}
    }
-   const h=await create(HandLandmarker,'hand_landmarker.task',{numHands:4,minHandDetectionConfidence:.6,minHandPresenceConfidence:.6,minTrackingConfidence:.5});hand=h.task;
-   const f=await create(FaceLandmarker,'face_landmarker.task',{numFaces:4,minFaceDetectionConfidence:.5,minFacePresenceConfidence:.5,minTrackingConfidence:.5});face=f.task;
+   const h=await create(HandLandmarker,'hand_landmarker.task',{numHands:2,minHandDetectionConfidence:.6,minHandPresenceConfidence:.6,minTrackingConfidence:.5});hand=h.task;
+   const f=await create(FaceLandmarker,'face_landmarker.task',{numFaces:1,minFaceDetectionConfidence:.5,minFacePresenceConfidence:.5,minTrackingConfidence:.5});face=f.task;
    // Compile the first inference before handing control to the visitor.
    const warmup=new OffscreenCanvas(640,480);warmup.getContext('2d').fillRect(0,0,640,480);
    hand.detectForVideo(warmup,1);face.detectForVideo(warmup,1);

@@ -194,6 +194,14 @@ export function createScene(container){
   const rx=(right-left)*.55,ry=(bottom-top)*.55;
   return rx>0&&ry>0&&((x-(left+right)/2)/rx)**2+((y-(top+bottom)/2)/ry)**2<=1;
  },
+ resumeTiming(){lastTick=performance.now();previousTick=0;},
+ reduceQuality(){
+  if(!loaded||quality===.5)return;
+  quality=quality===1?.75:.5;slowRenderSeconds=0;
+  const ratio=quality===.75?1:.75;renderer.setPixelRatio(ratio);resize();
+  snowMat.uniforms.pixelRatio.value=ratio;citySnowMat.uniforms.pixelRatio.value=ratio;
+  if(quality===.5)for(const glass of groups.GLASS||[]){glass.material.transmission=0;glass.material.opacity=.12;glass.material.needsUpdate=true;}
+ },
  lookAt(x,y=.5){targetLook=THREE.MathUtils.clamp((x-.5)*2,-1,1);targetLookY=THREE.MathUtils.clamp((y-.5)*2,-1,1);},
  reset(){pose.reset();physics.reset();targetLook=targetLookY=look=lookY=travelLast=0;},
  update(dt,time,motion,travel=0){
@@ -208,9 +216,9 @@ export function createScene(container){
   setView(travel);
   if(cityFlakes.visible){citySnowMat.uniforms.time.value=time;for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=(.045+Math.sin(time*.8+i*2.4)*(.025+citySeed[i]*.065))*dt;cityPos[i*3+2]+=Math.cos(time*.65+i*1.7)*dt*.035;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;if(cityPos[i*3+2]>12)cityPos[i*3+2]=-12;if(cityPos[i*3+2]<-12)cityPos[i*3+2]=12;}cityGeo.attributes.position.needsUpdate=true;}
   const nextShadowPhase=travel<.5?0:travel<=.55?1:2;
-  renderer.shadowMap.autoUpdate=travel<.46;if(nextShadowPhase!==shadowPhase){renderer.shadowMap.needsUpdate=true;shadowPhase=nextShadowPhase;}
+  renderer.shadowMap.autoUpdate=travel<.46&&(quality===1||renderedFrames%(quality===.75?4:8)===0);if(nextShadowPhase!==shadowPhase){renderer.shadowMap.needsUpdate=true;shadowPhase=nextShadowPhase;}
   const now=performance.now();renderer.render(scene,camera);frameMs+=(performance.now()-now-frameMs)*.03;
-  renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2&&quality===1){quality=.75;renderer.setPixelRatio(1);resize();snowMat.uniforms.pixelRatio.value=1;citySnowMat.uniforms.pixelRatio.value=1;}
+  renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2)api.reduceQuality();
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);
  },
  stats(){const sorted=transitionFrames.slice().sort((a,b)=>a-b);return {...cityLightStats,...liquid.stats(),transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}

@@ -26,10 +26,10 @@ export class TrackingClient{
     catch(e){clearTimeout(timer);this.pending=null;reject(e);}
    });
    if(this.closed||epoch!==this.epoch)return null;
-   const ageMs=performance.now()-timestamp;
+   const ageMs=performance.now()-timestamp,limitMs=kind==='face'?500:280;
    this.metrics={ageMs,inferenceMs:data.inferenceMs,dropped:this.metrics.dropped};
-   onResult({kind,result:data.result,timestamp,ageMs,inferenceMs:data.inferenceMs,stale:ageMs>160});
-   if(ageMs>160){this.metrics.dropped++;return null;}
+   onResult({kind,result:data.result,timestamp,ageMs,inferenceMs:data.inferenceMs,stale:ageMs>limitMs});
+   if(ageMs>limitMs){this.metrics.dropped++;return null;}
    return {result:data.result,timestamp};
   }finally{image?.close();this.busy=false;}
  }

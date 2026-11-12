@@ -18,6 +18,15 @@ let virtualPointer=[.72,.72],virtualCurl=0;
 const handOutline=$('hand-outline'),drawHandOutline=createHandRenderer(handOutline);let outlinedAt=-Infinity,lastOutlineDraw=-Infinity;
 const webcamDebug=new WebcamDebug($('webcam-skeleton'),$('tracking-status'),$('tracking-metrics'));
 const snowEntry=new SnowEntry();
+let recognitionOnly=false,comparisonSamples=[],comparisonBefore=null,trackingPressure=0;
+$('recognition-only').addEventListener('click',()=>{
+ recognitionOnly=!recognitionOnly;
+ if(recognitionOnly)comparisonBefore=comparisonSamples.length?Math.round(comparisonSamples.reduce((a,b)=>a+b,0)/comparisonSamples.length):null;
+ comparisonSamples=[];tracker?.reset();releaseAudience();
+ $('recognition-only').textContent=recognitionOnly?'3D 다시 실행':'인식만 비교 · 3D 정지';
+ $('recognition-only').setAttribute('aria-pressed',String(recognitionOnly));
+ scene?.resumeTiming();
+});
 const previewMuted=new URLSearchParams(location.search).has('muted');
 carol.mute(previewMuted);$('sound').textContent=previewMuted?'소리 꺼짐':'소리 켜짐';$('sound').setAttribute('aria-pressed',String(previewMuted));
 let introStarting=false;
@@ -118,7 +127,7 @@ window.addEventListener('art-error',event=>loadingFailed(event.detail));
 try{scene=createScene($('scene'));$('camera').disabled=$('pointer').disabled=$('reset').disabled=true;status('3D 스노우볼을 준비하고 있습니다…');scene.ready.then(ok=>{$('camera').disabled=$('pointer').disabled=$('reset').disabled=$('enter-city').disabled=!ok;$('scene').setAttribute('aria-busy','false');if(ok){$('loading').hidden=true;}else{loadingFailed('스노우볼을 불러오지 못했어요');}status(ok?'시작 방법을 선택해주세요':'3D 파일을 읽지 못했습니다');});}catch(e){loadingFailed('입체 화면을 시작하지 못했습니다. Chrome의 그래픽 가속 설정과 브라우저를 확인해주세요.');console.error(e);}
 function stopCamera(){if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('webcam').srcObject=null;$('camera-preview').removeAttribute('data-active');$('viewer-calibration').hidden=true;calibrationStart=null;audience.reset();trackingSchedule.reset();tracker?.reset();}
 function setMode(value){
-  webcamDebug.reset();
+  recognitionOnly=false;comparisonSamples=[];comparisonBefore=null;$('recognition-only').textContent='인식만 비교 · 3D 정지';$('recognition-only').setAttribute('aria-pressed','false');webcamDebug.reset();
   audience.reset();trackingSchedule.reset();tracker?.reset();
   snowEntry.reset();
   clearWish();$('catch-snow').hidden=true;
@@ -140,7 +149,7 @@ async function startCamera(){
     }
     if(token!==generation)return;
     status('Chrome 카메라 허용을 확인해주세요');
-    const candidate=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:60,max:60}}});
+    const candidate=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:30,max:30}}});
     if(token!==generation){candidate.getTracks().forEach(t=>t.stop());return;}
     stream=candidate;$('webcam').srcObject=stream;await $('webcam').play();
     if(token!==generation)return;
@@ -221,17 +230,23 @@ function applyTrackingResult(inference,result,now){
  }
 function frame(now){
   const time=now/1000,dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+  $('recognition-only').disabled=phase==='entering'||phase==='ending';
   if(demoTime!==null&&phase==='globe'){const t=time-demoTime;motion.keepHeld=true;motion.sample(.5+.19*Math.sin(t*demoFrequency),.5+.10*Math.cos(t*demoFrequency*.8),time);if(t>32){demoTime=null;releasePointer();}}
   if(demoTime!==null&&phase==='city'){demoTime=null;releasePointer();}
   if(phase!=='entering'&&mode==='camera'&&tracker&&!tracker.busy&&stream&&$('webcam').readyState>=2){
-    const inference=trackingSchedule.next(now,$('webcam').currentTime,{allowed:audience.allowed,phase,calibrating:calibrationStart!==null,diagnostics:true});
+    const inference=trackingSchedule.next(now,$('webcam').currentTime,{allowed:audience.allowed,phase,calibrating:calibrationStart!==null,diagnostics:true,prioritizeHands:true});
     if(inference){
       const token=generation,requestPhase=phase;
       tracker.detect(inference,$('webcam'),now,raw=>{
-        if(token===generation&&mode==='camera'&&phase===requestPhase&&!document.hidden)webcamDebug.record(raw);
+        if(token===generation&&mode==='camera'&&phase===requestPhase&&!document.hidden){
+         webcamDebug.record(raw);
+         if(inference==='hand'){comparisonSamples.push(raw.ageMs);if(comparisonSamples.length>60)comparisonSamples.shift();
+          if(!recognitionOnly){trackingPressure=raw.ageMs>150?trackingPressure+1:Math.max(0,trackingPressure-1);if(trackingPressure>=12){scene?.reduceQuality();trackingPressure=0;}}
+         }
+        }
       }).then(packet=>{
         if(token!==generation||mode!=='camera'||phase!==requestPhase||document.hidden)return;
-        if(packet)applyTrackingResult(inference,packet.result,packet.timestamp);
+        if(packet&&(!recognitionOnly||inference==='face'))applyTrackingResult(inference,packet.result,packet.timestamp);
         document.body.dataset.tracking=JSON.stringify({...tracker.metrics,handHz:trackingSchedule.handHz(performance.now()),delegates:tracker.delegates});
       }).catch(e=>{
         if(token!==generation||mode!=='camera')return;
@@ -239,7 +254,12 @@ function frame(now){
       });
     }
   }
-  if(mode==='camera'&&phase!=='entering'&&(!audience.allowed||time-audience.lastSeen>.35))releaseAudience();
+  if(mode==='camera'&&phase!=='entering'&&(!audience.allowed||time-audience.lastSeen>.9))releaseAudience();
+  if(mode==='camera'){
+   const avg=comparisonSamples.length?Math.round(comparisonSamples.reduce((a,b)=>a+b,0)/comparisonSamples.length):null;
+   $('comparison-status').textContent=`${recognitionOnly?'3D 정지 · 인식만 측정':'3D 실행 중'} · 화질 ${scene?.stats().quality===1?'기본':scene?.stats().quality===.75?'경량':'최소'}\n손 평균 지연 ${avg??'—'}ms (${comparisonSamples.length}회)${recognitionOnly?` · 정지 전 ${comparisonBefore??'—'}ms`:''}`;
+  }
+  if(recognitionOnly){webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:false,delegates:tracker?.delegates,dropped:tracker?.metrics.dropped});handOutline.hidden=true;requestAnimationFrame(frame);return;}
   motion.update(dt,time);
   if(phase==='globe'&&mode!=='idle')carol.followShake(dt,!!scene?.stats().holding&&motion.keepHeld,motion.raw).catch(()=>error('소리를 시작하지 못했어요. 소리 버튼을 눌러주세요.'));
   if(phase==='globe'&&mode!=='idle'&&scene?.stats().holding){completeStep(0,'스노우볼을 들었어요');}

@@ -39,3 +39,9 @@ assert.ok(fastError<oldError*.7,'camera globe follows fast movement with substan
 const last=motion.last;motion.sample(.99,.99,last.t+.02);assert.equal(motion.inputSpeed,0,'a tracking jump clears speed instead of launching the globe');
 motion.release();assert.equal(motion.inputSpeed,0,'release clears speed');
 console.log('PASS: fast C grip, brief loss, measured movement speed and reduced following lag',{errorRatio:fastError/oldError,maxSpeed});
+
+const prioritized=new TrackingSchedule(),priorityCount={face:0,hand:0};
+for(let f=0;f<180;f++){const kind=prioritized.next(f*1000/60,f/60,{allowed:true,diagnostics:true,prioritizeHands:true});if(kind)priorityCount[kind]++;}
+assert.ok(priorityCount.face<=7&&priorityCount.face>=6);assert.ok(priorityCount.hand>=85);
+assert.equal(prioritized.next(3100,3.1,{allowed:false,diagnostics:true,prioritizeHands:true}),'face','lost viewer resumes rapid full search');
+console.log('PASS: selected viewer hand priority and periodic audience search',priorityCount);

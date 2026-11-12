@@ -172,3 +172,5 @@ body[data-phase=entering] .instruction #hint{display:none}
 #tracking-status{display:block;padding:9px 10px 3px;font-size:13px;line-height:1.5;color:#fff}
 #tracking-metrics{display:block;padding:0 10px 8px;white-space:pre-line;font-size:11px;line-height:1.6;color:#d4dedb}
 @media(max-width:650px){#camera-preview,body.city-settled #camera-preview{width:195px;max-height:45dvh}}
+
+#recognition-only{width:100%;margin-top:8px;padding:8px;font-size:12px}#comparison-status{display:block;white-space:pre-line;font-size:11px;padding:6px 0}

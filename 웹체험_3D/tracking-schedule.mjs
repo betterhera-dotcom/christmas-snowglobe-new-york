@@ -3,9 +3,9 @@
 export class TrackingSchedule{
  constructor(){this.reset();}
  reset(){this.videoTime=-1;this.lastHand=-Infinity;this.lastFace=-Infinity;this.lastKind=null;this.handTimes=[];}
- next(now,videoTime,{allowed,phase='globe',calibrating=false,diagnostics=false}){
+ next(now,videoTime,{allowed,phase='globe',calibrating=false,diagnostics=false,prioritizeHands=false}){
   if(videoTime===this.videoTime)return null;
-  const faceInterval=calibrating||!allowed||phase==='city'?100:200;
+  const faceInterval=calibrating||!allowed?100:prioritizeHands?(phase==='city'?300:450):phase==='city'?100:200;
   let kind=null;
   // Diagnostic hands remain visible without a selected face. Alternate overdue
   // models on slower devices so repeated face checks cannot starve hand checks.
