@@ -1,0 +1,39 @@
+/* Floating globe on green; city keeps its lightweight sky and skyline. */
+#shop{bottom:0;background-color:#172b22!important;background-image:url('./assets/backgrounds/shop.jpg')!important;background-repeat:no-repeat!important}
+#blizzard{background:radial-gradient(ellipse,#f8fbf4,#e7ece2)!important}
+#experience{min-height:0}
+/* Landscape phones: preserve the centre for the same 3D scene. */
+@media (orientation:landscape) and (max-height:600px){
+ #experience{height:100dvh;min-height:0}
+ .intro-copy{padding:12px max(24px,env(safe-area-inset-right)) 12px max(24px,env(safe-area-inset-left));max-height:100dvh;overflow-y:auto}
+ .intro-copy>span{font-size:10px;letter-spacing:.2em}
+ .intro-star{font-size:24px;margin:3px 0;line-height:1}
+ .intro-copy h2{font-size:clamp(23px,4.7vh,32px);line-height:1.25;margin:8px 0}
+ .intro-copy>p:not(.intro-star){font-size:12px;line-height:1.5;margin:6px 0}
+ .intro-actions{flex-direction:row;gap:12px;margin-top:12px}
+ .intro-copy .intro-actions button{min-width:180px;width:auto;min-height:52px;padding:10px 18px;font-size:15px}
+ .intro-copy .intro-actions small{font-size:10px;margin-top:4px}
+ .intro-copy #intro-status{min-height:1em;font-size:10px;margin:8px auto 0}
+ body.active header{top:max(10px,env(safe-area-inset-top));left:max(18px,env(safe-area-inset-left));right:max(18px,env(safe-area-inset-right))}
+ body.active .title h1{font-size:11px}
+ #motion-guide{left:max(18px,env(safe-area-inset-left));right:auto;top:22%;width:25%;max-width:240px;transform:none;padding:0;text-align:left;align-items:flex-start;gap:8px}
+ .motion-copy strong{font-size:clamp(17px,3.9vh,23px);line-height:1.45}
+ .motion-heading{font-size:10px;justify-content:flex-start;flex-wrap:wrap;gap:6px}
+ #tracking-map{width:36px;height:30px}
+ #snow-progress{width:100%;font-size:11px}
+ #camera-preview,body.city-settled #camera-preview{right:max(12px,env(safe-area-inset-right));bottom:54px;width:clamp(120px,18vw,170px);max-height:58dvh;padding:6px}
+ #camera-preview .camera-title{font-size:10px;line-height:18px}
+ #tracking-status,#tracking-metrics{font-size:9px}
+ footer{left:max(18px,env(safe-area-inset-left));right:max(18px,env(safe-area-inset-right));bottom:max(3px,env(safe-area-inset-bottom));justify-content:flex-end}
+ footer .footer-title{display:none}footer>div{gap:8px;width:auto}footer button{font-size:12px;min-height:44px;padding:8px 12px}
+ body.active .instruction,body.active.city-settled .instruction{bottom:54px;left:max(18px,env(safe-area-inset-left));right:auto;width:25%}
+ body[data-phase=entering] .instruction{top:50px;left:0;right:0;width:auto}
+ body[data-phase=entering] .instruction h2{font-size:22px}
+ .wish-card{inset:12% 30px auto}.wish-caption{font-size:10px}
+ #wish-message{font-size:clamp(18px,4.8vh,27px);line-height:1.6;margin:12px 0}
+ #wish-title{font-size:23px}#wish-token{font-size:12px}
+ #camera-startup{max-height:90dvh;overflow:auto}
+}
+
+/* Webcam remains reachable during mouse/touch play on desktop too. */
+@media(max-width:650px){footer button{font-size:11px;padding:8px 6px}footer>div{gap:2px;flex-wrap:wrap;justify-content:center}}

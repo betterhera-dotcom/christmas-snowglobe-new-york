@@ -1,3 +1,4 @@
+import {counterBackdrop} from './counter-backdrop.mjs';
 import {createVirtualHand} from './receiving-natural-hand.js?pose=lite-v2';
 import {flattenDistantObject} from './city-impostor.js';
 import * as THREE from './vendor/three.module.js';
@@ -161,6 +162,23 @@ export function createScene(container){
  const cityFlakes=new THREE.Points(cityGeo,citySnowMat);scene.add(cityFlakes);cityFlakes.visible=false;
  const startPos=new THREE.Vector3(0,2.9,9.5),endPos=new THREE.Vector3(-.12,1.18,1.70),startAim=new THREE.Vector3(0,1.60,0),endAim=new THREE.Vector3(.02,1.34,-.42),aim=new THREE.Vector3(),inv=new THREE.Quaternion(),g=new THREE.Vector3(),v=new THREE.Vector3();
  const smooth=x=>x*x*(3-2*x);
+ let backdropLayoutKey='';
+ function alignCounterBackdrop(){
+  if(!baseBounds)return;
+  const w=container.clientWidth,h=container.clientHeight;
+  if(!w||!h)return;
+  camera.updateMatrixWorld(true);
+  // Resting base front edge; never follow the lifted/rotated hand pose.
+  const contact=new THREE.Vector3(0,0,baseBounds.max.z).project(camera);
+  const key=`${w}:${h}:${contact.y}`;
+  if(key===backdropLayoutKey)return;
+  backdropLayoutKey=key;
+  const layout=counterBackdrop(w,h,(1-contact.y)*h/2);
+  const backdrop=document.getElementById('shop');
+  backdrop.style.backgroundSize=`${layout.width}px ${layout.height}px`;
+  backdrop.style.backgroundPosition=`center ${layout.top}px`;
+  container.dataset.counterContactY=String((1-contact.y)*h/2);
+ }
  let startFov=36;
  function resize(){
   const w=container.clientWidth,h=container.clientHeight;
@@ -179,6 +197,7 @@ export function createScene(container){
 
   if(travel>=1){const base=endAim.clone().sub(endPos),yaw=-look*.90,pitch=-lookY*.38;const euler=new THREE.Euler(pitch,yaw,0,'YXZ');base.applyEuler(euler);aim.copy(camera.position).add(base);}
   camera.lookAt(aim);if(lanterns.visible){model.updateWorldMatrix(true,false);const eye=model.worldToLocal(camera.position.clone());for(const halo of lanternHalos)halo.position.copy(eye).sub(halo.userData.center).normalize().multiplyScalar(.09).add(halo.userData.center);}camera.fov=THREE.MathUtils.lerp(startFov,60,enter);camera.updateProjectionMatrix();
+  if(travel===0)alignCounterBackdrop();
   sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;skyline.material.opacity=sky.material.opacity;skyline.visible=sky.visible;scene.fog=travel>.55?cityFog:null;outer.visible=travel>.55;shadow.visible=travel<.5;shop.visible=false;
   // Stop drawing the full-screen refraction once the snow veil covers the globe.
   for(const o of groups.GLASS||[])o.visible=travel<.44;

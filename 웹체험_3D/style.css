@@ -13,7 +13,8 @@ footer{position:absolute;z-index:5;bottom:9px;left:42px;right:35px;display:flex;
 @media(max-height:700px) and (min-width:651px){header{top:12px;min-height:74px;padding:12px 22px}.scene-caption{top:104px}.instruction{bottom:50px;padding:14px 22px 12px;gap:10px}h2,body.active .instruction h2{font-size:23px;margin:7px 0 5px}.step{font-size:7px}.readout{padding-top:10px}footer{bottom:2px}#hint{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.fairy-dust{animation:none}.arcade-panel,button,#shop{transition:none}}
 
-@media(max-width:650px){#shop{bottom:30%}}
+/* Keep the counter backdrop in the same viewport as the projected globe. */
+@media(max-width:650px){#shop{bottom:0}}
 
 #blizzard{background:url("./assets/redraw-v4/snowstorm.png") center/cover no-repeat}
 
