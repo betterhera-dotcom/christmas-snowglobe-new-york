@@ -1,0 +1,8 @@
+2026-11-12 release review
+User approved commit/push/deploy including distant city planes and longer globe enjoyment.
+Camera: 1280x720, body full-frame, hands upper-body crop, face head crop; image landmarks restored to camera coordinates. Body/hand/face diagnostics shown independently. Face preparation is isolated from frame timeouts.
+Same frozen actual camera frame comparison: full-frame face 0 vs 152px head crop face 1; hands 1 in both full frame and 365px upper-body crop. Physical distance was not measured by the agent. User subsequently confirmed head turning works. No camera images saved or committed.
+C-grip pickup, hand-height and strength behavior preserve the user's latest correction in the parallel development chat. Either owned hand can operate. Face recognition is not a prerequisite for hand control.
+City palm: existing SVG was suppressed by CSS; restored in city, with faded display-only preview when control is unavailable. Synthetic pointer city check covers the visible palm; this is not a new live-camera hand success claim.
+Enjoyment minimum 3 -> 5 seconds of active shaking; actual particle fill and debounce remain required for entry.
+Distant city: five far building groups baked to flat cards; nearby geometry and original GLB preserved. Browser stats report 5 planes, artLoaded true, error null. Initial baking/texture cost remains; GLB download size unchanged. No exhibition PC speedup percentage claimed.

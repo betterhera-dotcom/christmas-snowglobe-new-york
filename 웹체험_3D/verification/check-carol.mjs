@@ -24,22 +24,29 @@ assert.equal(track.paused,true,'holding without shaking keeps instrumental intro
 for(let f=0;f<4;f++)await carol.followShake(1/60,true,1);
 await carol.followShake(1/60,true,0);assert.equal(track.paused,true,'one brief tracking bump cannot start the song');
 for(let f=0;f<12;f++)await carol.followShake(1/60,true,.1);
-assert.equal(track.paused,false,'held movement starts the recording');assert.equal(track.currentTime,20,'start at the user-specified chorus');assert.equal(carol.songGain.gain.value,.12,'song starts quietly');assert.equal(track.playbackRate,.6,'first shake winds up from slow playback');
+assert.equal(track.paused,false,'held movement starts the recording');assert.equal(track.currentTime,carol.startTime,'start at the user-specified chorus');assert.equal(carol.songGain.gain.value,.12,'song starts quietly');assert.equal(track.playbackRate,.68,'first audible sample starts slowly');
+for(let f=0;f<120;f++)carol.update(1/60,1);
+assert.ok(Math.abs(track.playbackRate-.68)<.001,'even a strong first shake preserves two seconds of slow opening');
+for(let f=0;f<240;f++)carol.update(1/60,1);
+assert.ok(track.playbackRate>1.1,'after the opening the song responds to strong shakes');
 track.currentTime=45;
 for(const gentle of [.04,.15,.35,.55,.70]){
- for(let f=0;f<480;f++)carol.update(1/60,gentle);
- assert.ok(Math.abs(track.playbackRate-1)<.004,'gentle and ordinary shaking keep original speed');
+ for(let f=0;f<600;f++)carol.update(1/60,gentle);
+ assert.ok(Math.abs(track.playbackRate-(.68+Math.min(1,gentle/.85)*.47))<.004,'shaking strength changes tempo continuously');
 }
 for(let f=0;f<300;f++)carol.update(1/60,1);
-assert.ok(track.playbackRate>3.3&&track.playbackRate<=3.4,'strong shake feels like fast-forward');
+assert.ok(Math.abs(track.playbackRate-1.15)<.004,'strong shaking reaches a distinct but bounded tempo');
 assert.ok(carol.songVolume>.70&&carol.songVolume<=.72,'volume grows within a bounded range');
-assert.equal(track.currentTime,45,'changing rate does not seek or restart');assert.equal(track.preservesPitch,false,'tape-style playback changes voice pitch with speed');
+assert.equal(track.currentTime,45,'changing rate does not seek or restart');assert.equal(track.preservesPitch,true,'recording keeps its original voice pitch');
 carol.mute(true);for(let f=0;f<30;f++)carol.update(1/60,1);
 assert.equal(carol.songGain.gain.value,0);assert.equal(track.muted,true);
 await carol.pause();await carol.start();assert.equal(track.currentTime,45,'tab resume continues the same verse');assert.equal(carol.songGain.gain.value,0);
 carol.mute(false);
-for(let f=0;f<300;f++)carol.update(1/60,0);
-assert.ok(track.playbackRate<.86&&track.playbackRate>=.85);assert.ok(carol.songVolume<.14);
+for(let f=0;f<600;f++)carol.update(1/60,0);
+assert.ok(Math.abs(track.playbackRate-.68)<.004,'rest slows the song');assert.ok(carol.songVolume<.14);
+for(let f=0;f<30;f++)carol.update(1/60,.85);
+assert.ok(track.playbackRate>.82&&track.playbackRate<.92,'tempo gradually accelerates instead of jumping within half a second');
+const peak=track.playbackRate;for(let f=0;f<30;f++)carol.update(1/60,0);assert.ok(track.playbackRate<peak&&track.playbackRate>.78,'tempo coasts down gradually');
 carol.rate=3.4;track.playbackRate=3.4;carol.update(1/60,1,'city');assert.equal(track.playbackRate,1,'arrival immediately locks original speed');
 assert.ok(Math.abs(track.playbackRate-1)<.004,'city returns to original speed');
 let before=tones;carol.effect('touch');assert.ok(tones>before,'touch has a glass chime');
@@ -47,7 +54,7 @@ before=tones;carol.effect('touch');assert.equal(tones,before,'rapid repeat taps 
 for(const effect of ['curtain','enter','arrival','lift']){before=tones;carol.effect(effect);assert.ok(tones>before,`${effect} has an effect`);}
 carol.enterUntil=0;before=tones;carol.stir(0);assert.equal(tones,before,'no shake sound at rest');carol.stir(.4);assert.ok(tones>before,'active motion has a snow/glass accent');
 carol.mute(true);before=tones;carol.effect('enter');assert.equal(tones,before,'effects respect mute');carol.mute(false);
-events.ended();assert.equal(track.currentTime,20,'next loop starts at the chorus too');
+events.ended();assert.equal(track.currentTime,carol.startTime,'next loop starts at the chorus too');
 await carol.startCity();assert.equal(city.currentTime,0,'new city song starts at its beginning');assert.equal(city.playbackRate,1);assert.equal(city.paused,false);assert.equal(carol.songGain.gain.value,0);
 carol.context.currentTime+=3;carol.update(1/60,1,'city');assert.equal(track.paused,true,'globe song stops after the crossfade');assert.equal(city.paused,false);
 city.currentTime=12;await carol.pause();await carol.resume();assert.equal(city.currentTime,12,'city resumes without restarting');assert.equal(city.playbackRate,1);
@@ -58,4 +65,6 @@ carol.context.currentTime+=3;carol.update(1/60,1,'ending');assert.equal(track.pa
 await carol.pause();await carol.resume();assert.equal(track.paused,true,'returning to ending never restarts the song');assert.equal(city.paused,true);
 events.ended();assert.equal(track.paused,true,'ending cannot restart the chorus loop');
 carol.reset();await carol.startIntro();assert.equal(track.paused,true);assert.equal(carol.mode,'intro');assert.equal(city.paused,true);assert.equal(sources,2,'one source per recording across repeated visits');
-console.log('PASS: chorus at 20s, quiet start, 1x gentle movement / strong 3.4x, separate city song, magical effects, mute, resume, ending and reset');
+console.log('PASS: chorus cue preserved, quiet start, 0.68–1.15x tempo, gradual acceleration and deceleration, separate city song, magical effects, mute, resume, ending and reset');
+
+carol.mode='song';carol.songElapsed=10;carol.rate=.68;for(let i=0;i<600;i++){carol.update(1/60,100,'globe');assert.ok(track.playbackRate<=1.15,'extreme shaking never exceeds elegant tempo cap');}

@@ -1,0 +1,12 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>손 위 눈 표현 검사</title>
+<style>body{margin:0;background:radial-gradient(ellipse at 45% 38%,#516d77,#1c303a 75%);color:#edf6fa;font:16px system-ui}header{position:fixed;top:24px;left:32px;z-index:1}h1{font-size:23px;margin:0 0 8px}p{opacity:.7;margin:0 0 15px}input{width:260px}button{margin-left:18px;padding:7px 12px;border:1px solid #c7d7dd88;background:transparent;color:inherit;border-radius:4px}canvas{display:block}output{margin-left:16px}</style>
+<header><h1>손 위에 쌓이는 눈</h1><p>그래픽 검사 · 실제 카메라 인식과는 별도입니다.</p><label>쌓인 양 <input id="amount" type="range" min="0" max="100" value="75"></label><output id="percent">75%</output><button id="play">4초 쌓임 재생</button></header>
+<script type="module">
+import * as THREE from '../vendor/three.module.js';
+import {createVirtualHand} from '../vr-hand.js';
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.88;document.body.append(renderer.domElement);
+const hand=createVirtualHand(),range=document.getElementById('amount'),percent=document.getElementById('percent');
+function draw(){renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0,0);renderer.clear();hand.set(true,[.5,.58],+range.value/100);hand.render(renderer,innerWidth,innerHeight);percent.textContent=range.value+'%';}
+let animation=0;range.addEventListener('input',()=>{cancelAnimationFrame(animation);draw();});
+document.getElementById('play').addEventListener('click',()=>{cancelAnimationFrame(animation);const start=performance.now();function step(now){range.value=Math.min(100,(now-start)/40);draw();if(now-start<4000)animation=requestAnimationFrame(step);}animation=requestAnimationFrame(step);});addEventListener('resize',draw);draw();
+</script></html>

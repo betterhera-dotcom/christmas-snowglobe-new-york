@@ -5,19 +5,27 @@ import {ShakeMotion} from '../motion.mjs';
 import {HeldPose} from '../pose.mjs';
 
 for(const fps of [30,60])for(const phase of ['globe','city']){
- const schedule=new TrackingSchedule(),count={face:0,hand:0};let lastFace=0,maxFaceGap=0;
+ const schedule=new TrackingSchedule(),count={body:0,face:0,hand:0};let lastBody=0,maxBodyGap=0,lastFace=0,maxFaceGap=0,lastHand=0,maxHandGap=0;
  for(let f=0;f<fps*3;f++){
-  const now=f*1000/fps,kind=schedule.next(now,f/fps,{allowed:true,phase});
-  if(kind){count[kind]++;assert.equal(schedule.next(now+1,f/fps,{allowed:true,phase}),null,'never process a stale video frame');}
+  const now=f*1000/fps,kind=schedule.next(now,f/fps,{allowed:true,phase,faceReady:true});
+  if(kind){count[kind]++;assert.equal(schedule.next(now+1,f/fps,{allowed:true,phase}),null);}
   if(kind==='face'){maxFaceGap=Math.max(maxFaceGap,now-lastFace);lastFace=now;}
+  if(kind==='hand'){maxHandGap=Math.max(maxHandGap,now-lastHand);lastHand=now;}
+  if(kind==='body'){maxBodyGap=Math.max(maxBodyGap,now-lastBody);lastBody=now;}
  }
- assert.ok(count.hand>=3*(phase==='city'?20:25),'hands get frequent updates even on 30 fps cameras');
- assert.ok(count.hand<=90,'hand inference capped at 30 per second');
- assert.ok(maxFaceGap<250,'face ownership refresh stays inside 350ms safety timeout');
- console.log('PASS scheduling', {fps,phase,handHz:count.hand/3,faceHz:count.face/3});
+ assert.ok(count.hand>=(phase==='city'?45:75)&&count.hand<=90);assert.ok(maxBodyGap<750);
+ assert.ok(count.face>=(phase==='city'?20:4),'face analysis runs from the globe and continues in the city');
+ if(phase==='city'){assert.ok(maxFaceGap<=201,'city face targets update within 200ms on a responsive worker');assert.ok(maxHandGap<=101,'frequent face scans leave hands responsive');}
+ console.log('PASS scheduling',{fps,phase,...count});
 }
-for(const options of [{allowed:false},{allowed:true,calibrating:true}]){
- const schedule=new TrackingSchedule();for(let f=0;f<120;f++)assert.notEqual(schedule.next(f*1000/60,f/60,options),'hand','no hand control without a valid viewer or while calibrating');
+for(const options of [{allowed:false}]){
+ const schedule=new TrackingSchedule();for(let f=0;f<120;f++)assert.notEqual(schedule.next(f*1000/60,f/60,options),'hand');
+}
+for(const interval of [220,600]){
+ const schedule=new TrackingSchedule(),kinds=[];
+ for(let now=0;now<6000;now+=interval)kinds.push(schedule.next(now,now/1000,{allowed:true,phase:'city',faceReady:true}));
+ assert.ok(kinds.filter(k=>k==='hand').length>=4);assert.ok(kinds.includes('body'));
+ for(let i=1;i<kinds.length;i++)if(kinds[i-1]!=='hand')assert.equal(kinds[i],'hand','expensive models cannot starve hands');
 }
 function cHand(x,y){
  const h=Array.from({length:21},()=>({x:0,y:0,z:0}));

@@ -2,19 +2,25 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>손끝에서 열리는 크리스마스 · 스노우볼 세계여행</title>
+  <title>손끝에서 열리는 크리스마스</title>
+  <meta name="robots" content="noindex,nofollow">
   <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
 </head>
 <body data-phase="globe">
   <main id="experience">
     <section id="intro" aria-label="겨울 여행 인트로">
       <div class="curtain curtain-left" aria-hidden="true"></div><div class="curtain curtain-right" aria-hidden="true"></div>
-      <div class="intro-copy"><span>CHRISTMAS IN YOUR HANDS</span><p class="intro-star" aria-hidden="true">✧</p><h2>손끝에서 열리는<br>크리스마스</h2><p>작은 겨울을 흔들고,<br>손안에 내려앉는 행운을 만나세요.</p><div class="intro-actions"><button id="intro-camera">카메라로 시작<small>손으로 잡고 흔들어요</small></button><button id="intro-pointer">터치·마우스로 시작<small>화면을 누르고 움직여요</small></button></div><p id="intro-status" role="status" aria-live="polite">시작 방법을 누르면 음악과 함께 커튼이 열립니다</p></div>
+      <div class="intro-copy"><span>CHRISTMAS IN YOUR HANDS</span><p class="intro-star" aria-hidden="true">✧</p><h2>손끝에서 열리는<br>크리스마스</h2><p>작은 겨울을 흔들고,<br>손안에 내려앉는 행운을 만나세요.</p><div class="intro-actions"><button id="intro-camera" disabled>카메라로 시작<small>손으로 잡고 흔들어요</small></button><button id="intro-pointer" disabled>터치·마우스로 시작<small>화면을 누르고 움직여요</small></button></div><p id="intro-status" role="status" aria-live="polite">시작 버튼을 준비하고 있습니다…</p><button id="retry-app" hidden onclick="location.reload()">다시 불러오기</button></div>
     </section>
     <div id="shop" aria-hidden="true"></div>
     <canvas id="window-snow" aria-hidden="true"></canvas>
     <div id="scene" data-loaded="false" aria-busy="true" aria-label="크리스마스 매장에서 손으로 들고 흔드는 뉴욕 스노우볼"></div>
     <div id="loading" role="status"><p id="loading-message">작은 겨울을 준비하고 있어요</p><small>스노우볼과 매장을 불러오는 중입니다.</small><button id="retry-load" hidden>다시 불러오기</button></div>
+    <aside id="camera-startup" hidden aria-label="카메라 연결 안내">
+      <p id="camera-start-status" role="status" aria-live="polite"></p>
+      <small id="camera-start-help">이미 허용한 카메라는 허용 창 없이 연결됩니다.</small>
+      <div><button id="retry-camera" hidden>카메라 다시 시도</button><button id="cancel-start">마우스로 시작</button></div>
+    </aside>
     <div class="vignette" aria-hidden="true"></div>
     <header class="arcade-panel">
       <div class="title"><h1>손끝에서 열리는 크리스마스</h1><p>스노우볼 세계여행</p></div>
@@ -28,28 +34,42 @@
     <div class="scene-caption"><span>THE CHRISTMAS ATELIER</span><p>작은 유리구 속, 또 하나의 겨울</p></div>
     <div id="feedback" role="status" aria-live="polite" hidden></div>
     <div id="hand-cursor" hidden aria-hidden="true">✦</div>
+    <canvas id="hand-outline" width="640" height="480" hidden aria-hidden="true"></canvas>
     <aside id="motion-guide" hidden aria-label="동작 인식 가이드">
       <div class="motion-heading"><span id="tracking-state" role="status">손을 보여주세요</span><span id="tracking-mode">카메라</span></div>
       <svg id="tracking-map" viewBox="0 0 120 90" aria-hidden="true"><path id="tracking-lines"/><g id="tracking-joints"></g></svg>
-      <div class="motion-copy"><strong id="motion-title">손을 C자로 만들어 잡아주세요</strong><p id="motion-help">얼굴과 손이 카메라에 함께 보이게 해주세요.</p></div>
-      <div id="snow-progress" hidden><div class="snow-progress-label"><span>손에 쌓인 눈</span><span id="snow-percent">0%</span></div><div id="snow-meter" role="progressbar" aria-label="손에 쌓인 눈" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
+      <div class="motion-copy"><strong id="motion-title">손을 C 모양으로 만들어 잡아주세요</strong><p id="motion-help">어깨와 손이 카메라에 함께 보이게 해주세요.</p></div>
+      <div id="snow-progress" hidden><div class="snow-progress-label"><span id="snow-progress-label">손에 쌓인 눈</span><span id="snow-percent">0%</span></div><div id="snow-meter" role="progressbar" aria-label="손에 쌓인 눈" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
       <ol class="motion-steps"><li id="guide-hold">1 잡기</li><li id="guide-shake">2 흔들기</li><li id="guide-snow">3 눈 받기</li></ol>
     </aside>
     <div id="snow-hand" hidden aria-hidden="true">
       <svg viewBox="0 0 260 240">
-        <defs><linearGradient id="palm-glow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#effbff" stop-opacity=".5"/><stop offset="1" stop-color="#aed3e0" stop-opacity=".12"/></linearGradient><radialGradient id="snow-shade" cx=".4" cy=".25" r=".8"><stop stop-color="#fffef8"/><stop offset=".65" stop-color="#edf5f7"/><stop offset="1" stop-color="#b3cedb"/></radialGradient></defs>
+        <defs><linearGradient id="palm-glow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#effbff" stop-opacity=".5"/><stop offset="1" stop-color="#aed3e0" stop-opacity=".12"/></linearGradient><radialGradient id="snow-shade" cx=".4" cy=".25" r=".8"><stop stop-color="#fffef8"/><stop offset=".65" stop-color="#edf5f7"/><stop offset="1" stop-color="#b3cedb"/></radialGradient>
+          <linearGradient id="snow-front" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f4f9fb"/><stop offset="1" stop-color="#91b3c5"/></linearGradient>
+          <radialGradient id="snow-soft" cx=".35" cy=".2" r=".85"><stop stop-color="#fffef9"/><stop offset=".6" stop-color="#f1f7fa"/><stop offset="1" stop-color="#bdd2df"/></radialGradient>
+          <pattern id="snow-grain" width="19" height="17" patternUnits="userSpaceOnUse"><g fill="#fff" opacity=".85"><circle cx="2" cy="3" r=".75"/><circle cx="12" cy="7" r="1.1"/><circle cx="7" cy="14" r=".6"/><path d="M16 12l1-1 1 1-1 1Z"/></g><g fill="#7d9fb5" opacity=".22"><circle cx="5" cy="6" r=".65"/><circle cx="15" cy="3" r=".5"/><circle cx="11" cy="14" r=".7"/></g></pattern>
+          <path id="snow-mound" d="M66 148Q62 139 73 133Q72 123 87 122Q90 111 104 113Q113 98 128 104Q145 100 153 115Q169 111 176 126Q190 132 184 144Q190 153 172 158Q131 173 88 162Q70 159 66 148Z"/>
+        </defs>
         <path class="virtual-palm" fill="url(#palm-glow)" d="M101 232L96 201Q69 184 56 161L31 125Q23 113 30 106Q38 99 47 108L74 131L61 78Q57 64 67 61Q77 59 81 72L94 112L88 55Q86 42 97 40Q107 39 109 53L118 105L122 48Q123 35 134 37Q144 39 143 52L142 108L155 63Q159 51 169 55Q179 59 175 72L160 131Q159 145 169 139L193 114Q203 104 212 112Q220 120 210 132L185 164Q172 190 155 202L154 232Z"/>
         <path class="palm-detail" d="M82 142Q102 128 125 138M96 162Q123 176 150 151M104 194Q125 183 151 191M92 116L97 136M119 109L120 128M141 113L137 129"/>
-        <g id="palm-snow"><path fill="url(#snow-shade)" d="M68 148Q62 139 75 132Q69 119 88 117Q87 102 105 106Q112 87 128 101Q142 91 153 111Q174 107 174 123Q191 125 182 140Q186 153 164 159Q120 176 79 158Q67 156 68 148Z"/><path fill="none" stroke="#ffffffb3" stroke-width="2" d="M80 133Q94 125 105 128M116 108Q129 103 139 112M144 141Q160 130 172 135"/></g>
-      </svg><span id="palm-caption">손바닥을 펴서 눈을 받아주세요</span>
+        <g id="palm-snow">
+          <ellipse cx="126" cy="160" rx="55" ry="8" fill="#244a64" opacity=".16"/>
+          <use href="#snow-mound" fill="url(#snow-shade)"/>
+          <path fill="url(#snow-front)" d="M67 145Q88 153 107 148Q132 155 153 146Q171 148 184 141Q192 153 172 158Q131 173 88 162Q70 159 67 145Z"/>
+          <path fill="url(#snow-soft)" d="M76 136Q81 122 97 125Q100 116 112 119Q123 107 136 115Q150 113 157 127Q172 125 177 137Q154 146 134 141Q110 150 88 141Z"/>
+          <use href="#snow-mound" fill="url(#snow-grain)"/>
+          <g fill="#fffdf6"><ellipse cx="100" cy="123" rx="2.2" ry="1.1"/><ellipse cx="144" cy="138" rx="1.7" ry=".9"/><circle cx="122" cy="113" r="1"/><circle cx="81" cy="142" r="1.2"/><circle cx="165" cy="145" r="1"/></g>
+          <g fill="none" stroke="#fff" stroke-linecap="round" opacity=".85"><path d="M112 128v5m-2.5-2.5h5M157 124v3m-1.5-1.5h3"/></g>
+        </g>
+      </svg><span id="palm-caption">펼친 손바닥을 화면에 보여주세요</span>
     </div>
     <section class="instruction arcade-panel">
-      <div class="guide"><span class="step">01 / LIFT THE SNOWGLOBE</span><h2 id="prompt">손으로 작은 겨울을 들어보세요</h2><p id="hint">손을 C자 모양으로 만들어 잡고 자유롭게 흔들어보세요. 손을 완전히 펴서 1초간 유지하면 내려놓습니다.</p></div>
+      <div class="guide"><span class="step">01 / LIFT THE SNOWGLOBE</span><h2 id="prompt">손으로 작은 겨울을 들어보세요</h2><p id="hint">C 모양으로 잡고 손 높이와 흔드는 강도로 조작해주세요.</p></div>
       <div class="actions"><button id="camera" class="primary">카메라로 시작 <span aria-hidden="true">▶</span></button><button id="pointer">마우스 · 터치로 체험</button><button id="enter-city" class="test-entry" disabled title="흔들기 없이 도시 화면 테스트">도시 들어가기</button></div>
       <div class="readout"><div class="signal"><i id="status-dot"></i><span id="status">시작 방법을 선택해주세요</span></div><span id="mode-label">READY</span><div class="energy"><span>SNOW</span><div class="meter" role="progressbar" aria-label="눈을 깨우는 힘" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="energy-bar"></div></div></div><span class="tempo"><span id="bpm">1.00</span> <small>× SPEED</small></span></div>
       <p id="error" role="alert" hidden></p>
     </section>
-    <footer><span class="footer-title">스노우볼 세계여행 <span>· CHRISTMAS EDITION</span></span><div><button id="catch-snow" hidden>눈 받기 테스트</button><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset">처음으로</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
+    <footer><span class="footer-title">CHRISTMAS IN YOUR HANDS</span><div><button id="catch-snow" hidden>눈 받기</button><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset">처음으로</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
     <div id="winter-wish" hidden data-stage="grow">
       <div class="wish-frost" aria-hidden="true"></div>
       <svg id="caught-snowflake" viewBox="-60 -60 120 120" aria-hidden="true">
@@ -59,13 +79,36 @@
       <div class="wish-radiance" aria-hidden="true"></div>
       <div class="wish-card"><div class="wish-star" aria-hidden="true">✧</div><span class="wish-caption">크리스마스가 건네는 새해의 행운</span><h2 id="wish-title"></h2><p id="wish-message" role="status" aria-live="polite"></p><p id="wish-token"></p><p class="ending-note">체험이 끝났어요 · 잠시 후 첫 화면으로 돌아갑니다</p><button id="wish-close">처음부터 다시 체험</button></div>
     </div>
-    <aside id="viewer-calibration" hidden><label class="viewer-mode"><input id="distance-limit" type="checkbox">전시 모드 · 3m 거리 제한</label><p id="viewer-status" role="status">테스트 모드 · 거리 제한 없이 한 사람만 조작합니다.</p><button id="calibrate-distance" hidden>2.3m 기준 맞추기</button><small>전시 모드 권장 2.3m / 최대 3m · 얼굴 크기로 추정</small></aside>
-    <details id="camera-preview"><summary>카메라 인식 확인</summary><video id="webcam" autoplay playsinline muted></video><p>영상은 이 기기에서만 처리하며 저장하지 않습니다. 카메라 위치나 줌을 바꾸면 2.3m 기준을 다시 맞춰주세요.</p></details>
+    <aside id="camera-preview" aria-label="내 모습과 인식 상태"><div class="camera-title">내 모습 <span>몸 · 손 · 얼굴</span></div><div class="webcam-frame"><video id="webcam" autoplay playsinline muted></video><canvas id="webcam-skeleton" aria-hidden="true"></canvas></div><div hidden><button id="recognition-only" aria-pressed="false">인식만 비교 · 3D 정지</button>
+      <a href="./recognition.html" class="recognition-link">몸·손·얼굴 크게 확인하기</a><small id="comparison-status">3D 실행 중</small></div><strong id="tracking-status" role="status">영상 연결 후 분석 대기</strong><small id="tracking-metrics">몸 — · 손 —</small><p id="viewer-status" role="status">거리 제한 없이 앞쪽 관객 한 분의 손을 연결합니다.</p></aside>
     <canvas id="storm-particles" aria-hidden="true"></canvas><div id="blizzard" aria-hidden="true"></div>
     <noscript>이 작품을 실행하려면 Chrome에서 JavaScript를 허용해주세요.</noscript>
   </main>
-  <audio id="carol-track" preload="auto" src="assets/audio/jingle-bells-vocals.mp3" hidden></audio>
+  <audio id="carol-track" preload="auto" src="assets/audio/jingle-bells-musicbox-20s.m4a" hidden></audio>
   <audio id="city-track" preload="auto" loop src="assets/audio/jingle-bells-city.mp3" hidden></audio>
-  <script type="module" src="app.js"></script>
+  <script id="app-bootstrap">
+    // This small loader still runs when an app module fails to download or evaluate.
+    (() => {
+      const status = document.getElementById('intro-status');
+      const retry = document.getElementById('retry-app');
+      const buttons = ['intro-camera', 'intro-pointer'].map(id => document.getElementById(id));
+      const timer = setTimeout(() => {
+        status.textContent = '시작 준비가 늦어지고 있습니다. 연결을 확인하거나 다시 불러와주세요.';
+        retry.hidden = false;
+      }, 15000);
+      import('./app.js').then(() => {
+        clearTimeout(timer);
+        retry.hidden = true;
+        buttons.forEach(button => button.disabled = false);
+        status.textContent = '시작 방법을 누르면 음악과 함께 커튼이 열립니다';
+      }).catch(error => {
+        clearTimeout(timer);
+        buttons.forEach(button => button.disabled = true);
+        status.textContent = '실행 파일을 불러오지 못했습니다. 다시 불러오기를 눌러주세요.';
+        retry.hidden = false;
+        console.error('Snowglobe startup failed:', error);
+      });
+    })();
+  </script>
 </body>
 </html>

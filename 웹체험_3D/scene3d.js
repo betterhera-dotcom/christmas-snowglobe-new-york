@@ -1,3 +1,5 @@
+import {createVirtualHand} from './vr-hand.js';
+import {flattenDistantObject} from './city-impostor.js';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {RoomEnvironment} from './vendor/RoomEnvironment.js';
@@ -8,6 +10,7 @@ import {createLiquid} from './liquid-globe.js';
 import {sampleSnowSurface} from './snow-surface.js';
 export function createScene(container){
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.88;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;container.append(renderer.domElement);
+ const virtualHand=createVirtualHand();
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.02,120);
  const environment=new RoomEnvironment(),pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(environment,.04).texture;environment.dispose();pmrem.dispose();
  scene.add(new THREE.HemisphereLight(0xd8eaff,0x806647,.72));const key=new THREE.DirectionalLight(0xffe0b0,2.8);key.position.set(-3,6,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-6,right:6,top:6,bottom:-5,near:.1,far:20});key.shadow.bias=-.00025;key.shadow.normalBias=.012;key.shadow.radius=3;scene.add(key);const rim=new THREE.DirectionalLight(0xb2d8ff,.65);rim.position.set(3,4,-3);scene.add(rim);
@@ -86,6 +89,7 @@ export function createScene(container){
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),new THREE.MeshStandardMaterial({color:0xe8edf1,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.position.y=.839;ground.receiveShadow=true;outer.add(ground);
  const architecture=new THREE.Group();outer.add(architecture);
  const cityFill=new THREE.DirectionalLight(0xc1d9ff,.85);cityFill.position.set(2,3,4);outer.add(cityFill);
+ const distantCards=[];
  const cityReady=modelReady.then(ok=>{if(!ok)return;
   // Match the miniature's counter-contact offset so the surrounding street meets its floor.
   outer.position.y=-baseMin;
@@ -112,6 +116,12 @@ export function createScene(container){
   const trees=model.getObjectByName('TREES');
   if(trees)for(const [x,z,scale,rotation]of [[-2,-1.1,.8,.2],[2.1,-1.4,.76,-.3],[-1.7,-3.7,.9,-.4],[1.8,-4,.85,.5],[-3.9,-1.5,.82,-.2],[3.8,-1.8,.92,.3]]){
    const copy=trees.clone();copy.scale.setScalar(scale);copy.position.set(x,.84*(1-scale),z);copy.rotation.y=rotation;outer.add(copy);
+  }
+  scene.updateMatrixWorld(true);
+  const eye=new THREE.Vector3(-.12,1.18,1.70);
+  for(const object of [...architecture.children,...outer.children.filter(o=>o!==architecture&&o.isGroup)]){
+   const card=flattenDistantObject(object,renderer,scene,eye);
+   if(card){card.visible=false;distantCards.push(card);}
   }
  });
  // Independent sky dome and distant skyline: buildings never stretch with sky elevation.
@@ -172,33 +182,57 @@ export function createScene(container){
   liquid.setTravel(travel);
   for(const o of groups.BASE||[])o.visible=travel<.5;
   for(const o of globeRailing)o.visible=travel<.55;
+  for(const card of distantCards)card.visible=travel>.55;
   flakes.visible=travel<.55;cityFlakes.visible=travel>.55;
  }
  const ready=Promise.all([modelReady,cityReady,...backgroundJobs]).then(async([ok])=>{
   if(!ok)return false;
-  // Prepare both light/fog variants and upload city geometry before enabling interaction.
-  for(const travel of [0,.46,.52,.6,1]){setView(travel);await renderer.compileAsync(scene,camera);renderer.render(scene,camera);}
+  // Prepare only the opening view. City variants compile when that view is entered.
+  setView(0);await renderer.compileAsync(scene,camera);
   setView(0);renderer.render(scene,camera);loaded=true;lastTick=previousTick=performance.now();
   container.dataset.loaded='true';return true;
  }).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 준비를 완료하지 못했습니다. 다시 불러와주세요.'}));return false;});
- const api={canvas:renderer.domElement,ready,lookAt(x,y=.5){targetLook=THREE.MathUtils.clamp((x-.5)*2,-1,1);targetLookY=THREE.MathUtils.clamp((y-.5)*2,-1,1);},
+ const api={setReceivingHand:(show,point,progress,guide=false)=>virtualHand.set(show,point,progress,guide),canvas:renderer.domElement,ready,
+ handOverGlobe(x,y){
+  if(!loaded||travelLast>0)return false;
+  const box=new THREE.Box3();for(const glass of groups.GLASS||[])box.expandByObject(glass);
+  if(box.isEmpty())return false;
+  let left=1,right=0,top=1,bottom=0;
+  for(const xx of [box.min.x,box.max.x])for(const yy of [box.min.y,box.max.y])for(const zz of [box.min.z,box.max.z]){
+   const p=new THREE.Vector3(xx,yy,zz).project(camera),sx=(p.x+1)/2,sy=(1-p.y)/2;
+   left=Math.min(left,sx);right=Math.max(right,sx);top=Math.min(top,sy);bottom=Math.max(bottom,sy);
+  }
+  const rx=(right-left)*.55,ry=(bottom-top)*.55;
+  return rx>0&&ry>0&&((x-(left+right)/2)/rx)**2+((y-(top+bottom)/2)/ry)**2<=1;
+ },
+ resumeTiming(){lastTick=performance.now();previousTick=0;},
+ reduceQuality(){
+  if(!loaded||quality===.5)return;
+  quality=quality===1?.75:.5;slowRenderSeconds=0;
+  const ratio=quality===.75?1:.75;renderer.setPixelRatio(ratio);resize();
+  snowMat.uniforms.pixelRatio.value=ratio;citySnowMat.uniforms.pixelRatio.value=ratio;
+  if(quality===.5)for(const glass of groups.GLASS||[]){glass.material.transmission=0;glass.material.opacity=.12;glass.material.needsUpdate=true;}
+ },
+ lookAt(x,y=.5){targetLook=THREE.MathUtils.clamp((x-.5)*2,-1,1);targetLookY=THREE.MathUtils.clamp((y-.5)*2,-1,1);},
  reset(){pose.reset();physics.reset();targetLook=targetLookY=look=lookY=travelLast=0;},
  update(dt,time,motion,travel=0){
   if(!loaded){container.dataset.state=JSON.stringify(api.stats());return;}
   const tick=performance.now();if(travel>0&&travel<1){if(travelLast===0)transitionFrames.length=0;if(previousTick)transitionFrames.push(tick-previousTick);}previousTick=tick;frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
   pivot.position.set(pose.position[0]*settle,1.5+pose.position[1]*settle,pose.position[2]*settle);pivot.rotation.set(pose.rotation[0]*settle,pose.rotation[1]*settle,pose.rotation[2]*settle);
   if(baseBounds){let lowest=Infinity;for(const x of [baseBounds.min.x,baseBounds.max.x])for(const y of [baseBounds.min.y,baseBounds.max.y])for(const z of [baseBounds.min.z,baseBounds.max.z]){v.set(x,y+model.position.y,z).applyQuaternion(pivot.quaternion).add(pivot.position);lowest=Math.min(lowest,v.y);}if(lowest<0)pivot.position.y-=lowest;contactGap=Math.max(0,lowest);}
-  inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);if(travel<.42){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
-  look+=(targetLook-look)*(1-Math.exp(-dt*3));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*3));
+  inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);
+  // HeldPose already compensates camera motion, including the velocity used by snow.
+  if(travel<.42){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
+  look+=(targetLook-look)*(1-Math.exp(-dt*5));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*5));
   setView(travel);
   if(cityFlakes.visible){citySnowMat.uniforms.time.value=time;for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=(.045+Math.sin(time*.8+i*2.4)*(.025+citySeed[i]*.065))*dt;cityPos[i*3+2]+=Math.cos(time*.65+i*1.7)*dt*.035;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;if(cityPos[i*3+2]>12)cityPos[i*3+2]=-12;if(cityPos[i*3+2]<-12)cityPos[i*3+2]=12;}cityGeo.attributes.position.needsUpdate=true;}
   const nextShadowPhase=travel<.5?0:travel<=.55?1:2;
-  renderer.shadowMap.autoUpdate=travel<.46;if(nextShadowPhase!==shadowPhase){renderer.shadowMap.needsUpdate=true;shadowPhase=nextShadowPhase;}
-  const now=performance.now();renderer.render(scene,camera);frameMs+=(performance.now()-now-frameMs)*.03;
-  renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2&&quality===1){quality=.75;renderer.setPixelRatio(1);resize();snowMat.uniforms.pixelRatio.value=1;citySnowMat.uniforms.pixelRatio.value=1;}
+  renderer.shadowMap.autoUpdate=travel<.46&&(quality===1||renderedFrames%(quality===.75?4:8)===0);if(nextShadowPhase!==shadowPhase){renderer.shadowMap.needsUpdate=true;shadowPhase=nextShadowPhase;}
+  const now=performance.now();renderer.info.autoReset=false;renderer.info.reset();renderer.render(scene,camera);virtualHand.render(renderer,container.clientWidth,container.clientHeight);frameMs+=(performance.now()-now-frameMs)*.03;
+  renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2)api.reduceQuality();
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);
  },
- stats(){const sorted=transitionFrames.slice().sort((a,b)=>a-b);return {...cityLightStats,...liquid.stats(),transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
+ stats(){const sorted=transitionFrames.slice().sort((a,b)=>a-b);return {...cityLightStats,...liquid.stats(),transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0),distantPlanes:distantCards.length,distantTrianglesRemoved:distantCards.reduce((n,c)=>n+c.userData.originalTriangles,0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
  };
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 연결이 중단되었습니다. 새로고침해주세요.'}));});
  return api;
