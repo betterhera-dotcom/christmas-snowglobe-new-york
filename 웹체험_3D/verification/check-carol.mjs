@@ -28,13 +28,13 @@ assert.equal(track.paused,false,'held movement starts the recording');assert.equ
 for(let f=0;f<120;f++)carol.update(1/60,1);
 assert.ok(Math.abs(track.playbackRate-.68)<.001,'even a strong first shake preserves two seconds of slow opening');
 for(let f=0;f<240;f++)carol.update(1/60,1);
-assert.ok(track.playbackRate>1.1,'after the opening the song responds to strong shakes');
+assert.ok(track.playbackRate>1.0&&track.playbackRate<1.1,'after the opening the song responds to strong shakes');
 track.currentTime=45;
 for(const gentle of [.04,.15,.35,.55,.70]){
- for(let f=0;f<600;f++)carol.update(1/60,gentle);
+ for(let f=0;f<900;f++)carol.update(1/60,gentle);
  assert.ok(Math.abs(track.playbackRate-(.68+Math.min(1,gentle/.85)*.47))<.004,'shaking strength changes tempo continuously');
 }
-for(let f=0;f<300;f++)carol.update(1/60,1);
+for(let f=0;f<900;f++)carol.update(1/60,1);
 assert.ok(Math.abs(track.playbackRate-1.15)<.004,'strong shaking reaches a distinct but bounded tempo');
 assert.ok(carol.songVolume>.70&&carol.songVolume<=.72,'volume grows within a bounded range');
 assert.equal(track.currentTime,45,'changing rate does not seek or restart');assert.equal(track.preservesPitch,true,'recording keeps its original voice pitch');
@@ -42,11 +42,11 @@ carol.mute(true);for(let f=0;f<30;f++)carol.update(1/60,1);
 assert.equal(carol.songGain.gain.value,0);assert.equal(track.muted,true);
 await carol.pause();await carol.start();assert.equal(track.currentTime,45,'tab resume continues the same verse');assert.equal(carol.songGain.gain.value,0);
 carol.mute(false);
-for(let f=0;f<600;f++)carol.update(1/60,0);
+for(let f=0;f<900;f++)carol.update(1/60,0);
 assert.ok(Math.abs(track.playbackRate-.68)<.004,'rest slows the song');assert.ok(carol.songVolume<.14);
 for(let f=0;f<30;f++)carol.update(1/60,.85);
-assert.ok(track.playbackRate>.82&&track.playbackRate<.92,'tempo gradually accelerates instead of jumping within half a second');
-const peak=track.playbackRate;for(let f=0;f<30;f++)carol.update(1/60,0);assert.ok(track.playbackRate<peak&&track.playbackRate>.78,'tempo coasts down gradually');
+assert.ok(track.playbackRate>.74&&track.playbackRate<.8,'tempo gradually accelerates instead of jumping within half a second');
+const peak=track.playbackRate;for(let f=0;f<30;f++)carol.update(1/60,0);assert.ok(track.playbackRate<peak&&track.playbackRate>.68+(peak-.68)*.7,'tempo coasts down gradually');
 carol.rate=3.4;track.playbackRate=3.4;carol.update(1/60,1,'city');assert.equal(track.playbackRate,1,'arrival immediately locks original speed');
 assert.ok(Math.abs(track.playbackRate-1)<.004,'city returns to original speed');
 let before=tones;carol.effect('touch');assert.ok(tones>before,'touch has a glass chime');

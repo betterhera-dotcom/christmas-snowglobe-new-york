@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {Carol} from '../audio.js';
+const track={dataset:{},addEventListener(){},playbackRate:1};
+const c=new Carol(track,{});c.mode='song';c.rate=.7;c.songElapsed=10;
+for(let i=0;i<30;i++)c.update(1/60,.85,'globe');
+assert.ok(c.rate>.7&&c.rate<.8,'half a second of vigorous shaking does not jump tempo');
+const early=c.rate;
+for(let i=0;i<300;i++)c.update(1/60,.85,'globe');
+assert.ok(c.rate>early&&c.rate<1.15,'tempo builds gradually and stays gentle');
+assert.equal(track.currentTime,undefined,'tempo changes do not seek');
+console.log('PASS: gradual acceleration, capped tempo, no seeking');

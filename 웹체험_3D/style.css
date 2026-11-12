@@ -208,3 +208,8 @@ footer .footer-title{font-size:10px;letter-spacing:1.5px}
 /* Keep the live self-view visible above the scene in both interaction stages. */
 body[data-phase="globe"] #camera-preview[data-active="true"],
 body[data-phase="city"] #camera-preview[data-active="true"]{display:block;visibility:visible;opacity:1;z-index:30;}
+
+/* Identical self-view layout in globe and city, without a collapsible viewport. */
+#camera-preview,body.city-settled #camera-preview{position:fixed;top:auto;right:18px;bottom:70px;width:280px;max-width:calc(100vw - 28px);max-height:calc(100dvh - 150px);box-sizing:border-box;z-index:30;overflow:auto;}
+#camera-preview .camera-title{font-size:13px;font-weight:600;line-height:24px;}
+@media(max-width:650px){#camera-preview,body.city-settled #camera-preview{right:10px;bottom:60px;width:195px;max-height:45dvh;}}

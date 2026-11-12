@@ -11,7 +11,7 @@ await carol.followShake(.2,true,.3);assert.equal(track.currentTime,0,'song start
 track.currentTime=25;
 for(let i=0;i<180;i++)carol.update(1/60,0,'globe');
 assert.ok(track.playbackRate>.67&&track.playbackRate<.70,'quiet movement slows recording');
-for(let i=0;i<360;i++)carol.update(1/60,.85,'globe');
+for(let i=0;i<900;i++)carol.update(1/60,.85,'globe');
 assert.ok(track.playbackRate>1.14&&track.playbackRate<=1.15,'strong movement speeds recording');
 assert.equal(track.currentTime,25,'rate changes never restart recording');
 track.ended();assert.equal(track.currentTime,0,'repeat starts from same cue');

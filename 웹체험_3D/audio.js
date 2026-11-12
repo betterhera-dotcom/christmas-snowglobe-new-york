@@ -68,7 +68,7 @@ export class Carol {
     // Let the slow opening be heard, then blend into gesture-driven tempo.
     const openingMix=Math.min(1,Math.max(0,((this.songElapsed||0)-2)/1));
     const targetRate=.68+strength*.47*openingMix;
-    const tempoEase=targetRate>this.rate?1:1.6;
+    const tempoEase=targetRate>this.rate?2.5:1.8;
     this.rate=shaking?this.rate+(targetRate-this.rate)*(1-Math.exp(-dt/tempoEase)):1;
     const volume=shaking?.12+strength**.8*.60:.4;
     this.songVolume+=(volume-this.songVolume)*(1-Math.exp(-dt/1.2));
