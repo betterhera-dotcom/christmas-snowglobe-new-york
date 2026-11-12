@@ -38,11 +38,6 @@ jobs:
         with:
           ref: codex/experiment-lite
           path: _lite
-      - name: Check out lightweight experience
-        uses: actions/checkout@v6
-        with:
-          ref: codex/experiment-lite
-          path: _lite
       - name: Check out mobile experience
         uses: actions/checkout@v6
         with:
@@ -87,12 +82,12 @@ jobs:
           cp -R _experiment/experiment2/assets _experiment/experiment2/vendor _site/experiment2/
           cp _experiment/experiment2/verification/liquid-preview.html _site/experiment2/verification/
           git -C _experiment rev-parse HEAD > _site/experiment2/version.txt
-          mkdir -p _site/experiment-lite _site/웹체험_3D
-          cp _lite/웹체험_3D/*.html _lite/웹체험_3D/*.css _lite/웹체험_3D/*.js _lite/웹체험_3D/*.mjs _site/experiment-lite/
-          cp -R _lite/웹체험_3D/assets _lite/웹체험_3D/vendor _site/experiment-lite/
+          mkdir -p _site/웹체험_3D/assets/3d
           cp -R _mobile/mobile _site/mobile
           cp _mobile/웹체험_3D/*.html _mobile/웹체험_3D/*.css _mobile/웹체험_3D/*.js _mobile/웹체험_3D/*.mjs _site/웹체험_3D/
-          cp -R _mobile/웹체험_3D/assets _mobile/웹체험_3D/vendor _site/웹체험_3D/
+          cp -R _mobile/웹체험_3D/vendor _site/웹체험_3D/
+          cp -R _mobile/웹체험_3D/assets/audio _site/웹체험_3D/assets/
+          cp -R _mobile/웹체험_3D/assets/3d/hand _site/웹체험_3D/assets/3d/
           node --check _site/mobile/app.js
           node --check _site/mobile/scene3d.js
           (cd _mobile && python3 mobile/verification/check-model.py)
