@@ -1,4 +1,4 @@
-name: Deploy snowglobe to GitHub Pages
+name: Deploy snowglobe and developer preview
 
 on:
   push:
@@ -25,26 +25,37 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Check out developer experience
+        uses: actions/checkout@v6
+        with:
+          ref: codex/experiment
+          path: _experiment
       - uses: actions/configure-pages@v5
-      - name: Check liquid simulation
+      - name: Check public and developer experiences
         run: |
-          node --check 웹체험_3D/app.js
-          node --check 웹체험_3D/scene3d.js
-          node 웹체험_3D/verification/check-liquid-snow.mjs
-          node 웹체험_3D/verification/check-snow-filling.mjs
-          node 웹체험_3D/verification/check-snow-surface.mjs
-          node 웹체험_3D/verification/check-carol.mjs
-          node 웹체험_3D/verification/check-hand-tracking.mjs
-          node 웹체험_3D/verification/check-tracking-client.mjs
-          node 웹체험_3D/verification/check-motion.mjs
-          node 웹체험_3D/verification/check-audience.mjs
-          node 웹체험_3D/verification/check-snow-wish.mjs
-      - name: Prepare static experience
+          for source in 웹체험_3D _experiment/웹체험_3D; do
+            node --check "$source/app.js"
+            node --check "$source/scene3d.js"
+            for check in liquid-snow snow-filling snow-surface carol hand-tracking tracking-client motion audience snow-wish; do
+              node "$source/verification/check-$check.mjs"
+            done
+          done
+          node _experiment/웹체험_3D/verification/check-snow-entry.mjs
+          node _experiment/웹체험_3D/verification/check-camera-distance-motion.mjs
+      - name: Prepare public and developer URLs
         run: |
           mkdir -p _site/verification
           cp 웹체험_3D/*.html 웹체험_3D/*.css 웹체험_3D/*.js 웹체험_3D/*.mjs _site/
           cp -R 웹체험_3D/assets 웹체험_3D/vendor _site/
           cp 웹체험_3D/verification/liquid-preview.html _site/verification/
+          mkdir -p _site/experiment/verification
+          cp _experiment/웹체험_3D/*.html _experiment/웹체험_3D/*.css _experiment/웹체험_3D/*.js _experiment/웹체험_3D/*.mjs _site/experiment/
+          cp -R _experiment/웹체험_3D/assets _experiment/웹체험_3D/vendor _site/experiment/
+          cp _experiment/웹체험_3D/verification/liquid-preview.html _site/experiment/verification/
+          git rev-parse HEAD > _site/version.txt
+          git -C _experiment rev-parse HEAD > _site/experiment/version.txt
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v4
         with:
