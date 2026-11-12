@@ -72,7 +72,17 @@ export function createVirtualHand(){
  }).catch(error=>{console.warn('Virtual hand model failed to load',error);return false;});
  const snow=createPalmSnow();hand.add(snow.group);
  let visible=false;
- return {ready,set(show,point,progress=0,guide=false){visible=show;hand.userData.guide=guide;hand.userData.point=point;snow.setProgress(progress);},render(renderer,w,h){if(!visible)return;
+ let prepared=false;
+ return {ready,async prepare(renderer){
+  if(prepared)return;await ready;
+  // Compile and upload both overlays before the first detected hand reveals them.
+  await renderer.compileAsync(guideScene,camera);
+  if(modelLoaded){snow.setProgress(1);await renderer.compileAsync(scene,camera);}
+  const target=new THREE.WebGLRenderTarget(64,64),previous=renderer.getRenderTarget(),auto=renderer.autoClear;
+  try{renderer.setRenderTarget(target);renderer.autoClear=true;renderer.render(guideScene,camera);if(modelLoaded)renderer.render(scene,camera);}
+  finally{renderer.setRenderTarget(previous);renderer.autoClear=auto;target.dispose();snow.setProgress(0);}
+  prepared=true;
+ },set(show,point,progress=0,guide=false){visible=show;hand.userData.guide=guide;hand.userData.point=point;snow.setProgress(progress);},render(renderer,w,h){if(!visible)return;
   camera.left=-w/2;camera.right=w/2;camera.top=h/2;camera.bottom=-h/2;camera.updateProjectionMatrix();
   if(hand.userData.guide){
    const size=Math.min(230,w*.27,h*.36);guideMesh.scale.setScalar(size/320);

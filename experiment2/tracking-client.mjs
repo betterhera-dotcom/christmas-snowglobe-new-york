@@ -3,7 +3,7 @@ import {RESULT_MAX_AGE_MS} from './tracking-policy.mjs';
 // One in-flight image, no waiting queue. Reset makes old results ineligible.
 export class TrackingClient{
  constructor(worker=new Worker(new URL('./tracking-worker.js',import.meta.url))){
-  this.handRegion=new StableHandRegion();this.worker=worker;this.busy=false;this.closed=false;this.epoch=0;this.sequence=0;this.metrics={ageMs:0,inferenceMs:0,dropped:0};
+  this.handRegion=new StableHandRegion();this.worker=worker;this.busy=false;this.closed=false;this.epoch=0;this.sequence=0;this.metrics={ageMs:0,inferenceMs:0,dropped:0};this.timing={};
   this.ready=new Promise((resolve,reject)=>{this.resolveReady=resolve;this.rejectReady=reject;});
   this.initTimer=setTimeout(()=>this.fail(new Error('손 분석 준비 시간이 초과되었습니다.')),30000);
   worker.onmessage=({data})=>{
@@ -24,7 +24,9 @@ export class TrackingClient{
    const w=region?.width||source.videoWidth||source.width,h=region?.height||source.videoHeight||source.height;
    const scale=w&&h?Math.min(1,640/Math.max(w,h)):1;
    const resize=w&&h?{resizeWidth:Math.max(1,Math.round(w*scale)),resizeHeight:Math.max(1,Math.round(h*scale))}:undefined;
+   const captureStarted=performance.now();
    image=region?await createImageBitmap(source,region.x,region.y,region.width,region.height,resize):await createImageBitmap(source,...(resize?[resize]:[]));
+   const captureMs=performance.now()-captureStarted;
    if(this.closed||epoch!==this.epoch)return null;
    const data=await new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>this.fail(new Error('손 분석 응답이 멈췄습니다.')),2000);
@@ -35,11 +37,26 @@ export class TrackingClient{
    if(this.closed||epoch!==this.epoch)return null;
    data.result=restoreRegion(data.result,region);
    const ageMs=performance.now()-timestamp,limitMs=RESULT_MAX_AGE_MS[kind];
-   this.metrics={ageMs,inferenceMs:data.inferenceMs,dropped:this.metrics.dropped};
+   const timing=this.timing[kind]||(this.timing[kind]={count:0,firstMs:data.inferenceMs,peakMs:0,firstDetectedMs:null,recent:[]});
+   timing.count++;timing.peakMs=Math.max(timing.peakMs,data.inferenceMs);
+   if(timing.firstDetectedMs===null&&(data.result.landmarks?.length||data.result.faceLandmarks?.length))timing.firstDetectedMs=data.inferenceMs;
+   timing.recent.push(data.inferenceMs);if(timing.recent.length>30)timing.recent.shift();
+   this.metrics={ageMs,inferenceMs:data.inferenceMs,dropped:this.metrics.dropped,captureMs:Math.round(captureMs),timing:Object.fromEntries(Object.entries(this.timing).map(([k,v])=>[k,{count:v.count,firstMs:Math.round(v.firstMs),peakMs:Math.round(v.peakMs),firstDetectedMs:v.firstDetectedMs===null?null:Math.round(v.firstDetectedMs),recentMeanMs:Math.round(v.recent.reduce((a,b)=>a+b,0)/v.recent.length)}]))};
    onResult({kind,region,result:data.result,timestamp,ageMs,inferenceMs:data.inferenceMs,stale:ageMs>limitMs});
    if(ageMs>limitMs){this.metrics.dropped++;return null;}
    return {result:data.result,timestamp};
   }finally{image?.close();this.busy=false;if(this.faceQueued)this.prepareFace();}
+ }
+ async warmCamera(source){
+  await this.ready;
+  const started=performance.now();
+  // A black initialization image cannot exercise landmark inference on a real hand/body.
+  // Discard warmup results: they must never select a viewer or trigger a grip.
+  for(const kind of ['body','hand','hand']){
+   if(this.closed)return;
+   await this.detect(kind,source,performance.now());
+  }
+  this.cameraWarmupMs=Math.round(performance.now()-started);
  }
  prepareFace(){
   if(this.closed||this.faceRequested||this.delegates?.face)return;

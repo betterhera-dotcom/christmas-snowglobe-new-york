@@ -43,3 +43,15 @@ const failedWorker=new WorkerDouble(),failedFace=new TrackingClient(failedWorker
 failedWorker.frames=[];failedWorker.onmessage({data:{type:'face-error',message:'unavailable'}});assert.equal(failedFace.facePreparing,false);
 job=failedFace.detect('body',{},performance.now());await Promise.resolve();failedWorker.respond();assert.ok(await job,'optional face failure preserves body and hand inference');failedFace.close();
 console.log('PASS: face preparation cannot trip the frame watchdog; success and optional failure both resume detection');
+
+const warmWorker=new WorkerDouble(),warmClient=new TrackingClient(warmWorker);await warmClient.ready;
+const warmJob=warmClient.warmCamera({width:640,height:480});
+for(const kind of ['body','hand','hand']){
+ for(let i=0;i<8&&!warmWorker.frames.length;i++)await Promise.resolve();
+ assert.equal(warmWorker.frames.length,1,'warmup keeps one frame in flight');
+ assert.equal(warmWorker.frames[0].kind,kind);
+ warmWorker.respond({landmarks:[[{x:.5,y:.5,z:0}]]});
+}
+await warmJob;assert.ok(Number.isFinite(warmClient.cameraWarmupMs));
+assert.equal(warmClient.busy,false);assert.equal(warmClient.timing.hand.count,2);warmClient.close();
+console.log('PASS: real-frame warmup is sequential, finishes before control, and records timing');

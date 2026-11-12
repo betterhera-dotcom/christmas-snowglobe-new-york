@@ -9,7 +9,7 @@ import {HeldPose} from './pose.mjs';
 import {GlobeSnow} from './snow3d.mjs';
 import {createLiquid} from './liquid-globe.js';
 import {sampleSnowSurface} from './snow-surface.js';
-export function createScene(container){
+export function createScene(container,{responsive=true,expanded=true,cachedShopShadows=true}={}){
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.88;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;container.append(renderer.domElement);
  const virtualHand=createVirtualHand();
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.02,120);
@@ -17,9 +17,11 @@ export function createScene(container){
  scene.add(new THREE.HemisphereLight(0xd8eaff,0x806647,.72));const key=new THREE.DirectionalLight(0xffe0b0,2.8);key.position.set(-3,6,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-6,right:6,top:6,bottom:-5,near:.1,far:20});key.shadow.bias=-.00025;key.shadow.normalBias=.012;key.shadow.radius=3;scene.add(key);const rim=new THREE.DirectionalLight(0xb2d8ff,.65);rim.position.set(3,4,-3);scene.add(rim);
  const pivot=new THREE.Group(),model=new THREE.Group();pivot.add(model);model.position.y=-1.5;pivot.position.y=1.5;scene.add(pivot);
  const liquid=createLiquid(model);
- const pose=new HeldPose(),physics=new GlobeSnow(),clock={time:0};let loaded=false,shopLoaded=false,error=null,baseMin=.02,baseBounds=null,contactGap=0,materialMaps=0,look=0,lookY=0,targetLook=0,targetLookY=0,travelLast=0,frameMs=16,quality=1,slowRenderSeconds=0,renderedFrames=0,lastTick=performance.now(),frameInterval=16;
+ const pose=new HeldPose({responsive,expanded}),physics=new GlobeSnow(),clock={time:0};let loaded=false,shopLoaded=false,error=null,baseMin=.02,baseBounds=null,contactGap=0,materialMaps=0,look=0,lookY=0,targetLook=0,targetLookY=0,travelLast=0,frameMs=16,quality=1,slowRenderSeconds=0,renderedFrames=0,lastTick=performance.now(),frameInterval=16;
  function tuneMaterial(m){if(m.map)m.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());m.envMapIntensity=.55;if(/limestone/i.test(m.name))m.color.setRGB(.68,.61,.49);if(/walnut|timber|wood/i.test(m.name))m.color.setRGB(.48,.32,.19);if(m.name.startsWith('SHOP cloth binding')){const c=[[.16,.027,.035],[.035,.10,.065],[.24,.16,.065],[.045,.07,.10]][Number(m.name.slice(-1))]||[.1,.07,.04];m.color.setRGB(...c);}if(/Snow/.test(m.name))m.color.setRGB(.88,.92,.97);}
  let snowStatsScans=0,shadowUpdates=0;
+ let cameraPrepared=false,warmupMs=0;
+ let physicsMs=0,physicsPeakMs=0,movingFrames=0,firstMovingPeakMs=0,recentMovingPeakMs=0;const movingIntervals=[];
  let snowStats=physics.stats(),diagnosticAt=-Infinity,transitionStatsAt=-Infinity,transitionSummary={transitionFrames:0,transitionMaxMs:0,transitionP95Ms:0};
  const shadowRefresh=new ShadowRefresh(),shadowTransform=new Float64Array(6);
  const transitionFrames=[];let previousTick=0,shadowPhase=-1;
@@ -171,7 +173,18 @@ export function createScene(container){
   camera.updateProjectionMatrix();
  }
  addEventListener('resize',resize);resize();
- function setView(travel){const enter=smooth(Math.min(1,travel));
+ let shopShadowMode=null;
+ function setView(travel){
+  const useStatic=cachedShopShadows&&travel<.5;
+  if(shopShadowMode!==useStatic){
+   model.traverse(o=>{if(!o.isMesh)return;
+    if(!o.userData.originalShadows)o.userData.originalShadows=[o.castShadow,o.receiveShadow];
+    const original=o.userData.originalShadows;
+    o.castShadow=useStatic?false:original[0];o.receiveShadow=useStatic?false:original[1];
+   });
+   shopShadowMode=useStatic;shadowRefresh.reset();
+  }
+const enter=smooth(Math.min(1,travel));
   key.shadow.normalBias=travel>.55?.001:.012;
   key.shadow.bias=travel>.55?-.00005:-.00025;
   key.intensity=THREE.MathUtils.lerp(2.8,1.85,enter);
@@ -179,7 +192,7 @@ export function createScene(container){
   camera.position.lerpVectors(startPos,endPos,enter);aim.lerpVectors(startAim,endAim,enter);
 
   if(travel>=1){const base=endAim.clone().sub(endPos),yaw=-look*.90,pitch=-lookY*.38;const euler=new THREE.Euler(pitch,yaw,0,'YXZ');base.applyEuler(euler);aim.copy(camera.position).add(base);}
-  camera.lookAt(aim);if(lanterns.visible){model.updateWorldMatrix(true,false);const eye=model.worldToLocal(camera.position.clone());for(const halo of lanternHalos)halo.position.copy(eye).sub(halo.userData.center).normalize().multiplyScalar(.09).add(halo.userData.center);}camera.fov=THREE.MathUtils.lerp(startFov,60,enter);camera.updateProjectionMatrix();
+  camera.lookAt(aim);if(lanterns.visible){model.updateWorldMatrix(true,false);const eye=model.worldToLocal(camera.position.clone());for(const halo of lanternHalos)halo.position.copy(eye).sub(halo.userData.center).normalize().multiplyScalar(.09).add(halo.userData.center);}camera.fov=THREE.MathUtils.lerp(startFov,58,enter);camera.updateProjectionMatrix();
   sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;skyline.material.opacity=sky.material.opacity;skyline.visible=sky.visible;scene.fog=travel>.55?cityFog:null;outer.visible=travel>.55;shadow.visible=travel<.5;shop.visible=travel<.5;
   // Stop drawing the full-screen refraction once the snow veil covers the globe.
   for(const o of groups.GLASS||[])o.visible=travel<.44;
@@ -192,7 +205,16 @@ export function createScene(container){
  const ready=Promise.all([modelReady,cityReady,...backgroundJobs]).then(async([ok])=>{
   if(!ok)return false;
   // Prepare only the opening view. City variants compile when that view is entered.
+  const warmStarted=performance.now();
   setView(0);await renderer.compileAsync(scene,camera);
+  await virtualHand.prepare(renderer);
+  // Exercise moving-snow code during the covered intro; never carry warmup force into play.
+  for(let i=0;i<8;i++){
+   physics.update(1/60,i/60,[Math.sin(i*1.7)*1.5,Math.cos(i*1.3)*.5,0]);
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+  }
+  physics.reset();snowStats=physics.stats();snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;
+  warmupMs=Math.round(performance.now()-warmStarted);
   setView(0);renderer.render(scene,camera);loaded=true;lastTick=previousTick=performance.now();
   container.dataset.loaded='true';return true;
  }).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 준비를 완료하지 못했습니다. 다시 불러와주세요.'}));return false;});
@@ -209,6 +231,12 @@ export function createScene(container){
   const rx=(right-left)*.55,ry=(bottom-top)*.55;
   return rx>0&&ry>0&&((x-(left+right)/2)/rx)**2+((y-(top+bottom)/2)/ry)**2<=1;
  },
+ prepareCamera(){
+  if(cameraPrepared||!loaded)return;cameraPrepared=true;
+  // Start at the same pixel budget that formerly arrived only after repeated slow frames.
+  if(quality===1)api.reduceQuality();
+  renderer.render(scene,camera);lastTick=previousTick=performance.now();
+ },
  resumeTiming(){lastTick=performance.now();previousTick=0;},
  reduceQuality(){
   if(!loaded||quality===.5)return;
@@ -221,26 +249,32 @@ export function createScene(container){
  reset(){pose.reset();physics.reset();snowStats=physics.stats();shadowRefresh.reset();targetLook=targetLookY=look=lookY=travelLast=0;},
  update(dt,time,motion,travel=0){
   if(!loaded){container.dataset.state=JSON.stringify(api.stats());return;}
-  const tick=performance.now();if(travel>0&&travel<1){if(travelLast===0){transitionFrames.length=0;transitionStatsAt=-Infinity;}if(previousTick)transitionFrames.push(tick-previousTick);}previousTick=tick;frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
+  const tick=performance.now(),elapsed=Math.min(.25,Math.max(0,(tick-lastTick)/1000));if(motion.keepHeld&&travel===0){const interval=tick-lastTick;movingFrames++;if(movingFrames<=120)firstMovingPeakMs=Math.max(firstMovingPeakMs,interval);movingIntervals.push(interval);if(movingIntervals.length>120)movingIntervals.shift();recentMovingPeakMs=Math.max(...movingIntervals);}if(travel>0&&travel<1){if(travelLast===0){transitionFrames.length=0;transitionStatsAt=-Infinity;}if(previousTick)transitionFrames.push(tick-previousTick);}previousTick=tick;frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
   pivot.position.set(pose.position[0]*settle,1.5+pose.position[1]*settle,pose.position[2]*settle);pivot.rotation.set(pose.rotation[0]*settle,pose.rotation[1]*settle,pose.rotation[2]*settle);
   if(baseBounds){let lowest=Infinity;for(const x of [baseBounds.min.x,baseBounds.max.x])for(const y of [baseBounds.min.y,baseBounds.max.y])for(const z of [baseBounds.min.z,baseBounds.max.z]){v.set(x,y+model.position.y,z).applyQuaternion(pivot.quaternion).add(pivot.position);lowest=Math.min(lowest,v.y);}if(lowest<0)pivot.position.y-=lowest;contactGap=Math.max(0,lowest);}
   inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);
   // HeldPose already compensates camera motion, including the velocity used by snow.
-  if(travel<.42){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowStats=physics.stats();snowStatsScans++;snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
+  if(travel<.42){const physicsStart=performance.now();physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowStats=physics.stats();snowStatsScans++;physicsMs=performance.now()-physicsStart;physicsPeakMs=Math.max(physicsPeakMs,physicsMs);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
   look+=(targetLook-look)*(1-Math.exp(-dt*3.5));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*3.5));
   setView(travel);
   if(cityFlakes.visible){citySnowMat.uniforms.time.value=time;for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=(.045+Math.sin(time*.8+i*2.4)*(.025+citySeed[i]*.065))*dt;cityPos[i*3+2]+=Math.cos(time*.65+i*1.7)*dt*.035;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;if(cityPos[i*3+2]>12)cityPos[i*3+2]=-12;if(cityPos[i*3+2]<-12)cityPos[i*3+2]=12;}cityGeo.attributes.position.needsUpdate=true;}
   const nextShadowPhase=travel<.5?0:travel<=.55?1:2;
+  if(cachedShopShadows){
+   const height=Math.max(0,pose.position[1]);
+   shadow.position.x=pivot.position.x;shadow.position.z=pivot.position.z;
+   shadow.scale.setScalar(1+height*.12);shadow.material.opacity=1/(1+height*.8);
+  }
   shadowTransform[0]=pivot.position.x;shadowTransform[1]=pivot.position.y;shadowTransform[2]=pivot.position.z;
   shadowTransform[3]=pivot.rotation.x;shadowTransform[4]=pivot.rotation.y;shadowTransform[5]=pivot.rotation.z;
+  if(cachedShopShadows&&travel<.5)shadowTransform.fill(0);
   renderer.shadowMap.autoUpdate=false;
   if(shadowRefresh.take(tick,shadowTransform,nextShadowPhase,travel<.46,quality===1?0:quality===.75?1000/15:1000/7.5)){renderer.shadowMap.needsUpdate=true;shadowUpdates++;}
   shadowPhase=nextShadowPhase;
   const now=performance.now();renderer.info.autoReset=false;renderer.info.reset();renderer.render(scene,camera);virtualHand.render(renderer,container.clientWidth,container.clientHeight);frameMs+=(performance.now()-now-frameMs)*.03;
-  renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2)api.reduceQuality();
+  renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+elapsed:Math.max(0,slowRenderSeconds-elapsed*2);if(slowRenderSeconds>2)api.reduceQuality();
   if(tick-diagnosticAt>=200){diagnosticAt=tick;const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);}
  },
- stats(){const now=performance.now();if(now-transitionStatsAt>=200){transitionStatsAt=now;const sorted=transitionFrames.slice().sort((a,b)=>a-b);transitionSummary={transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0)};}return {...cityLightStats,...liquid.stats(),...transitionSummary,distantPlanes:distantCards.length,distantTrianglesRemoved:distantCards.reduce((n,c)=>n+c.userData.originalTriangles,0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...snowStats,renderedFrames,snowStatsScans,shadowUpdates,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
+ stats(){const now=performance.now();if(now-transitionStatsAt>=200){transitionStatsAt=now;const sorted=transitionFrames.slice().sort((a,b)=>a-b);transitionSummary={transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0)};}return {...cityLightStats,...liquid.stats(),...transitionSummary,distantPlanes:distantCards.length,distantTrianglesRemoved:distantCards.reduce((n,c)=>n+c.userData.originalTriangles,0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...snowStats,physicsMs:Math.round(physicsMs*10)/10,physicsPeakMs:Math.round(physicsPeakMs),movingFrames,firstMovingPeakMs:Math.round(firstMovingPeakMs),recentMovingPeakMs:Math.round(recentMovingPeakMs),warmupMs,cameraPrepared,viewFov:camera.fov,programs:renderer.info.programs.length,pixelRatio:renderer.getPixelRatio(),cachedShopShadows,renderedFrames,snowStatsScans,shadowUpdates,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
  };
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 연결이 중단되었습니다. 새로고침해주세요.'}));});
  return api;
