@@ -1,4 +1,4 @@
-import {createVirtualHand} from './receiving-natural-hand.js?pose=white-guide-v14';
+import {createVirtualHand} from './receiving-natural-hand.js?pose=white-follow-v15';
 import {flattenDistantObject} from './city-impostor.js';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';

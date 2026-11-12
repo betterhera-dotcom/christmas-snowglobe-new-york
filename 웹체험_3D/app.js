@@ -1,7 +1,7 @@
 import {handLift} from './hand-height.mjs';
 import {trackingRegion} from './tracking-region.mjs';
 import {ENTRY_DURATION_MS,MIN_PLAY_SECONDS,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,citySnowReady,transitionVeil} from './journey.mjs';
-import { createScene } from './scene3d.js?hand=white-guide-v14';
+import { createScene } from './scene3d.js?hand=white-follow-v15';
 import { ShakeMotion } from './motion.mjs';
 import { HeadLook } from './head-look.mjs';
 import {HandPickup} from './hand-pickup.mjs';

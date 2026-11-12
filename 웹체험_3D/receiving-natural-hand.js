@@ -76,7 +76,9 @@ export function createVirtualHand(){
   camera.left=-w/2;camera.right=w/2;camera.top=h/2;camera.bottom=-h/2;camera.updateProjectionMatrix();
   if(hand.userData.guide){
    const size=Math.min(230,w*.27,h*.36);guideMesh.scale.setScalar(size/320);
-   guideMesh.position.set(w*.29,0,0);
+   const point=hand.userData.point||[.5,.6];
+   // Follow the tracked palm, with a small rightward display offset.
+   guideMesh.position.set((point[0]-.5)*w+size*.45,(.5-point[1])*h,0);
    const auto=renderer.autoClear;renderer.autoClear=false;renderer.clearDepth();renderer.render(guideScene,camera);renderer.autoClear=auto;return;
   }
   if(!modelLoaded)return;
