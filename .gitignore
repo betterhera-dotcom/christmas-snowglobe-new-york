@@ -11,3 +11,6 @@ __pycache__/
 /.sites-archive-*/
 /뉴욕-*-배포.tar.gz
 /뉴욕-부분업로드.tar.gz
+
+/Blender/.liquid-motion.json
+/Blender/snowglobe_liquid_v01.blend1
