@@ -5,6 +5,7 @@ import {decorateCityLights,varyCityWindows,separateGlobeRailing} from './city-li
 import {HeldPose} from './pose.mjs';
 import {GlobeSnow} from './snow3d.mjs';
 import {createLiquid} from './liquid-globe.js';
+import {sampleSnowSurface} from './snow-surface.js';
 export function createScene(container){
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.88;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;container.append(renderer.domElement);
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.02,120);
@@ -14,7 +15,7 @@ export function createScene(container){
  const liquid=createLiquid(model);
  const pose=new HeldPose(),physics=new GlobeSnow(),clock={time:0};let loaded=false,shopLoaded=false,error=null,baseMin=.02,baseBounds=null,contactGap=0,materialMaps=0,look=0,lookY=0,targetLook=0,targetLookY=0,travelLast=0,frameMs=16,quality=1,slowRenderSeconds=0,renderedFrames=0,lastTick=performance.now(),frameInterval=16;
  function tuneMaterial(m){if(m.map)m.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());m.envMapIntensity=.55;if(/limestone/i.test(m.name))m.color.setRGB(.68,.61,.49);if(/walnut|timber|wood/i.test(m.name))m.color.setRGB(.48,.32,.19);if(m.name.startsWith('SHOP cloth binding')){const c=[[.16,.027,.035],[.035,.10,.065],[.24,.16,.065],[.045,.07,.10]][Number(m.name.slice(-1))]||[.1,.07,.04];m.color.setRGB(...c);}if(/Snow/.test(m.name))m.color.setRGB(.88,.92,.97);}
- const transitionFrames=[];let previousTick=0;
+ const transitionFrames=[];let previousTick=0,shadowPhase=-1;
  let cityLightStats={};
  const lanternMaterials=[];let globeRailing=[];
  const groups={};const loader=new GLTFLoader();
@@ -25,8 +26,8 @@ export function createScene(container){
    if(mats.some(m=>m.name==='Winter paving'||m.name==='Snow-covered ground'))o.castShadow=false;
   }});
   for(const o of groups.PROPS||[]){const array=Array.isArray(o.material),materials=array?o.material:[o.material];const tuned=materials.map(m=>{if(m.name!=='Warm window glass')return m;const lit=m.clone();lit.emissive.setHex(0xffd5a0);lit.emissiveIntensity=1.4;lit.roughness=.35;lanternMaterials.push(lit);return lit;});o.material=array?tuned:tuned[0];}
+  physics.surface=sampleSnowSurface(model);physics.reset();
   cityLightStats=await decorateCityLights(gltf.scene);
-  for(const tree of groups.TREES||[])tree.traverse(o=>{if(o.isMesh&&/Fir needle shade/.test(o.material.name)){o.material=o.material.clone();o.material.color.setRGB(.82,1,.91);o.material.emissive.setHex(0x446354);o.material.emissiveIntensity=.4;o.material.envMapIntensity=.9;}});
   globeRailing=separateGlobeRailing(groups.PROPS||[]);
   // Thin optical shell: real volume, controlled reflections, no 2D deformation.
   for(const o of groups.GLASS||[])o.material=new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:.012,transmission:1,thickness:.003,ior:1.45,transparent:true,opacity:1,depthWrite:false,side:THREE.FrontSide,envMapIntensity:.65});
@@ -38,9 +39,6 @@ export function createScene(container){
  const modelReady=Promise.all([globeReady,shopReady,liquid.ready]).then(results=>{loaded=results.every(Boolean);document.getElementById('shop').style.display='none';document.getElementById('window-snow').style.display='none';if(loaded){pivot.visible=false;shadow.visible=false;const cubeTarget=new THREE.WebGLCubeRenderTarget(256,{type:THREE.HalfFloatType});const capture=new THREE.CubeCamera(.1,40,cubeTarget);capture.position.set(0,1.6,0);capture.update(renderer,scene);const generator=new THREE.PMREMGenerator(renderer);const old=scene.environment;scene.environment=generator.fromCubemap(cubeTarget.texture).texture;old?.dispose();generator.dispose();cubeTarget.dispose();pivot.visible=true;shadow.visible=true;}loaded=false;return results.every(Boolean);});
  // Warm fixtures in the shop are anchored in the same real 3D room.
  for(const x of [-3.8,3.8]){const lamp=new THREE.PointLight(0xffb763,6,9,2);lamp.position.set(x,3,-1.6);shop.add(lamp);}
- const shopSnowGeo=new THREE.BufferGeometry(),shopSnowPos=new Float32Array(350*3);
- for(let i=0;i<350;i++){shopSnowPos[i*3]=(Math.random()-.5)*13;shopSnowPos[i*3+1]=Math.random()*5;shopSnowPos[i*3+2]=-3.50+Math.random()*.04;}
- shopSnowGeo.setAttribute('position',new THREE.BufferAttribute(shopSnowPos,3));const shopSnow=new THREE.Points(shopSnowGeo,new THREE.PointsMaterial({color:0xe4edf6,size:.025,transparent:true,opacity:.72,depthWrite:false}));shop.add(shopSnow);
  fetch('./assets/3d/colliders.json').then(r=>{if(!r.ok)throw Error('collision data');return r.json();}).then(b=>physics.boxes=b).catch(()=>{container.dataset.collisionWarning='true';});
  // Local lantern light, with small depth-tested halos; no full-screen bloom pass.
  const lanternHalos=[];const lanterns=new THREE.Group();model.add(lanterns);lanterns.visible=false;
@@ -56,10 +54,21 @@ export function createScene(container){
  }
  // Main particles share the miniature coordinate system and are occluded by actual buildings.
  const snowGeo=new THREE.BufferGeometry();snowGeo.setAttribute('position',new THREE.BufferAttribute(physics.p,3));
- const sizes=new Float32Array(physics.count);for(let i=0;i<sizes.length;i++)sizes[i]=.045+physics.depth[i]*.060;snowGeo.setAttribute('size',new THREE.BufferAttribute(sizes,1));
- const snowMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{opacity:{value:.88},pixelRatio:{value:renderer.getPixelRatio()}},
- vertexShader:'attribute float size;uniform float pixelRatio;varying float depth;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);depth=-mv.z;gl_Position=projectionMatrix*mv;gl_PointSize=clamp(size*560.*pixelRatio/max(.1,-mv.z),5.5,80.);}',
- fragmentShader:'uniform float opacity;varying float depth;void main(){vec2 p=gl_PointCoord-.5;float r=length(p);float a=(1.-smoothstep(.36,.49,r))*opacity;if(a<.02)discard;gl_FragColor=vec4(.96,.97,.94,a);}'});
+ const sizes=new Float32Array(physics.count);for(let i=0;i<sizes.length;i++)sizes[i]=.020+Math.pow(physics.depth[i],2.4)*.090;snowGeo.setAttribute('size',new THREE.BufferAttribute(sizes,1));
+ snowGeo.setAttribute('flakeAngle',new THREE.BufferAttribute(physics.angle,1));snowGeo.setAttribute('flakeSeed',new THREE.BufferAttribute(physics.depth,1));
+ // Solid cutout flakes enter Three's transmission buffer BEFORE liquid/glass.
+ // Transparent points would be drawn over the glass, like an exterior overlay.
+ const snowMat=new THREE.ShaderMaterial({transparent:false,depthWrite:true,alphaToCoverage:true,uniforms:{pixelRatio:{value:renderer.getPixelRatio()}},
+ vertexShader:`attribute float size;attribute float flakeAngle;attribute float flakeSeed;uniform float pixelRatio;varying float angle;varying float seed;varying float waterDepth;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vec4 center=modelViewMatrix*vec4(0.,1.78,0.,1.);waterDepth=clamp((center.z-mv.z+1.43)/2.86,0.,1.);angle=flakeAngle;seed=flakeSeed;gl_Position=projectionMatrix*mv;gl_PointSize=clamp(size*560.*pixelRatio/max(.1,-mv.z),2.,80.);}`,
+ fragmentShader:`varying float angle;varying float seed;varying float waterDepth;void main(){
+ vec2 p=gl_PointCoord-.5;float c=cos(angle),s=sin(angle);p=mat2(c,-s,s,c)*p;
+ float face=abs(cos(angle*.73+seed*6.28));p.y/=mix(.35,.95,face);p.x/=mix(.70,1.,fract(seed*17.));
+ float theta=atan(p.y,p.x),edge=.36+.035*sin(theta*3.+seed*18.)+.025*cos(theta*7.-seed*12.);
+ float coverage=1.-smoothstep(edge-.025,edge+.035,length(p));if(coverage<.02)discard;
+ float light=(.66+.19*face+.15*fract(seed*31.))*mix(1.,.68,waterDepth);gl_FragColor=vec4(mix(vec3(.86,.93,1.),vec3(1.,.97,.90),fract(seed*13.))*light,coverage);
+ #include <tonemapping_fragment>
+ #include <colorspace_fragment>
+ }`});
  const flakes=new THREE.Points(snowGeo,snowMat);model.add(flakes);
  // Contact shadow stays at the counter while the held globe lifts.
  const shadowTexture=document.createElement('canvas');shadowTexture.width=shadowTexture.height=128;const c=shadowTexture.getContext('2d'),grad=c.createRadialGradient(64,64,5,64,64,64);grad.addColorStop(0,'#00000088');grad.addColorStop(1,'#00000000');c.fillStyle=grad;c.fillRect(0,0,128,128);
@@ -94,13 +103,16 @@ export function createScene(container){
    }
    o.geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));o.material=o.material.clone();o.material.vertexColors=true;
   });
-  const blocks=[[-3.2,-2.3,.12,.90],[2.9,-2.6,-.17,1.12],[-3.4,-5.5,.32,1.17],[3.2,-5.8,-.28,.84],[-3,-8.6,-.13,.79],[3.5,-9,.21,1.06],[.6,-11,Math.PI+.18,.91],[3.3,1.1,-Math.PI/2,1.04],[-3.4,.7,Math.PI/2,.87]];
+  const blocks=[[-3.2,-2.3,.12,.90],[2.9,-2.6,-.17,1.12],[-3.4,-5.5,.32,1.17],[3.2,-5.8,-.28,.84],[-3,-8.6,-.13,.79],[3.5,-9,.21,1.06],[.6,-11,Math.PI+.18,.91],[3.3,1.1,-Math.PI/2,1.04],[-3.4,.7,Math.PI/2,.87],[-1.6,-6.7,.20,.78],[1.4,-7.6,-.24,.89]];
   if(city)for(const [i,[x,z,rotation,height]] of blocks.entries()){
    const copy=city.clone();
    copy.traverse(o=>{if(o.isMesh&&(o.material.name.startsWith('Snow')||o.material.name==='Winter paving')){const geometry=o.geometry.clone(),positions=geometry.attributes.position,index=geometry.index,keep=[];for(let n=0;n<index.count;n+=3){const a=index.getX(n),b=index.getX(n+1),c=index.getX(n+2);if(Math.max(positions.getY(a),positions.getY(b),positions.getY(c))>.90)keep.push(a,b,c);}geometry.setIndex(keep);o.geometry=geometry;}if(o.isMesh)o.castShadow=false;});
    varyCityWindows(copy,i+1);copy.scale.y=height;copy.position.set(x,.84*(1-height),z);copy.rotation.y=rotation;architecture.add(copy);
   }
-  const trees=model.getObjectByName('TREES');if(trees)for(const [x,z]of [[-2,-3],[2,-3]]){const copy=trees.clone();copy.position.set(x,0,z);outer.add(copy);}
+  const trees=model.getObjectByName('TREES');
+  if(trees)for(const [x,z,scale,rotation]of [[-2,-1.1,.8,.2],[2.1,-1.4,.76,-.3],[-1.7,-3.7,.9,-.4],[1.8,-4,.85,.5],[-3.9,-1.5,.82,-.2],[3.8,-1.8,.92,.3]]){
+   const copy=trees.clone();copy.scale.setScalar(scale);copy.position.set(x,.84*(1-scale),z);copy.rotation.y=rotation;outer.add(copy);
+  }
  });
  // Independent sky dome and distant skyline: buildings never stretch with sky elevation.
  const sky=new THREE.Mesh(new THREE.SphereGeometry(55,64,32),new THREE.MeshBasicMaterial({color:0x9caabd,side:THREE.BackSide,transparent:true,opacity:0,depthWrite:false,toneMapped:false,fog:false}));
@@ -155,7 +167,8 @@ export function createScene(container){
   if(travel>=1){const base=endAim.clone().sub(endPos),yaw=-look*.90,pitch=-lookY*.38;const euler=new THREE.Euler(pitch,yaw,0,'YXZ');base.applyEuler(euler);aim.copy(camera.position).add(base);}
   camera.lookAt(aim);if(lanterns.visible){model.updateWorldMatrix(true,false);const eye=model.worldToLocal(camera.position.clone());for(const halo of lanternHalos)halo.position.copy(eye).sub(halo.userData.center).normalize().multiplyScalar(.09).add(halo.userData.center);}camera.fov=THREE.MathUtils.lerp(startFov,60,enter);camera.updateProjectionMatrix();
   sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;skyline.material.opacity=sky.material.opacity;skyline.visible=sky.visible;scene.fog=travel>.55?cityFog:null;outer.visible=travel>.55;shadow.visible=travel<.5;shop.visible=travel<.5;
-  for(const o of groups.GLASS||[])o.visible=travel<.5;
+  // Stop drawing the full-screen refraction once the snow veil covers the globe.
+  for(const o of groups.GLASS||[])o.visible=travel<.44;
   liquid.setTravel(travel);
   for(const o of groups.BASE||[])o.visible=travel<.5;
   for(const o of globeRailing)o.visible=travel<.55;
@@ -164,7 +177,7 @@ export function createScene(container){
  const ready=Promise.all([modelReady,cityReady,...backgroundJobs]).then(async([ok])=>{
   if(!ok)return false;
   // Prepare both light/fog variants and upload city geometry before enabling interaction.
-  for(const travel of [0,.52,.6,1]){setView(travel);await renderer.compileAsync(scene,camera);renderer.render(scene,camera);}
+  for(const travel of [0,.46,.52,.6,1]){setView(travel);await renderer.compileAsync(scene,camera);renderer.render(scene,camera);}
   setView(0);renderer.render(scene,camera);loaded=true;lastTick=previousTick=performance.now();
   container.dataset.loaded='true';return true;
  }).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 준비를 완료하지 못했습니다. 다시 불러와주세요.'}));return false;});
@@ -175,12 +188,12 @@ export function createScene(container){
   const tick=performance.now();if(travel>0&&travel<1){if(travelLast===0)transitionFrames.length=0;if(previousTick)transitionFrames.push(tick-previousTick);}previousTick=tick;frameInterval+=(tick-lastTick-frameInterval)*.05;lastTick=tick;clock.time=time;travelLast=travel;pose.update(dt,motion);const enter=smooth(Math.min(1,travel)),settle=1-smooth(Math.min(1,travel*2.2));
   pivot.position.set(pose.position[0]*settle,1.5+pose.position[1]*settle,pose.position[2]*settle);pivot.rotation.set(pose.rotation[0]*settle,pose.rotation[1]*settle,pose.rotation[2]*settle);
   if(baseBounds){let lowest=Infinity;for(const x of [baseBounds.min.x,baseBounds.max.x])for(const y of [baseBounds.min.y,baseBounds.max.y])for(const z of [baseBounds.min.z,baseBounds.max.z]){v.set(x,y+model.position.y,z).applyQuaternion(pivot.quaternion).add(pivot.position);lowest=Math.min(lowest,v.y);}if(lowest<0)pivot.position.y-=lowest;contactGap=Math.max(0,lowest);}
-  inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);if(travel<.55){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;}
+  inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);if(travel<.42){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
   look+=(targetLook-look)*(1-Math.exp(-dt*3));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*3));
   setView(travel);
   if(cityFlakes.visible){citySnowMat.uniforms.time.value=time;for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=(.045+Math.sin(time*.8+i*2.4)*(.025+citySeed[i]*.065))*dt;cityPos[i*3+2]+=Math.cos(time*.65+i*1.7)*dt*.035;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;if(cityPos[i*3+2]>12)cityPos[i*3+2]=-12;if(cityPos[i*3+2]<-12)cityPos[i*3+2]=12;}cityGeo.attributes.position.needsUpdate=true;}
-  if(shop.visible){for(let i=0;i<350;i++){shopSnowPos[i*3+1]-=dt*(.12+(i%7)*.025);if(shopSnowPos[i*3+1]<.15)shopSnowPos[i*3+1]=4.9;}shopSnowGeo.attributes.position.needsUpdate=true;}
-  renderer.shadowMap.autoUpdate=travel<.60;if(travelLast===0)renderer.shadowMap.needsUpdate=true;
+  const nextShadowPhase=travel<.5?0:travel<=.55?1:2;
+  renderer.shadowMap.autoUpdate=travel<.46;if(nextShadowPhase!==shadowPhase){renderer.shadowMap.needsUpdate=true;shadowPhase=nextShadowPhase;}
   const now=performance.now();renderer.render(scene,camera);frameMs+=(performance.now()-now-frameMs)*.03;
   renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2&&quality===1){quality=.75;renderer.setPixelRatio(1);resize();snowMat.uniforms.pixelRatio.value=1;citySnowMat.uniforms.pixelRatio.value=1;}
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);

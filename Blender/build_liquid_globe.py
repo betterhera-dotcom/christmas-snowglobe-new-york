@@ -100,5 +100,5 @@ bpy.ops.object.camera_add(location=(4,-7,3.9));camera=bpy.context.object;camera.
 for loc,power,size in [((-3,-4,6),900,4),((3,1,4),650,3)]:
  bpy.ops.object.light_add(type='AREA',location=loc);light=bpy.context.object;light.data.energy=power;light.data.shape='DISK';light.data.size=size;light.rotation_euler=(Vector((0,0,1.5))-light.location).to_track_quat('-Z','Y').to_euler()
 scene['preview_instructions']='Space to play: rest 0–1s, shake 1–5s, liquid flow settles 5–48s. Browser remains interactive.'
-bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'Blender/snowglobe_liquid_v01.blend'))
+bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'Blender/snowglobe_liquid_v02.blend'))
 print('LIQUID_COMPLETE',len(mesh.polygons),'faces;',bake['count'],'animated particles;',len(bake['samples']),'samples')

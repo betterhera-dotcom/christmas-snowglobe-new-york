@@ -29,7 +29,7 @@ export function isCGrip(hand){
   return curved>=2&&d(hand[8],hand[0])>d(hand[5],hand[0])*1.12;
 }
 // Release only on a clearly OPEN hand, not merely a weak fist estimate.
-function openFingers(hand){
+export function openFingers(hand){
   let count=0;
   for(const [base,joint,tip] of [[5,6,8],[9,10,12],[13,14,16],[17,18,20]]){
     const a=hand[base],b=hand[joint],c=hand[tip],w=hand[0];

@@ -1,7 +1,8 @@
 // Camera coordinates and pointer coordinates both use a mirrored 0..1 input space.
+import {MIN_PLAY_SECONDS} from './journey.mjs';
 export class ShakeMotion {
   constructor(){this.reset();}
-  reset(){this.last=null;this.raw=0;this.energy=0;this.strokes=0;this.direction=0;this.extreme=0;this.lastStroke=-10;this.firstStroke=0;this.burst=0;this.cooldown=0;this.x=.5;this.y=.5;this.anchor=null;this.vector=null;this.turn=0;}
+  reset(){this.last=null;this.raw=0;this.energy=0;this.strokes=0;this.direction=0;this.extreme=0;this.lastStroke=-10;this.firstStroke=0;this.burst=0;this.cooldown=0;this.x=.5;this.y=.5;this.anchor=null;this.vector=null;this.turn=0;this.playTime=0;}
   release(){this.last=null;this.raw=0;this.strokes=0;this.burst=0;this.anchor=null;this.vector=null;this.turn=0;}
   sample(x,y,time){
     if(!Number.isFinite(x+y+time))return;
@@ -23,7 +24,7 @@ export class ShakeMotion {
         if(angle>.08){
           if(time-this.lastStroke>1.35){this.turn=0;this.firstStroke=time;}
           this.turn+=angle;this.strokes=Math.floor(this.turn/Math.PI);this.lastStroke=time;
-          if(this.turn>=Math.PI*6&&time-this.firstStroke>=3&&this.energy>.22&&this.cooldown<=0){this.burst=1;this.cooldown=7;this.turn=0;this.strokes=0;}
+          if(this.playTime>=MIN_PLAY_SECONDS&&this.turn>=Math.PI*6&&time-this.firstStroke>=3&&this.energy>.22&&this.cooldown<=0){this.burst=1;this.cooldown=7;this.turn=0;this.strokes=0;}
         }
       }
       this.vector=next;this.anchor={x,y};
@@ -33,6 +34,7 @@ export class ShakeMotion {
   update(dt,time){
     if(!this.last||time-this.last.t>.16)this.raw=0;
     this.energy+=(this.raw-this.energy)*(1-Math.exp(-dt/(this.raw>this.energy?.16:1.35)));
+    if(this.last&&time-this.last.t<.3&&this.energy>.03)this.playTime+=Math.min(dt,.1);
     this.burst=Math.max(0,this.burst-dt*.3);this.cooldown=Math.max(0,this.cooldown-dt);
     if(time-this.lastStroke>1.35){this.strokes=0;this.turn=0;}
     return this.energy;

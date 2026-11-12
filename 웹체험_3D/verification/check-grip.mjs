@@ -18,7 +18,7 @@ g.reset();g.update(hand(true),9);g.update(hand(true),9.2);g.update(hand(false),9
 for(let t=0;t<=1;t+=.025){const curved=hand(true),open=hand(false),candidate=curved.map((p,i)=>({x:p.x+(open[i].x-p.x)*t,y:p.y+(open[i].y-p.y)*t,z:p.z+(open[i].z-p.z)*t}));if(!isCGrip(candidate))continue;const held=new Grip();held.update(hand(true),0);held.update(hand(true),.15);for(let i=0;i<20;i++)assert.equal(held.update(candidate,.2+i/15),true,'C grip always has priority over open estimate');}
 const bad=hand(true);bad[8].z=NaN;assert.equal(g.update(bad,11.6),true,'invalid coordinates use grace period');
 for(const [name,path] of Object.entries({vertical:t=>[.5,.5+.18*Math.sin(t*10)],diagonal:t=>[.5+.14*Math.sin(t*10),.5+.14*Math.sin(t*10)],circle:t=>[.5+.17*Math.cos(t*9),.5+.17*Math.sin(t*9)]})){
- const m=new ShakeMotion();let entered=false;for(let i=0;i<180;i++){const t=i/15,[x,y]=path(t);m.sample(x,y,t);m.update(1/15,t);entered ||= m.burst>0;}assert.ok(entered,name);m.release();assert.equal(m.burst,0);assert.equal(m.last,null);assert.equal(m.strokes,0);
+ const m=new ShakeMotion();let entered=false;for(let i=0;i<450;i++){const t=i/15,[x,y]=path(t);m.sample(x,y,t);m.update(1/15,t);entered ||= m.burst>0;}assert.ok(entered,name);m.release();assert.equal(m.burst,0);assert.equal(m.last,null);assert.equal(m.strokes,0);
 }
 console.log('PASS: rotated C/open/fist/pinch, grip hysteresis, tracking loss, vertical/diagonal/circular journey, release clears trigger');
 const {FistReturn}=await import('../grip.mjs');const r=new FistReturn();r.reset(0);

@@ -2,7 +2,7 @@
 import bpy,bmesh,json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent.parent
-bpy.ops.wm.open_mainfile(filepath=str(ROOT/'Blender/snowglobe_liquid_v01.blend'))
+bpy.ops.wm.open_mainfile(filepath=str(ROOT/'Blender/snowglobe_liquid_v02.blend'))
 liquid=bpy.data.objects['LIQUID'];bm=bmesh.new();bm.from_mesh(liquid.data)
 assert all(edge.is_manifold for edge in bm.edges), 'Liquid volume must be watertight'
 assert bm.calc_volume()>0, 'Volume must face outwards'
@@ -16,5 +16,5 @@ assert max(p.co.z for p in keys.key_blocks['Flow_0089'].data)>1.2
 for lib in bpy.data.libraries:assert Path(bpy.path.abspath(lib.filepath)).exists(),lib.filepath
 print('PASS: closed outward liquid volume, water IOR, 289 animation samples, reference models resolved')
 scene.render.resolution_x=800;scene.render.resolution_y=800;scene.cycles.samples=12
-scene.render.filepath=str(ROOT/'웹체험_3D/verification/liquid-blender.png')
+scene.render.filepath=str(ROOT/'웹체험_3D/verification/liquid-blender-v02.png')
 bpy.ops.render.render(write_still=True)

@@ -1,20 +1,30 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../"><title>액체 속 눈 · 움직임 검수</title>
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#15211d;color:white;font:14px system-ui}#scene{position:absolute;inset:0}canvas{display:block}aside{position:absolute;z-index:2;left:24px;bottom:24px;max-width:calc(100% - 48px);padding:16px;background:#10231bc9;border-radius:8px}h1{font-size:20px;font-weight:500;margin:0 0 8px}p{line-height:1.6;font-size:12px}button{padding:10px 14px;min-height:44px;background:transparent;color:white;border:1px solid #ffffff88;border-radius:4px;cursor:pointer;margin:4px 5px 4px 0}button:disabled{opacity:.4}#diagnostics{font-size:11px;color:#d6e7df;white-space:pre-wrap}#shop,#window-snow{display:none}</style></head>
-<body><div id="shop"></div><canvas id="window-snow"></canvas><div id="scene"></div><aside><h1>액체 속 눈 · 움직임 검수</h1><p>흔들기 → 남아 있는 물살 → 천천히 가라앉기<br>자동 도시 진입 없이 입자 움직임을 확인하는 시험 화면입니다.</p><button id="shake" disabled>4초간 흔들기</button><button id="stop" disabled>흔들기 멈추기</button><button id="city" disabled>도시 전환 확인</button><button id="reset" disabled>초기화</button><p id="diagnostics" role="status">모델 준비 중</p></aside>
+<body><div id="shop"></div><canvas id="window-snow"></canvas><div id="scene"></div><div id="entry-veil" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse,#f6f8f3,#e6edf1);opacity:0"></div><aside><h1>액체 속 눈 · 움직임 검수</h1><p>흔들기 → 남아 있는 물살 → 천천히 가라앉기<br>버튼 또는 화면을 누른 채 드래그해 시험하세요. 자동 도시 진입은 없습니다.</p><button id="shake" disabled>4초간 흔들기</button><button id="strong" disabled>8초간 풍성하게 흔들기</button><button id="stop" disabled>흔들기 멈추기</button><button id="city" disabled>도시 전환 확인</button><button id="reset" disabled>초기화</button><p id="diagnostics" role="status">모델 준비 중</p></aside>
 <script type="module">
+import {ENTRY_DURATION_MS,transitionVeil} from './journey.mjs';
 import {createScene} from './scene3d.js';
 const scene=createScene(document.querySelector('#scene')),motion={x:.5,y:.5,keepHeld:false,energy:0,wristRoll:0,pitch:0};
-let shakeStart=null,last=performance.now(),travel=0,entry=null,ready=false;
+let shakeStart=null,last=performance.now(),travel=0,entry=null,ready=false,releaseTime=null;
+let pointer=null,shakeSeconds=4,shakeScale=1;
+scene.canvas.style.touchAction='none';
+function movePointer(e){motion.x=e.clientX/innerWidth;motion.y=e.clientY/innerHeight;}
+scene.canvas.addEventListener('pointerdown',e=>{if(!ready||travel>0)return;pointer=e.pointerId;scene.canvas.setPointerCapture(pointer);shakeStart=null;motion.energy=0;releaseTime=null;movePointer(e);motion.keepHeld=true;});
+scene.canvas.addEventListener('pointermove',e=>{if(pointer===e.pointerId)movePointer(e);});
+function releasePointer(e){if(pointer!==e.pointerId)return;pointer=null;releaseTime=performance.now();}
+scene.canvas.addEventListener('pointerup',releasePointer);scene.canvas.addEventListener('pointercancel',releasePointer);
 scene.ready.then(ok=>{ready=ok;document.querySelectorAll('button').forEach(b=>b.disabled=!ok);if(!ok)document.querySelector('#diagnostics').textContent='모델 준비 실패';});
-document.querySelector('#shake').onclick=()=>{scene.reset();travel=0;entry=null;motion.keepHeld=true;motion.x=motion.y=.5;shakeStart=performance.now();};
-document.querySelector('#stop').onclick=()=>{shakeStart=null;motion.energy=0;};
+function startShake(seconds,scale){scene.reset();travel=0;entry=null;releaseTime=null;motion.keepHeld=true;motion.x=motion.y=.5;shakeSeconds=seconds;shakeScale=scale;shakeStart=performance.now();}
+document.querySelector('#shake').onclick=()=>startShake(4,1);
+document.querySelector('#strong').onclick=()=>startShake(8,1.4);
+document.querySelector('#stop').onclick=()=>{shakeStart=null;motion.energy=0;releaseTime=performance.now();};
 document.querySelector('#city').onclick=()=>{shakeStart=null;entry=performance.now();motion.energy=0;};
-document.querySelector('#reset').onclick=()=>{scene.reset();travel=0;entry=null;shakeStart=null;motion.keepHeld=false;motion.x=motion.y=.5;motion.energy=0;};
+document.querySelector('#reset').onclick=()=>{scene.reset();travel=0;entry=null;shakeStart=null;releaseTime=null;motion.keepHeld=false;motion.x=motion.y=.5;motion.energy=0;};
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;
- if(shakeStart!==null){const t=(now-shakeStart)/1000;motion.x=.5+.16*Math.sin(t*8);motion.y=.5+.10*Math.sin(t*6);motion.energy=.65;if(t>=4){shakeStart=null;motion.energy=0;}}
- if(entry!==null)travel=Math.min(1,(now-entry)/3600);
- scene.update(dt,now/1000,motion,travel);
- if(ready){const s=scene.stats();document.querySelector('#diagnostics').textContent=`${shakeStart!==null?'흔드는 중':travel===1?'도시 도착':s.airborne?'잔류 흐름 · 가라앉는 중':'고요한 상태'} · 떠 있는 눈 ${s.airborne} · 액체 ${s.liquidVisible?'표시':'숨김'} · ${s.fps} fps`;}
+ if(shakeStart!==null){const t=(now-shakeStart)/1000;motion.x=.5+.16*shakeScale*Math.sin(t*8);motion.y=.5+.10*shakeScale*Math.sin(t*6);motion.energy=.65;if(t>=shakeSeconds){shakeStart=null;releaseTime=now;motion.energy=0;}}
+ if(entry!==null)travel=Math.min(1,(now-entry)/ENTRY_DURATION_MS);
+ scene.update(dt,now/1000,motion,travel);document.querySelector('#entry-veil').style.opacity=transitionVeil(travel);
+ if(ready){const s=scene.stats();document.querySelector('#diagnostics').textContent=`${shakeStart!==null?'흔드는 중':travel===1?'도시 도착':s.currentStrength>.1?'남아 있는 물살':s.airborne?'천천히 가라앉는 중':'고요한 상태'}${releaseTime!==null?' · 멈춘 뒤 '+((now-releaseTime)/1000).toFixed(1)+'초':''}\n떠 있는 눈 ${s.airborne} · 물살 ${s.currentStrength.toFixed(2)} · ${s.fps} fps`;}
  requestAnimationFrame(frame);
 }requestAnimationFrame(frame);
 </script></body></html>

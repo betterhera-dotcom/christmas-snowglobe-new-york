@@ -8,5 +8,5 @@ export function createLiquid(model){
   volume.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;o.renderOrder=1;o.material.depthWrite=false;o.material.envMapIntensity=.35;}});
   model.add(volume);return true;
  });
- return {ready,setTravel(travel){if(volume)volume.visible=travel<.32;},stats(){return {liquidLoaded:!!volume,liquidVisible:!!volume?.visible};}};
+ return {ready,setTravel(travel){if(volume)volume.visible=travel<.44;},stats(){return {liquidLoaded:!!volume,liquidVisible:!!volume?.visible};}};
 }

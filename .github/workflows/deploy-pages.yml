@@ -31,6 +31,11 @@ jobs:
           node --check 웹체험_3D/app.js
           node --check 웹체험_3D/scene3d.js
           node 웹체험_3D/verification/check-liquid-snow.mjs
+          node 웹체험_3D/verification/check-snow-filling.mjs
+          node 웹체험_3D/verification/check-snow-surface.mjs
+          node 웹체험_3D/verification/check-motion.mjs
+          node 웹체험_3D/verification/check-audience.mjs
+          node 웹체험_3D/verification/check-snow-wish.mjs
       - name: Prepare static experience
         run: |
           mkdir -p _site/verification
