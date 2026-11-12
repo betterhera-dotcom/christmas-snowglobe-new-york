@@ -289,7 +289,7 @@ function frame(now){
   if(phase==='globe'&&mode!=='idle')carol.followShake(dt,!!scene?.stats().holding&&motion.keepHeld,motion.raw).catch(()=>error('소리를 시작하지 못했어요. 소리 버튼을 눌러주세요.'));
   if(phase==='globe'&&mode!=='idle'&&scene?.stats().holding){completeStep(0,'스노우볼을 들었어요');}
   if(phase==='globe'&&scene?.stats().holding&&motion.energy>.12)completeStep(1,'눈이 깨어났어요!');
-  if(phase==='globe'&&mode!=='idle'&&milestones[0])globeEnjoyTime+=dt;
+  if(phase==='globe'&&mode!=='idle'&&motion.keepHeld&&motion.raw>.18&&motion.last&&time-(motion.last.receivedAt??motion.last.t)<(motion.followHand?.35:.16))globeEnjoyTime+=dt;
   const fillState=scene?.stats();
   if(snowEntry.update(dt,{ready:phase==='globe'&&mode!=='idle'&&globeEnjoyTime>=MIN_PLAY_SECONDS,strong:motion.keepHeld&&motion.raw>.55&&motion.entrySpan>.12&&!!motion.last&&time-(motion.last.receivedAt??motion.last.t)<(motion.followHand?.35:.16)}))enterCity();
   if(phase==='entering'){

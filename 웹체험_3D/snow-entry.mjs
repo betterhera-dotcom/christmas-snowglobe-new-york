@@ -8,8 +8,8 @@ export class SnowEntry {
   // Show the invitation before counting any movement.
   if(!this.armed){this.armed=true;return false;}
   const step=Math.min(.1,Math.max(0,dt));
-  this.strongTime=strong?this.strongTime+step:Math.max(0,this.strongTime-step);
-  if(this.strongTime<.6)return false;
+  this.strongTime=strong?this.strongTime+step:Math.max(0,this.strongTime-step*.25);
+  if(this.strongTime<2)return false;
   this.entered=true;return true;
  }
 }

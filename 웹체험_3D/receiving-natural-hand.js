@@ -1,3 +1,4 @@
+import {createHandArt} from './hand-art.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {createPalmSnow} from './receiving-natural-snow.js';
 import * as THREE from './vendor/three.module.js';
@@ -5,6 +6,10 @@ import * as THREE from './vendor/three.module.js';
 export function createVirtualHand(){
  const scene=new THREE.Scene(),camera=new THREE.OrthographicCamera(-1,1,1,-1,.1,1000),hand=new THREE.Group();camera.position.z=500;scene.add(hand);
  scene.add(new THREE.HemisphereLight(0xe7f6ff,0x52667b,2));const light=new THREE.DirectionalLight(0xfff6e8,3);light.position.set(-100,160,250);scene.add(light);
+ const guideScene=new THREE.Scene();
+ const guideTexture=new THREE.CanvasTexture(createHandArt({lineWidth:2.6,edgeWidth:5}));guideTexture.colorSpace=THREE.SRGBColorSpace;
+ const guideMesh=new THREE.Mesh(new THREE.PlaneGeometry(240,320),new THREE.MeshBasicMaterial({map:guideTexture,transparent:true,depthWrite:false,toneMapped:false}));
+ guideMesh.rotation.z=Math.PI/2;guideScene.add(guideMesh);
  let modelLoaded=false,applyGripPose=()=>{};
  const ready=new GLTFLoader().loadAsync('./assets/3d/hand/left.glb').then(gltf=>{
   const model=gltf.scene;model.updateMatrixWorld(true);
@@ -67,8 +72,14 @@ export function createVirtualHand(){
  }).catch(error=>{console.warn('Virtual hand model failed to load',error);return false;});
  const snow=createPalmSnow();hand.add(snow.group);
  let visible=false;
- return {ready,set(show,point,progress=0,guide=false){visible=show;hand.userData.guide=guide;hand.userData.point=point;snow.setProgress(progress);},render(renderer,w,h){if(!visible||!modelLoaded)return;
+ return {ready,set(show,point,progress=0,guide=false){visible=show;hand.userData.guide=guide;hand.userData.point=point;snow.setProgress(progress);},render(renderer,w,h){if(!visible)return;
   camera.left=-w/2;camera.right=w/2;camera.top=h/2;camera.bottom=-h/2;camera.updateProjectionMatrix();
+  if(hand.userData.guide){
+   const size=Math.min(230,w*.27,h*.36);guideMesh.scale.setScalar(size/320);
+   guideMesh.position.set(w*.29,0,0);
+   const auto=renderer.autoClear;renderer.autoClear=false;renderer.clearDepth();renderer.render(guideScene,camera);renderer.autoClear=auto;return;
+  }
+  if(!modelLoaded)return;
   const p=hand.userData.point||[.5,.6],size=w<=650?200:Math.min(300,Math.max(190,w*.25)),scale=size/260;
   hand.scale.set(-scale,scale,scale);const guide=hand.userData.guide;hand.position.set(((guide?p[0]:Math.max(.16,Math.min(.84,p[0])))-.5)*w,(.5-(guide?p[1]:Math.max(.38,Math.min(.72,p[1]))))*h,0);
   // The guide uses the same open right hand as the city; offset only its display.
