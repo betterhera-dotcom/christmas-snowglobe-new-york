@@ -32,10 +32,15 @@ jobs:
         with:
           ref: codex/experiment
           path: _experiment
+      - name: Check out lightweight experience
+        uses: actions/checkout@v6
+        with:
+          ref: codex/experiment-lite
+          path: _lite
       - uses: actions/configure-pages@v5
       - name: Check public and developer experiences
         run: |
-          for source in 웹체험_3D _experiment/웹체험_3D; do
+          for source in 웹체험_3D _experiment/웹체험_3D _lite/웹체험_3D; do
             node --check "$source/app.js"
             node --check "$source/scene3d.js"
             for check in liquid-snow snow-filling snow-surface carol hand-tracking tracking-client motion audience snow-wish; do
@@ -44,6 +49,9 @@ jobs:
           done
           node _experiment/웹체험_3D/verification/check-snow-entry.mjs
           node _experiment/웹체험_3D/verification/check-camera-distance-motion.mjs
+          node _lite/웹체험_3D/verification/check-snow-entry.mjs
+          node _lite/웹체험_3D/verification/check-city-timing.mjs
+          node _lite/웹체험_3D/verification/check-lite.mjs
       - name: Prepare public and developer URLs
         run: |
           mkdir -p _site/verification
@@ -56,6 +64,10 @@ jobs:
           cp _experiment/웹체험_3D/verification/liquid-preview.html _site/experiment/verification/
           git rev-parse HEAD > _site/version.txt
           git -C _experiment rev-parse HEAD > _site/experiment/version.txt
+          mkdir -p _site/experiment-lite
+          cp _lite/웹체험_3D/*.html _lite/웹체험_3D/*.css _lite/웹체험_3D/*.js _lite/웹체험_3D/*.mjs _site/experiment-lite/
+          cp -R _lite/웹체험_3D/assets _lite/웹체험_3D/vendor _site/experiment-lite/
+          git -C _lite rev-parse HEAD > _site/experiment-lite/version.txt
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v4
         with:
