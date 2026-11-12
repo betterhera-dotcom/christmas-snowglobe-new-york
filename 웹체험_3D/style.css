@@ -188,3 +188,11 @@ body[data-phase=city][data-input=camera] .motion-copy p{display:block;font-size:
 /* The city uses one visible palm beneath the snow mound. */
 body[data-phase=city] #snow-hand .virtual-palm{display:block;fill:none;stroke:#fff;stroke-width:2.4}
 body[data-phase=city] #snow-hand .palm-detail{display:block;stroke:#ffffff99}
+
+/* The receiving glove is rendered in 3D beneath the detailed snow layer. */
+body[data-phase=city] #snow-hand .virtual-palm,body[data-phase=city] #snow-hand .palm-detail{display:none}
+
+body[data-phase=city] #hand-outline{display:none}
+
+/* Snow now shares the shaded 3D hand pass; keep only the caption in the HUD. */
+body[data-phase=city] #palm-snow{display:none}

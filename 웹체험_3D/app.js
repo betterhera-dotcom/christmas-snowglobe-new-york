@@ -305,6 +305,7 @@ function frame(now){
   }
   const preview=mode==='camera'&&(phase==='globe'||phase==='city')?getHandPreview(handPreviewPacket,audience,now):null;
   const handControllable=!!preview&&!preview.delayed&&trackedHand===preview.hand&&trackedAt===preview.timestamp/1000;
+  scene?.setReceivingHand?.(phase==='city'&&wishStartedAt===null&&(receivingSnow||snowCatch.progress>0),palmPoint,snowCatch.progress);
   updateGuide({mode,phase,handPreview:preview,handControllable,playTime:motion.playTime,globeFill:fillState?.globeFill||0,trackingHz:trackingSchedule.handHz(now),hand:time-trackedAt<=HAND_HOLD_SECONDS&&audience.allowed?trackedHand:null,held:motion.keepHeld,receiving:receivingSnow,progress:snowCatch.progress,point:palmPoint,test:testSnow});
   if(mode==='camera'&&(phase==='globe'||phase==='city')){
     if(!audience.selected)$('motion-title').textContent='어깨와 손이 카메라에 보이게 서주세요';
