@@ -1,4 +1,4 @@
-import {createVirtualHand} from './receiving-natural-hand.js?pose=fast-follow-v16';
+import {createVirtualHand} from './receiving-natural-hand.js?pose=lite-v1';
 import {flattenDistantObject} from './city-impostor.js';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
@@ -6,17 +6,18 @@ import {RoomEnvironment} from './vendor/RoomEnvironment.js';
 import {decorateCityLights,varyCityWindows,separateGlobeRailing} from './city-lighting.js';
 import {HeldPose} from './pose.mjs?follow=fast-v16';
 import {GlobeSnow} from './snow3d.mjs';
-import {createLiquid} from './liquid-globe.js';
+import {createLiteSnow} from './lite-snow.js';
 import {sampleSnowSurface} from './snow-surface.js';
 export function createScene(container){
- const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.88;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;container.append(renderer.domElement);
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.88;renderer.shadowMap.enabled=false;renderer.shadowMap.type=THREE.PCFSoftShadowMap;container.append(renderer.domElement);
  const virtualHand=createVirtualHand();
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(36,1,.02,120);
  const environment=new RoomEnvironment(),pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(environment,.04).texture;environment.dispose();pmrem.dispose();
  scene.add(new THREE.HemisphereLight(0xd8eaff,0x806647,.72));const key=new THREE.DirectionalLight(0xffe0b0,2.8);key.position.set(-3,6,5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-6,right:6,top:6,bottom:-5,near:.1,far:20});key.shadow.bias=-.00025;key.shadow.normalBias=.012;key.shadow.radius=3;scene.add(key);const rim=new THREE.DirectionalLight(0xb2d8ff,.65);rim.position.set(3,4,-3);scene.add(rim);
  const pivot=new THREE.Group(),model=new THREE.Group();pivot.add(model);model.position.y=-1.5;pivot.position.y=1.5;scene.add(pivot);
- const liquid=createLiquid(model);
- const pose=new HeldPose(),physics=new GlobeSnow(),clock={time:0};let loaded=false,shopLoaded=false,error=null,baseMin=.02,baseBounds=null,contactGap=0,materialMaps=0,look=0,lookY=0,targetLook=0,targetLookY=0,travelLast=0,frameMs=16,quality=1,slowRenderSeconds=0,renderedFrames=0,lastTick=performance.now(),frameInterval=16;
+ const liquid={ready:Promise.resolve(true),setTravel(){},stats:()=>({liquidLoaded:false,liquidVisible:false})};
+ const liteSnow=createLiteSnow();model.add(liteSnow.mesh);let physicsMs=0,statsAt=-Infinity,snowStats={};
+ const pose=new HeldPose(),physics=new GlobeSnow(3000,Math.random,{maxSubsteps:2}),clock={time:0};let loaded=false,shopLoaded=false,error=null,baseMin=.02,baseBounds=null,contactGap=0,materialMaps=0,look=0,lookY=0,targetLook=0,targetLookY=0,travelLast=0,frameMs=16,quality=1,slowRenderSeconds=0,renderedFrames=0,lastTick=performance.now(),frameInterval=16;
  function tuneMaterial(m){if(m.map)m.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());m.envMapIntensity=.55;if(/limestone/i.test(m.name))m.color.setRGB(.68,.61,.49);if(/walnut|timber|wood/i.test(m.name))m.color.setRGB(.48,.32,.19);if(m.name.startsWith('SHOP cloth binding')){const c=[[.16,.027,.035],[.035,.10,.065],[.24,.16,.065],[.045,.07,.10]][Number(m.name.slice(-1))]||[.1,.07,.04];m.color.setRGB(...c);}if(/Snow/.test(m.name))m.color.setRGB(.88,.92,.97);}
  const transitionFrames=[];let previousTick=0,shadowPhase=-1;
  let cityLightStats={};
@@ -33,14 +34,16 @@ export function createScene(container){
   cityLightStats=await decorateCityLights(gltf.scene);
   globeRailing=separateGlobeRailing(groups.PROPS||[]);
   // Thin optical shell: real volume, controlled reflections, no 2D deformation.
-  for(const o of groups.GLASS||[])o.material=new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:.012,transmission:1,thickness:.003,ior:1.45,transparent:true,opacity:1,depthWrite:false,side:THREE.FrontSide,envMapIntensity:.65});
+  for(const o of groups.GLASS||[])o.material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.FrontSide,
+   vertexShader:`varying vec3 n;varying vec3 eye;void main(){vec4 p=modelViewMatrix*vec4(position,1.);n=normalize(normalMatrix*normal);eye=normalize(-p.xyz);gl_Position=projectionMatrix*p;}`,
+   fragmentShader:`varying vec3 n;varying vec3 eye;void main(){float rim=pow(1.-abs(dot(normalize(n),normalize(eye))),2.5);gl_FragColor=vec4(.88,.95,1.,.012+rim*.26);}`});
   for(const o of groups.GLASS||[])o.castShadow=false;const base=model.getObjectByName('BASE');if(base){baseBounds=new THREE.Box3().setFromObject(base);baseMin=baseBounds.min.y-(pivot.position.y+model.position.y);model.position.y=-1.5-baseMin;}return true;
  }).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'3D 파일을 읽지 못했습니다. 실행기를 다시 열어주세요.'}));return false;});
 
  const shop=new THREE.Group();scene.add(shop);
- const shopReady=loader.loadAsync('./assets/3d/shop.glb').then(gltf=>{shop.add(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.receiveShadow=!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.name==='SHOP dusk beyond glass');o.castShadow=(Array.isArray(o.material)?o.material:[o.material]).some(m=>/SHOP walnut|SHOP cloth|SHOP wrapping|SHOP burgundy|Aged champagne brass|SHOP winter evergreen/.test(m.name));for(const m of Array.isArray(o.material)?o.material:[o.material]){tuneMaterial(m);if(m.map)m.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());if(m.normalMap)materialMaps++;}}});shopLoaded=true;return true;}).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'매장 3D 모델을 읽지 못했습니다. 새로고침해주세요.'}));return false;});
+ const shopReady=Promise.resolve(true);shopLoaded=true;
  const collisionReady=fetch('./assets/3d/colliders.json').then(r=>{if(!r.ok)throw Error('collision data');return r.json();}).then(b=>{physics.boxes=b;return true;}).catch(()=>{container.dataset.collisionWarning='true';return true;});
- const modelReady=Promise.all([globeReady,shopReady,liquid.ready,collisionReady]).then(results=>{loaded=results.every(Boolean);physics.reset();document.getElementById('shop').style.display='none';document.getElementById('window-snow').style.display='none';if(loaded){pivot.visible=false;shadow.visible=false;const cubeTarget=new THREE.WebGLCubeRenderTarget(256,{type:THREE.HalfFloatType});const capture=new THREE.CubeCamera(.1,40,cubeTarget);capture.position.set(0,1.6,0);capture.update(renderer,scene);const generator=new THREE.PMREMGenerator(renderer);const old=scene.environment;scene.environment=generator.fromCubemap(cubeTarget.texture).texture;old?.dispose();generator.dispose();cubeTarget.dispose();pivot.visible=true;shadow.visible=true;}loaded=false;return results.every(Boolean);});
+ const modelReady=Promise.all([globeReady,shopReady,liquid.ready,collisionReady]).then(results=>{physics.reset();document.getElementById('shop').style.display='';document.getElementById('window-snow').style.display='none';return results.every(Boolean);});
  // Warm fixtures in the shop are anchored in the same real 3D room.
  for(const x of [-3.8,3.8]){const lamp=new THREE.PointLight(0xffb763,6,9,2);lamp.position.set(x,3,-1.6);shop.add(lamp);}
  // Local lantern light, with small depth-tested halos; no full-screen bloom pass.
@@ -176,7 +179,7 @@ export function createScene(container){
 
   if(travel>=1){const base=endAim.clone().sub(endPos),yaw=-look*.90,pitch=-lookY*.38;const euler=new THREE.Euler(pitch,yaw,0,'YXZ');base.applyEuler(euler);aim.copy(camera.position).add(base);}
   camera.lookAt(aim);if(lanterns.visible){model.updateWorldMatrix(true,false);const eye=model.worldToLocal(camera.position.clone());for(const halo of lanternHalos)halo.position.copy(eye).sub(halo.userData.center).normalize().multiplyScalar(.09).add(halo.userData.center);}camera.fov=THREE.MathUtils.lerp(startFov,60,enter);camera.updateProjectionMatrix();
-  sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;skyline.material.opacity=sky.material.opacity;skyline.visible=sky.visible;scene.fog=travel>.55?cityFog:null;outer.visible=travel>.55;shadow.visible=travel<.5;shop.visible=travel<.5;
+  sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;skyline.material.opacity=sky.material.opacity;skyline.visible=sky.visible;scene.fog=travel>.55?cityFog:null;outer.visible=travel>.55;shadow.visible=travel<.5;shop.visible=false;
   // Stop drawing the full-screen refraction once the snow veil covers the globe.
   for(const o of groups.GLASS||[])o.visible=travel<.44;
   liquid.setTravel(travel);
@@ -209,7 +212,7 @@ export function createScene(container){
  reduceQuality(){
   if(!loaded||quality===.5)return;
   quality=quality===1?.75:.5;slowRenderSeconds=0;
-  const ratio=quality===.75?1:.75;renderer.setPixelRatio(ratio);resize();
+  const ratio=quality===.75?.85:.65;renderer.setPixelRatio(ratio);resize();
   snowMat.uniforms.pixelRatio.value=ratio;citySnowMat.uniforms.pixelRatio.value=ratio;
   if(quality===.5)for(const glass of groups.GLASS||[]){glass.material.transmission=0;glass.material.opacity=.12;glass.material.needsUpdate=true;}
  },
@@ -222,7 +225,8 @@ export function createScene(container){
   if(baseBounds){let lowest=Infinity;for(const x of [baseBounds.min.x,baseBounds.max.x])for(const y of [baseBounds.min.y,baseBounds.max.y])for(const z of [baseBounds.min.z,baseBounds.max.z]){v.set(x,y+model.position.y,z).applyQuaternion(pivot.quaternion).add(pivot.position);lowest=Math.min(lowest,v.y);}if(lowest<0)pivot.position.y-=lowest;contactGap=Math.max(0,lowest);}
   inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);
   // HeldPose already compensates camera motion, including the velocity used by snow.
-  if(travel<.42){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
+  if(travel<.42){const begin=performance.now();physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);physicsMs+=(performance.now()-begin-physicsMs)*.1;snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
+  liteSnow.update(dt,time,physics.agitation,travel,renderer.getPixelRatio());
   look+=(targetLook-look)*(1-Math.exp(-dt*3.5));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*3.5));
   setView(travel);
   if(cityFlakes.visible){citySnowMat.uniforms.time.value=time;for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=(.045+Math.sin(time*.8+i*2.4)*(.025+citySeed[i]*.065))*dt;cityPos[i*3+2]+=Math.cos(time*.65+i*1.7)*dt*.035;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;if(cityPos[i*3+2]>12)cityPos[i*3+2]=-12;if(cityPos[i*3+2]<-12)cityPos[i*3+2]=12;}cityGeo.attributes.position.needsUpdate=true;}
@@ -232,7 +236,7 @@ export function createScene(container){
   renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+elapsed:Math.max(0,slowRenderSeconds-elapsed*2);if(slowRenderSeconds>2)api.reduceQuality();
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);
  },
- stats(){const sorted=transitionFrames.slice().sort((a,b)=>a-b);return {...cityLightStats,...liquid.stats(),transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0),distantPlanes:distantCards.length,distantTrianglesRemoved:distantCards.reduce((n,c)=>n+c.userData.originalTriangles,0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...physics.stats(),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
+ stats(){const stamp=performance.now();if(stamp-statsAt>100){snowStats=physics.stats();statsAt=stamp;}const sorted=transitionFrames.slice().sort((a,b)=>a-b);return {...cityLightStats,...liquid.stats(),transitionFrames:sorted.length,transitionMaxMs:Math.round(sorted.at(-1)||0),transitionP95Ms:Math.round(sorted[Math.floor(sorted.length*.95)]||0),distantPlanes:distantCards.length,distantTrianglesRemoved:distantCards.reduce((n,c)=>n+c.userData.originalTriangles,0),artMode:'3d-shared-city',artLoaded:loaded,shopLoaded,cityBackdropLoaded,cityBackdropSize,skyLoaded,skylineLoaded,cityBackdropVisible:sky.visible&&cityBackdropLoaded,normalMappedMaterials:materialMaps,contactGap:Math.round(contactGap*10000)/10000,citySnowVisible:cityFlakes.visible,citySnowCount:cityCount,cityLanternsVisible:lanterns.visible,cityLanternCount:3,citySnowSampleY:Math.round(cityPos[1]*10000)/10000,error,holding:pose.held,inside:travelLast>=1,travel:travelLast,roll:pose.rotation[2],position:pose.position,...snowStats,lite:true,physicsMs:travelLast<.42?Math.round(physicsMs*100)/100:0,decorativeSnowCount:6000,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,renderMs:Math.round(frameMs*10)/10,fps:Math.round(1000/Math.max(1,frameInterval)),quality};}
  };
  renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 연결이 중단되었습니다. 새로고침해주세요.'}));});
  return api;

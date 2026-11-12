@@ -4,7 +4,7 @@ import vm from 'node:vm';
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
 for(const id of ['intro-camera','intro-pointer'])assert.match(html,new RegExp(`<button id="${id}" disabled>`));
 assert.match(html,/<button id="retry-app" hidden onclick="location.reload\(\)">/);
-const source=html.match(/<script id="app-bootstrap">([\s\S]*?)<\/script>/)[1].replace("import('./app.js')",'loadApp()');
+const source=html.match(/<script id="app-bootstrap">([\s\S]*?)<\/script>/)[1].replace(/import\('\.\/app\.js(?:\?[^']*)?'\)/,'loadApp()');
 const tick=()=>new Promise(r=>setImmediate(r));
 function setup(){
  let resolve,reject,timeout,cleared=false;

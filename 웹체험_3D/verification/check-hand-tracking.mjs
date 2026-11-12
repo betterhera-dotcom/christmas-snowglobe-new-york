@@ -13,8 +13,8 @@ for(const fps of [30,60])for(const phase of ['globe','city']){
   if(kind==='hand'){maxHandGap=Math.max(maxHandGap,now-lastHand);lastHand=now;}
   if(kind==='body'){maxBodyGap=Math.max(maxBodyGap,now-lastBody);lastBody=now;}
  }
- assert.ok(count.hand>=(phase==='city'?45:75)&&count.hand<=90);assert.ok(maxBodyGap<800,'700ms body refresh allows the intervening face/hand turns');
- assert.ok(count.face>=(phase==='city'?20:4),'face analysis runs from the globe and continues in the city');
+ assert.ok(count.hand>=(phase==='city'?45:75)&&count.hand<=90);assert.ok(maxBodyGap<(phase==='globe'?1100:800),'700ms body refresh allows the intervening face/hand turns');
+ assert.ok(count.face>=(phase==='city'?20:2),'face analysis runs from the globe and continues in the city');
  if(phase==='city'){assert.ok(maxFaceGap<=201,'city face targets update within 200ms on a responsive worker');assert.ok(maxHandGap<=101,'frequent face scans leave hands responsive');}
  console.log('PASS scheduling',{fps,phase,...count});
 }

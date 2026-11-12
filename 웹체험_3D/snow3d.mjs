@@ -1,6 +1,6 @@
 // A viscous, shared fluid velocity field inside a filled globe (not a full fluid solver).
 export class GlobeSnow{
- constructor(count=12000,random=Math.random){this.count=count;this.random=random;this.p=new Float32Array(count*3);this.v=new Float32Array(count*3);this.depth=Float32Array.from({length:count},()=>random());this.drift=Float32Array.from({length:count*3},()=>random()*Math.PI*2);this.angle=new Float32Array(count);this.boxes=[];this.surface=null;this.reset();}
+ constructor(count=12000,random=Math.random,{maxSubsteps=Infinity}={}){this.maxSubsteps=maxSubsteps;this.count=count;this.random=random;this.p=new Float32Array(count*3);this.v=new Float32Array(count*3);this.depth=Float32Array.from({length:count},()=>random());this.drift=Float32Array.from({length:count*3},()=>random()*Math.PI*2);this.angle=new Float32Array(count);this.boxes=[];this.surface=null;this.reset();}
  floorHeight(x,z){
   if(!this.surface)return .875;
   const {size,min,max,heights}=this.surface,gx=Math.max(0,Math.min(size-1.001,(x-min)/(max-min)*(size-1))),gz=Math.max(0,Math.min(size-1.001,(z-min)/(max-min)*(size-1))),ix=Math.floor(gx),iz=Math.floor(gz),tx=gx-ix,tz=gz-iz,k=iz*size+ix;
@@ -25,7 +25,7 @@ export class GlobeSnow{
   for(let a=0;a<3;a++)this.flow[a]=Math.max(-2.4,Math.min(2.4,this.flow[a]+kick[a]));
   const turn=[-kick[2]*1.1,kick[0]*.25-kick[2]*.35,kick[0]*1.1];
   for(let a=0;a<3;a++)this.spin[a]=Math.max(-2,Math.min(2,this.spin[a]+turn[a]));
-  const steps=Math.max(1,Math.ceil(dt/.012)),h=dt/steps;
+  const steps=Math.max(1,Math.min(this.maxSubsteps,Math.ceil(dt/.012))),h=dt/steps;
   for(let n=0;n<steps;n++){
    this.time+=h;this.turbulence*=Math.exp(-h*.48);this.agitation*=Math.exp(-h*.7);
    for(let a=0;a<3;a++){this.flow[a]+=(-this.displacement[a]*1.45-this.flow[a]*.85)*h;this.displacement[a]+=this.flow[a]*h;this.spin[a]*=Math.exp(-h*.50);}

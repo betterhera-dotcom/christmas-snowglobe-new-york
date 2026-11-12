@@ -1,7 +1,7 @@
 import {handLift} from './hand-height.mjs';
 import {trackingRegion} from './tracking-region.mjs';
 import {ENTRY_DURATION_MS,MIN_PLAY_SECONDS,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,citySnowReady,transitionVeil} from './journey.mjs';
-import { createScene } from './scene3d.js?hand=fast-follow-v16';
+import { createScene } from './scene3d.js?hand=lite-v1';
 import { ShakeMotion } from './motion.mjs';
 import { HeadLook } from './head-look.mjs';
 import {HandPickup} from './hand-pickup.mjs';
@@ -354,4 +354,10 @@ if(new URLSearchParams(location.search).has('verify')){
  ['정면 보기',()=>scene.lookAt(.5,.5)],['복귀 검증',()=>{demoTime=null;setMode('pointer');carol.reset();}]
  ]){const b=document.createElement('button');b.textContent=label;b.onclick=action;bar.append(b);}
  document.body.append(bar);
+}
+
+// Lightweight development dashboard; camera images are never stored.
+if(new URLSearchParams(location.search).has('perf')){
+ const panel=document.createElement('pre');panel.id='lite-performance';panel.style.cssText='position:fixed;left:12px;bottom:65px;z-index:100;color:#fff;background:#071b18e8;padding:12px;font:12px/1.6 monospace;pointer-events:none';document.body.append(panel);
+ setInterval(()=>{const s=scene?.stats();if(!s)return;panel.textContent=`경량판 · ${phase}\n화면 ${s.fps} FPS · 손 ${trackingSchedule.handHz(performance.now())}회/초\n손 좌표 지연 ${Math.round(webcamDebug.results.hand?.ageMs||0)}ms · 지연 제외 ${tracker?.metrics.dropped||0}회\n눈 CPU ${s.physicsMs}ms · 물리 눈 ${s.snowCount}개\n그리기 ${s.drawCalls}회 · 삼각형 ${s.triangles}개\n화질 ${s.quality} · 굴절/실시간 그림자 없음`;},500);
 }

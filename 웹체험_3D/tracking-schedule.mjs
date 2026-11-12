@@ -4,10 +4,10 @@ export class TrackingSchedule{
  reset(){this.videoTime=-1;this.lastHand=-Infinity;this.lastBody=-Infinity;this.lastFace=-Infinity;this.lastKind=null;this.handsSinceFace=0;this.handTimes=[];}
  next(now,videoTime,{allowed,phase='globe',diagnostics=false,faceReady=false}){
   if(videoTime===this.videoTime)return null;
-  const bodyInterval=allowed?700:350;
+  const bodyInterval=allowed?(phase==='globe'?1000:700):350;
   const bodyDue=now-this.lastBody>=bodyInterval-1;
   // In the globe, face outlines are secondary to acquiring and following hands.
-  const faceDue=faceReady&&(allowed||diagnostics)&&(phase==='city'||this.handsSinceFace>=2)&&now-this.lastFace>=(phase==='city'?100:900);
+  const faceDue=faceReady&&(allowed||diagnostics)&&(phase==='city'||this.handsSinceFace>=2)&&now-this.lastFace>=(phase==='city'?100:1500);
   let kind=null;
   if((allowed||diagnostics)&&this.lastKind!=='hand'&&this.lastKind!==null&&now-this.lastHand>=1000/30-1)kind='hand';
   else if(bodyDue&&(!faceDue||this.lastBody<=this.lastFace))kind='body';
