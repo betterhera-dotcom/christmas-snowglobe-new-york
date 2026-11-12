@@ -63,15 +63,16 @@ export class Carol {
   mute(value){this.muted=value;this.cityTrack.muted=value;if(this.track)this.track.muted=value;if(this.master){this.cityGain.gain.setTargetAtTime(value||this.mode!=='city'?0:.45,this.context.currentTime,.08);this.master.gain.setTargetAtTime(value?0:.14,this.context.currentTime,.08);this.songGain.gain.setTargetAtTime(value||this.mode!=='song'?0:this.songVolume,this.context.currentTime,.08);}}
   update(dt,energy,phase='globe'){
     const strength=Math.min(1,Math.max(0,energy)/.85),shaking=this.mode==='song'&&phase==='globe';
-    // Keep the recording at its original tempo for every gesture and distance.
-    this.rate=1;
+    // Make slow and strong shakes audibly distinct while preserving voice pitch.
+    const targetRate=.68+strength*.82;
+    this.rate=shaking?this.rate+(targetRate-this.rate)*(1-Math.exp(-dt/.28)):1;
     const volume=shaking?.12+strength**.8*.60:.4;
     this.songVolume+=(volume-this.songVolume)*(1-Math.exp(-dt/1.2));
     if(this.songGain&&this.mode==='song')this.songGain.gain.setTargetAtTime(this.muted?0:this.songVolume,this.context.currentTime,.15);
     if(this.mode==='city'&&this.context?.currentTime>=this.globeStopAt&&!this.track.paused)this.track.pause();
     if(this.mode==='ending'&&this.context?.currentTime>=this.fadeEnd){this.track.pause();this.cityTrack.pause();this.songGain.gain.setValueAtTime(0,this.context.currentTime);this.cityGain.gain.setValueAtTime(0,this.context.currentTime);}
     if(this.track){this.track.dataset.audioMode=this.mode;this.track.dataset.audioContext=this.context?.state||'none';this.track.dataset.gain=this.muted||this.mode!=='song'?'0':this.songVolume.toFixed(3);}
-    if(this.track&&this.track.playbackRate!==1)this.track.playbackRate=1;
+    if(this.track)this.track.playbackRate=this.rate;
     if(!this.context||this.context.state!=='running')return;
     if(this.mode!=='intro')return;
     this.beat-=dt*this.bpm/60;
