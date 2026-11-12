@@ -1,5 +1,6 @@
 // Select the frontmost-looking body by projected shoulder span, not metric depth.
 import {BODY_HOLD_SECONDS} from './tracking-policy.mjs';
+import {ActiveHand} from './active-hand.mjs';
 // Relative movement compensation only; no metre estimate or distance cutoff.
 export function cameraMotionScale(size){
  if(!Number.isFinite(size)||size<=0)return 1;
@@ -15,7 +16,7 @@ function describe(points,index){
 }
 export class AudienceGate {
  constructor(){this.reset();}
- reset(){this.bodies=[];this.selected=null;this.allowed=false;this.lastSeen=-Infinity;this.handAnchor=null;}
+ reset(){this.bodies=[];this.selected=null;this.allowed=false;this.lastSeen=-Infinity;this.handAnchor=null;this.activeHand=new ActiveHand();}
  update(landmarks,time){
   const previous=time-this.lastSeen<=BODY_HOLD_SECONDS?this.selected:null;
   this.bodies=landmarks.map(describe).filter(Boolean);
@@ -26,7 +27,7 @@ export class AudienceGate {
    .sort((a,b)=>Math.hypot(a.x-previous.x,a.y-previous.y)/previous.size+Math.abs(Math.log(a.size/previous.size))*.25-(Math.hypot(b.x-previous.x,b.y-previous.y)/previous.size+Math.abs(Math.log(b.size/previous.size))*.25))[0]:null;
   if(match&&selected.size<match.size*1.12)selected=match;
   const changed=!!previous!==!!selected||!!(previous&&selected&&selected!==match);
-  if(changed)this.handAnchor=null;
+  if(changed){this.handAnchor=null;this.activeHand.reset();}
   this.selected=selected;this.allowed=!!selected;
   if(selected)this.lastSeen=time;
   return {selected,allowed:this.allowed,changed};
@@ -38,11 +39,11 @@ export class AudienceGate {
   const owners=this.bodies.map(body=>{const head=visible(body.points[0])?body.points[0]:{x:body.x,y:body.y-body.size*.5};return {body,score:Math.hypot(x-head.x,y-head.y)/body.size};}).filter(o=>o.score<.8).sort((a,b)=>a.score-b.score);
   return owners[0]?.body===this.selected&&(!owners[1]||owners[1].score>owners[0].score*1.25+.08);
  }
- handIndex(hands,time,{remember=true}={}){
-  if(!this.allowed||time-this.lastSeen>BODY_HOLD_SECONDS){if(remember)this.handAnchor=null;return -1;}
+ handIndex(hands,time,{remember=true,prefer,moving=false}={}){
+  if(!this.allowed||time-this.lastSeen>BODY_HOLD_SECONDS){if(remember){this.handAnchor=null;this.activeHand.reset();}return -1;}
   const candidates=[];
   for(const [index,hand] of hands.entries()){
-   if(hand?.length!==21)continue;
+   if(hand?.length!==21||hand.some(p=>!p||!Number.isFinite(p.x+p.y)))continue;
    const wrist=hand[0];if(!wrist||!Number.isFinite(wrist.x+wrist.y))continue;
    const owners=[];
    for(const body of this.bodies){
@@ -55,7 +56,10 @@ export class AudienceGate {
    if(owners[1]&&owners[1].score<owners[0].score*1.25+.08)continue;
    candidates.push({index,wrist,distance:this.handAnchor?Math.hypot(wrist.x-this.handAnchor.x,wrist.y-this.handAnchor.y):owners[0].score});
   }
-  candidates.sort((a,b)=>a.distance-b.distance);if(remember)this.handAnchor=candidates[0]?.wrist||null;
-  return candidates[0]?.index??-1;
+  candidates.sort((a,b)=>a.distance-b.distance);
+  if(!remember)return candidates[0]?.index??-1;
+  const index=this.activeHand.select(candidates,time,{size:this.selected.size,prefer,moving});
+  this.handAnchor=hands[index]?.[0]||null;
+  return index;
  }
 }

@@ -50,7 +50,7 @@ let entryStartedAt=0,wishStartedAt=null,lastWish=-1,pointerCatchAt=null,pointerC
 const audience=new AudienceGate(),trackingSchedule=new TrackingSchedule();
 let handPreviewPacket=null;
 let testSnow=false,trackedHand=null,trackedAt=-Infinity,receivingSnow=false,palmPoint=[.5,.66];
-function releaseAudience(){handPreviewPacket=null;trackedHand=null;receivingSnow=false;grip.reset();snowCatch.reset();motion.keepHeld=false;motion.release();headLook.reset();$('hand-cursor').hidden=true;}
+function releaseAudience(){audience.activeHand.reset();audience.handAnchor=null;handPreviewPacket=null;trackedHand=null;receivingSnow=false;grip.reset();snowCatch.reset();motion.keepHeld=false;motion.release();headLook.reset();$('hand-cursor').hidden=true;}
 function updateAudience(bodies,now){
   const selection=audience.update(bodies,now/1000);
   motion.cameraScale=selection.selected?cameraMotionScale(selection.selected.size):1;
@@ -97,7 +97,7 @@ function drawStorm(time){
   stormContext.strokeStyle=`rgba(196,214,226,${fade*.7})`;stormContext.lineCap='round';
   for(const streak of streaks){const r=((streak.offset+time*.8)%1)**2*radius,length=(12+travel*100)*r/radius,x=storm.width/2+Math.cos(streak.angle)*r,y=storm.height/2+Math.sin(streak.angle)*r;stormContext.lineWidth=streak.size*(.5+r/radius);stormContext.beginPath();stormContext.moveTo(x,y);stormContext.lineTo(x+Math.cos(streak.angle)*length,y+Math.sin(streak.angle)*length);stormContext.stroke();}
 }
-function status(text,active=false){if(introStarting)$('intro-status').textContent=text;if(starting&&!$('loading').hidden)$('loading-message').textContent=text;$('status').textContent=text;$('status-dot').classList.toggle('active',active);}
+function status(text,active=false){if(introStarting)$('intro-status').textContent=text;if(starting)$('camera-start-status').textContent=text;$('status').textContent=text;$('status-dot').classList.toggle('active',active);}
 function error(text){if(text&&!$('intro').hidden)$('intro-status').textContent=text;$('error').textContent=text;$('error').hidden=!text;}
 function loadingFailed(message){error(message);$('loading').hidden=false;$('loading-message').textContent=message;$('loading').querySelector('small').textContent='연결을 확인한 후 다시 불러와주세요.';$('retry-load').hidden=false;}
 $('retry-load').addEventListener('click',()=>location.reload());
@@ -117,38 +117,50 @@ function setMode(value){
   $('mode-label').textContent=value==='camera'?'CAMERA':value==='pointer'?'TOUCH / MOUSE':'READY';$('prompt').textContent='손으로 작은 겨울을 들어보세요';
   $('hint').textContent=value==='pointer'?'스노우볼 위를 눌러 잡고, 3초간 음악과 눈을 즐긴 뒤 안내에 따라 세게 흔들어주세요.':'손을 스노우볼 위에 올려 잡고, 3초간 음악과 눈을 즐긴 뒤 안내에 따라 세게 흔들어주세요.';$('hand-cursor').hidden=true;lastHand=0;
 }
+function startupDeadline(promise,ms,message){
+ let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);})]).finally(()=>clearTimeout(timer));
+}
 async function startCamera(){
   if(starting)return;const token=++generation;starting=true;$('camera').disabled=true;$('cancel-start').hidden=false;error('');stopCamera();setMode('idle');
-  let permissionHint;
+  let permissionHint,acceptCamera=true;
+  $('camera-startup').hidden=false;$('retry-camera').hidden=true;$('camera-start-help').textContent='이미 허용한 카메라는 허용 창 없이 연결됩니다. 연결 중에는 3D 움직임을 잠시 멈춥니다.';
   try{
     if(!navigator.mediaDevices?.getUserMedia)throw new Error('LOCALHOST');
     const request=navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:30,max:30}}});
-    status('Chrome 카메라 허용을 확인해주세요');
+    request.then(candidate=>{if(!acceptCamera||token!==generation)candidate.getTracks().forEach(t=>t.stop());}).catch(()=>{});
+    status('1 / 3 · 카메라 연결 요청 중 · 브라우저의 허용 안내를 확인해주세요');
     permissionHint=setTimeout(()=>{if(token===generation)status('허용 창이 안 보이면 주소창 왼쪽 사이트 설정에서 카메라 권한을 확인해주세요. 마우스로도 시작할 수 있어요.');},5000);
     carol.startIntro().catch(()=>{});
-    const candidate=await request;clearTimeout(permissionHint);
+    const candidate=await startupDeadline(request,20000,'CAMERA_TIMEOUT');clearTimeout(permissionHint);
     if(token!==generation){candidate.getTracks().forEach(t=>t.stop());return;}
-    stream=candidate;$('webcam').srcObject=stream;await $('webcam').play();
+    stream=candidate;$('webcam').srcObject=stream;status('2 / 3 · 카메라 허용됨 · 영상이 시작되기를 기다립니다');await startupDeadline($('webcam').play(),12000,'VIDEO_TIMEOUT');
     if(token!==generation)return;
     $('camera-preview').dataset.active='true';$('camera-preview').open=true;
     stream.getVideoTracks()[0].addEventListener('ended',()=>{if(token===generation){generation++;starting=false;$('camera').disabled=false;$('cancel-start').hidden=true;stopCamera();setMode('idle');status('카메라 연결이 끊어졌습니다');error('카메라를 연결하고 ‘카메라로 시작’을 다시 눌러주세요.');}});
-    status('카메라 연결됨 · 몸과 손 인식, 3D 화면을 준비하고 있어요…');
+    status('3 / 3 · 카메라 영상 연결됨 · 몸과 손 인식을 준비하고 있습니다');
     if(!tracker)tracker=new TrackingClient();
-    const [,artReady]=await Promise.all([tracker.ready,scene?.ready]);
+    await tracker.ready;if(token!==generation)return;
+    status('몸과 손 인식 준비됨 · 3D 화면을 준비하고 있습니다');
+    const artReady=await startupDeadline(scene?.ready,60000,'ART_TIMEOUT');
     if(token!==generation)return;
     if(!artReady)throw new Error('ART');
-    setMode('camera');
+    setMode('camera');$('camera-startup').hidden=true;
     carol.startIntro().catch(()=>error('소리를 시작하지 못했어요. 소리 버튼을 눌러주세요.'));
     status('어깨와 손을 보여주세요 · 앞쪽 관객 한 분만 조작합니다');return true;
   }catch(e){
     if(token!==generation)return;tracker?.close();tracker=null;stopCamera();setMode('idle');status('카메라를 시작하지 못했습니다');
     const messages={NotAllowedError:'카메라 권한이 차단되어 있어요. Chrome 주소창 왼쪽 사이트 설정 → 카메라 → 허용 후 다시 시작해주세요. 운영체제의 Chrome 카메라 권한도 확인해주세요.',NotFoundError:'연결된 카메라가 없습니다. 웹캠을 연결하거나 마우스로 먼저 체험해주세요.',NotReadableError:'다른 앱이 카메라를 사용 중일 수 있습니다. 카메라 사용 앱을 닫고 다시 시작해주세요.'};
-    error(messages[e.name]||(e.message==='LOCALHOST'?'카메라는 HTTPS 또는 localhost 주소에서 실행해주세요.':e.message==='ART'?'3D 화면을 불러오지 못했습니다. 다시 불러오기를 눌러주세요.':'몸과 손 인식을 준비하지 못했습니다. 카메라로 시작을 다시 누르거나 마우스로 체험해주세요.'));console.warn(e);
-  }finally{clearTimeout(permissionHint);if(token===generation){starting=false;$('camera').disabled=false;$('cancel-start').hidden=true;}}
+    messages.SecurityError='브라우저 또는 운영체제 설정에서 카메라 접근이 차단되어 있습니다. 카메라 권한을 확인해주세요.';
+    messages.OverconstrainedError='웹캠이 요청한 영상 설정을 지원하지 못했습니다. 다른 웹캠 또는 Chrome 카메라 설정을 확인해주세요.';
+    const timed={CAMERA_TIMEOUT:'카메라가 20초 동안 응답하지 않았습니다. 주소창 왼쪽 사이트 설정에서 카메라 허용 여부를 확인하고, 다른 카메라 사용 앱을 닫은 뒤 다시 시도해주세요.',VIDEO_TIMEOUT:'카메라는 허용됐지만 영상이 시작되지 않았습니다. 다른 카메라 사용 앱을 닫고 웹캠 연결을 확인해주세요.',ART_TIMEOUT:'카메라와 인식은 준비됐지만 3D 화면 로딩이 지연되고 있습니다. 다시 불러오기를 시도해주세요.'};
+    error(messages[e.name]||timed[e.message]||(e.message==='LOCALHOST'?'카메라는 HTTPS 또는 localhost 주소에서 실행해주세요.':e.message==='ART'?'3D 화면을 불러오지 못했습니다. 다시 불러오기를 눌러주세요.':'몸과 손 인식을 준비하지 못했습니다. 카메라로 시작을 다시 누르거나 마우스로 체험해주세요.'));console.warn(e);
+    $('camera-startup').hidden=false;$('camera-start-status').textContent=$('error').textContent;$('camera-start-help').textContent='브라우저 밖의 권한 창은 사이트가 강제로 열 수 없습니다. 차단 설정을 바꾼 후 아래 버튼으로 다시 시도해주세요.';$('retry-camera').hidden=false;
+  }finally{acceptCamera=false;clearTimeout(permissionHint);if(token===generation){scene?.resumeTiming();starting=false;$('camera').disabled=false;$('cancel-start').hidden=false;}}
 }
 $('camera').addEventListener('click',startCamera);
+$('retry-camera').addEventListener('click',startCamera);
 async function startPointer(){
- const token=++generation;starting=false;$('camera').disabled=false;$('cancel-start').hidden=true;stopCamera();setMode('idle');error('');status('3D 스노우볼을 준비하고 있습니다…');carol.resume().catch(()=>{});
+ const token=++generation;starting=false;$('camera-startup').hidden=true;scene?.resumeTiming();$('camera').disabled=false;$('cancel-start').hidden=true;stopCamera();setMode('idle');error('');status('3D 스노우볼을 준비하고 있습니다…');carol.resume().catch(()=>{});
  if(!scene?.stats().artLoaded&&!await scene?.ready){if(token===generation)loadingFailed('스노우볼을 불러오지 못했어요');return false;}
  if(token!==generation)return false;
  setMode('pointer');status('마우스를 누른 채 움직여주세요',true);feedback('스노우볼 위를 눌러 잡아보세요');return true;
@@ -182,10 +194,10 @@ $('scene').addEventListener('pointercancel',releasePointer);
 $('scene').addEventListener('lostpointercapture',releasePointer);
 $('scene').addEventListener('pointerleave',()=>{if(mode==='pointer'&&!pointerHeld)motion.release();});
 $('sound').addEventListener('click',async()=>{carol.mute(!carol.muted);$('sound').textContent=carol.muted?'소리 꺼짐':'소리 켜짐';$('sound').setAttribute('aria-pressed',String(carol.muted));feedback(carol.muted?'캐롤을 잠시 쉬어요':'캐롤이 다시 흘러요');if(!carol.muted)await carol.resume().catch(()=>error('소리를 시작하지 못했어요. 다시 눌러주세요.'));});
-function resetExperience(){generation++;starting=false;introStarting=false;$('cancel-start').hidden=true;$('camera').disabled=false;stopCamera();setMode('idle');carol.reset();carol.startIntro().catch(()=>{});error('');status('시작 방법을 선택해주세요');$('intro-status').textContent='시작 방법을 누르면 음악과 함께 커튼이 열립니다';showIntro();}
+function resetExperience(){$('camera-startup').hidden=true;generation++;starting=false;introStarting=false;$('cancel-start').hidden=true;$('camera').disabled=false;stopCamera();setMode('idle');carol.reset();carol.startIntro().catch(()=>{});error('');status('시작 방법을 선택해주세요');$('intro-status').textContent='시작 방법을 누르면 음악과 함께 커튼이 열립니다';showIntro();}
 $('reset').addEventListener('click',resetExperience);
 $('fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{error('전체 화면은 Chrome 메뉴에서도 켤 수 있습니다.');}});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){handPreviewPacket=null;tracker?.reset();motion.reset();carol.pause();pointerCatchAt=null;pointerHeld=false;testSnow=false;receivingSnow=false;snowCatch.reset();}else if(carol.context){carol.resume().catch(()=>{});lastFrame=performance.now();if(phase==='entering')entryStartedAt=lastFrame-travel*ENTRY_DURATION_MS;}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){audience.activeHand.reset();audience.handAnchor=null;handPreviewPacket=null;tracker?.reset();motion.reset();carol.pause();pointerCatchAt=null;pointerHeld=false;testSnow=false;receivingSnow=false;snowCatch.reset();}else if(carol.context){carol.resume().catch(()=>{});lastFrame=performance.now();if(phase==='entering')entryStartedAt=lastFrame-travel*ENTRY_DURATION_MS;}});
 window.addEventListener('pagehide',()=>{generation++;stopCamera();tracker?.close();carol.pause();});
 function applyTrackingResult(inference,result,now){
  const time=now/1000;
@@ -195,7 +207,19 @@ function applyTrackingResult(inference,result,now){
         if(phase==='city'&&audience.allowed&&wishStartedAt===null&&audience.ownsFace(result.faceLandmarks[0],time)){const horizontal=headLook.update(result.faceLandmarks[0]);scene?.lookAt(horizontal,headLook.vertical);}
       }else{
       trackingSchedule.recordHand(performance.now());
-      const index=audience.handIndex(result.landmarks,time),hand=result.landmarks[index];
+      const index=audience.handIndex(result.landmarks,time,{
+        moving:phase==='globe',
+        prefer:phase==='globe'&&!grip.closed?i=>{
+          const palm=[0,5,9,13,17].map(j=>result.landmarks[i][j]);
+          return scene?.handOverGlobe(1-palm.reduce((s,p)=>s+p.x,0)/5,palm.reduce((s,p)=>s+p.y,0)/5);
+        }:undefined
+      }),hand=result.landmarks[index];
+      const handChanged=audience.activeHand.changed;
+      if(handChanged){
+        // A handover is not a shake: rebase position and wrist rotation.
+        motion.release();motion.gripRevision=(motion.gripRevision||0)+1;
+        grip.since=null;snowCatch.reset();
+      }
       trackedHand=hand||null;trackedAt=time;
       if(phase==='city'){
         receivingSnow=isReceivingSnow(result.worldLandmarks?.[index]||hand);
@@ -205,19 +229,20 @@ function applyTrackingResult(inference,result,now){
         const points=[hand[0],hand[5],hand[9],hand[13],hand[17]],x=1-points.reduce((s,p)=>s+p.x,0)/5,y=points.reduce((s,p)=>s+p.y,0)/5;
         const wasClosed=grip.closed,closed=grip.update(result.worldLandmarks?.[index]||hand,time,scene?.handOverGlobe(x,y));
         const wristAngle=Math.atan2(hand[9].y-hand[0].y,hand[9].x-hand[0].x);
-        if(closed&&(!wasClosed||time-lastHand>HAND_HOLD_SECONDS))wristBase=wristAngle;
+        if(closed&&(handChanged||!wasClosed||time-lastHand>HAND_HOLD_SECONDS))wristBase=wristAngle;
         if(closed&&wasClosed&&time-lastHand>HAND_HOLD_SECONDS)motion.gripRevision=(motion.gripRevision||0)+1;
         if(closed){motion.wristRoll=-Math.atan2(Math.sin(wristAngle-wristBase),Math.cos(wristAngle-wristBase));
           const points3D=result.worldLandmarks?.[index]||hand,palm=Math.hypot(points3D[9].x-points3D[0].x,points3D[9].y-points3D[0].y,points3D[9].z-points3D[0].z);
           motion.pitch=Math.max(-.65,Math.min(.65,(points3D[9].z-points3D[0].z)/Math.max(.001,palm)));
         }
         motion.keepHeld=closed;
-        if(closed)motion.sample(x,y,time,performance.now()/1000);else motion.release();lastHand=time;status(closed?'스노우볼을 잡고 있어요':'손을 C자 모양으로 만들어 스노우볼을 잡아주세요',closed);$('hand-cursor').hidden=phase==='city';$('hand-cursor').style.left=`${x*100}%`;$('hand-cursor').style.top=`${y*100}%`;
+        if(closed)motion.sample(x,y,time,performance.now()/1000);else motion.release();lastHand=time;status(closed?'스노우볼을 잡고 있어요':'한 손을 스노우볼 위에 올려 잡아주세요',closed);$('hand-cursor').hidden=phase==='city';$('hand-cursor').style.left=`${x*100}%`;$('hand-cursor').style.top=`${y*100}%`;
       }else{const held=grip.update(null,time);motion.keepHeld=held;if(!held)motion.release();$('hand-cursor').hidden=true;status(held?'잡은 상태를 유지하고 있어요 · 손을 보여주세요':'손이 카메라에 보이도록 들어주세요');}
       }
  }
 function frame(now){
   const time=now/1000,dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+  if(starting){requestAnimationFrame(frame);return;}
   $('recognition-only').disabled=phase==='entering'||phase==='ending';
   if(demoTime!==null&&phase==='globe'){const t=time-demoTime;motion.keepHeld=true;motion.sample(.5+.19*Math.sin(t*demoFrequency),.5+.10*Math.cos(t*demoFrequency*.8),time);if(t>32){demoTime=null;releasePointer();}}
   if(demoTime!==null&&phase==='city'){demoTime=null;releasePointer();}
@@ -227,6 +252,7 @@ function frame(now){
       const token=generation,requestPhase=phase;
       tracker.detect(inference,$('webcam'),now,raw=>{
         if(token===generation&&mode==='camera'&&phase===requestPhase&&!document.hidden){
+         if(inference==='face')raw.owned=audience.ownsFace(raw.result.faceLandmarks?.[0],raw.timestamp/1000);
          webcamDebug.record(raw);
          if(inference==='hand'){handPreviewPacket=raw;comparisonSamples.push(raw.ageMs);if(comparisonSamples.length>60)comparisonSamples.shift();
           if(!recognitionOnly){trackingPressure=raw.ageMs>150?trackingPressure+1:Math.max(0,trackingPressure-1);if(trackingPressure>=12){scene?.reduceQuality();trackingPressure=0;}}
@@ -262,7 +288,7 @@ function frame(now){
     if(!cityArrivedAt)cityArrivedAt=now;
     if(now-cityArrivedAt>4000&&!document.body.classList.contains('city-settled')){
       document.body.classList.add('city-settled');
-      $('hint').textContent=mode==='camera'?'손바닥을 펴고 4초간 눈 받기 → 가득 쌓이면 행운 카드':'화면을 4초간 누르기 → 손에 눈 쌓기 → 행운 카드';
+      $('hint').textContent=mode==='camera'?'고개로 둘러보기 · 한 손으로 4초간 눈 받기 → 행운 카드':'화면을 4초간 누르기 → 손에 눈 쌓기 → 행운 카드';
     }
   }
   if(phase==='city'){

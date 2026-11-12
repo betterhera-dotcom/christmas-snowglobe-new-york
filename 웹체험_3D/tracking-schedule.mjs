@@ -5,10 +5,12 @@ export class TrackingSchedule{
  next(now,videoTime,{allowed,phase='globe',diagnostics=false,faceReady=false}){
   if(videoTime===this.videoTime)return null;
   const bodyInterval=allowed?700:350;
+  const bodyDue=now-this.lastBody>=bodyInterval-1;
+  const faceDue=phase==='city'&&allowed&&faceReady&&now-this.lastFace>=300;
   let kind=null;
   if((allowed||diagnostics)&&this.lastKind!=='hand'&&this.lastKind!==null&&now-this.lastHand>=1000/30-1)kind='hand';
-  else if(now-this.lastBody>=bodyInterval-1)kind='body';
-  else if(phase==='city'&&allowed&&faceReady&&now-this.lastFace>=700)kind='face';
+  else if(bodyDue&&(!faceDue||this.lastBody<=this.lastFace))kind='body';
+  else if(faceDue)kind='face';
   else if((allowed||diagnostics)&&now-this.lastHand>=(allowed?1000/30-1:250))kind='hand';
   if(!kind)return null;
   this.videoTime=videoTime;this.lastKind=kind;

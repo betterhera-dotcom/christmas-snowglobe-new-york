@@ -30,7 +30,8 @@ export class WebcamDebug{
   }
   const bodies=body?.result.landmarks.length,hands=hand?.result.landmarks.length;
   this.status.textContent=paused?'도시 이동 중 · 분석 잠시 대기':!body&&!hand?'분석 결과 대기 · 어깨와 손을 보여주세요':body?.stale||hand?.stale?'분석 지연 · 주황색 선은 조작에서 제외':!bodies?'몸 미감지 · 어깨와 손을 함께 보여주세요':!allowed?'몸 감지 · 양어깨가 카메라에 보이게 해주세요':!hands?'몸 감지 완료 · 손을 보여주세요':controlled?'손 연결 완료 · 흰색 손 UI 표시 중':'손 검출됨 · 조작자 팔과 연결 대기';
+  const faceState=!delegates?.face?'도시에서 준비':!face?'얼굴 분석 대기':face.stale?'분석 지연':!face.result.faceLandmarks?.length?'얼굴 미감지':!face.owned?'조작자 얼굴 연결 대기':'고개 연결됨';
   const describe=p=>p?`${Math.round(p.ageMs)}ms / 처리 ${Math.round(p.inferenceMs)}ms`:'대기';
-  this.metrics.textContent=`몸 ${bodies??'—'} · 손 ${hands??'—'}\n몸 ${delegates?.body||'—'} ${describe(body)}\n손 ${delegates?.hand||'—'} ${describe(hand)}\n고개 보기 ${delegates?.face?describe(face):'도시에서 준비'}\n지연 제외 ${dropped}회 · 흰색: 손 / 초록: 선택 몸`;
+  this.metrics.textContent=`몸 ${bodies??'—'} · 손 ${hands??'—'}\n몸 ${delegates?.body||'—'} ${describe(body)}\n손 ${delegates?.hand||'—'} ${describe(hand)}\n고개 보기 ${faceState}${face?' · '+describe(face):''}\n지연 제외 ${dropped}회 · 흰색: 손 / 초록: 선택 몸`;
  }
 }

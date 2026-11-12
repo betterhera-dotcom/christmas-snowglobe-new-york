@@ -174,3 +174,8 @@ body[data-phase=entering] .instruction #hint{display:none}
 @media(max-width:650px){#camera-preview,body.city-settled #camera-preview{width:195px;max-height:45dvh}}
 
 #recognition-only{width:100%;margin-top:8px;padding:8px;font-size:12px}#comparison-status{display:block;white-space:pre-line;font-size:11px;padding:6px 0}
+
+/* Camera startup stays visible independently of 3D asset loading. */
+#camera-startup{position:absolute;z-index:35;left:50%;bottom:85px;transform:translateX(-50%);width:min(600px,calc(100% - 32px));padding:20px;background:#10251cf5;border:1px solid #d9e7d399;border-radius:8px;color:#fff;text-align:center;box-sizing:border-box}
+#camera-startup[hidden],#retry-camera[hidden],#cancel-start[hidden]{display:none}
+#camera-startup p{margin:0 0 10px;font-size:18px;line-height:1.6}#camera-startup small{display:block;font-size:13px;line-height:1.6;color:#deeadf}#camera-startup>div{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px}#camera-startup button{font-size:15px;padding:10px 16px}

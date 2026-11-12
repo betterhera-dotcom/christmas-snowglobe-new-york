@@ -15,7 +15,12 @@
     <div id="shop" aria-hidden="true"></div>
     <canvas id="window-snow" aria-hidden="true"></canvas>
     <div id="scene" data-loaded="false" aria-busy="true" aria-label="크리스마스 매장에서 손으로 들고 흔드는 뉴욕 스노우볼"></div>
-    <div id="loading" role="status"><p id="loading-message">작은 겨울을 준비하고 있어요</p><small>스노우볼과 매장을 불러오는 중입니다.</small><button id="cancel-start" hidden>카메라 대기 취소 · 마우스로 시작</button><button id="retry-load" hidden>다시 불러오기</button></div>
+    <div id="loading" role="status"><p id="loading-message">작은 겨울을 준비하고 있어요</p><small>스노우볼과 매장을 불러오는 중입니다.</small><button id="retry-load" hidden>다시 불러오기</button></div>
+    <aside id="camera-startup" hidden aria-label="카메라 연결 안내">
+      <p id="camera-start-status" role="status" aria-live="polite"></p>
+      <small id="camera-start-help">이미 허용한 카메라는 허용 창 없이 연결됩니다.</small>
+      <div><button id="retry-camera" hidden>카메라 다시 시도</button><button id="cancel-start">마우스로 시작</button></div>
+    </aside>
     <div class="vignette" aria-hidden="true"></div>
     <header class="arcade-panel">
       <div class="title"><h1>손끝에서 열리는 크리스마스</h1><p>스노우볼 세계여행</p></div>

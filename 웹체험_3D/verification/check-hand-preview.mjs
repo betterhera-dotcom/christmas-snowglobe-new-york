@@ -35,3 +35,6 @@ const ctx=vm.createContext({document:{getElementById:element,createElementNS:()=
 ctx.options={mode:'camera',phase:'globe',hand:null,handPreview:{hand:frontHand,delayed:true},handControllable:false,point:[.5,.5]};vm.runInContext('updateGuide(options)',ctx);
 assert.match(element('tracking-state').textContent,/손 위치 표시 · 조작 대기/);assert.match(element('motion-title').textContent,/분석이 늦어/);
 console.log('PASS: delayed white-hand preview without control, expiry, no/rear hands, no anchor mutation, session reset and waiting guide');
+
+ctx.options={mode:'camera',phase:'city',hand:null,progress:0,point:[.5,.5]};vm.runInContext('updateGuide(options)',ctx);
+assert.match(element('motion-help').textContent,/고개를 돌려/,'city keeps head-look instructions alongside snow collection');
