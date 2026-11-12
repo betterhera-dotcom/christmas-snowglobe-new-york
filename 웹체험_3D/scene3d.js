@@ -1,4 +1,4 @@
-import {createVirtualHand} from './vr-hand.js';
+import {createVirtualHand} from './receiving-natural-hand.js?pose=skin-left-v13';
 import {flattenDistantObject} from './city-impostor.js';
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';

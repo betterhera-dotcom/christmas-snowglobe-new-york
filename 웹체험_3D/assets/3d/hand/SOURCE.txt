@@ -1,0 +1,4 @@
+WebXR Input Profiles generic-hand, @webxr-input-profiles/assets@1.0
+https://cdn.jsdelivr.net/npm/@webxr-input-profiles/assets@1.0/dist/profiles/generic-hand/left.glb
+https://github.com/immersive-web/webxr-input-profiles/tree/main/packages/assets
+MIT license; recolored and posed locally.

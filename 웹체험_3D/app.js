@@ -1,7 +1,7 @@
 import {handLift} from './hand-height.mjs';
 import {trackingRegion} from './tracking-region.mjs';
 import {ENTRY_DURATION_MS,MIN_PLAY_SECONDS,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,citySnowReady,transitionVeil} from './journey.mjs';
-import { createScene } from './scene3d.js';
+import { createScene } from './scene3d.js?hand=skin-left-v13';
 import { ShakeMotion } from './motion.mjs';
 import { HeadLook } from './head-look.mjs';
 import {HandPickup} from './hand-pickup.mjs';
@@ -12,7 +12,7 @@ import {TrackingSchedule} from './tracking-schedule.mjs';
 import {TrackingClient} from './tracking-client.mjs';
 import {getHandPreview} from './hand-preview.mjs';
 import {BODY_HOLD_SECONDS,HAND_HOLD_SECONDS} from './tracking-policy.mjs';
-import { Carol } from './audio.js?cue=trimmed20-v6';
+import { Carol } from './audio.js?cue=trimmed20-smooth-v7';
 import {showIntro,openIntro,updateGuide} from './experience-guide.js';
 import {createHandRenderer,pointerHand} from './hand-shape.js';
 import {WebcamDebug} from './webcam-debug.js';

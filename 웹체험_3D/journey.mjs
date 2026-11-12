@@ -1,7 +1,7 @@
 export const CITY_TITLE_MS=5000;
-export const WISH_DURATION_MS=17000;
-export const WISH_FADE_MS=15500;
-export const ENTRY_DURATION_MS=5500;
+export const WISH_DURATION_MS=6500;
+export const WISH_FADE_MS=5000;
+export const ENTRY_DURATION_MS=4000;
 export const MIN_PLAY_SECONDS=9;
 const smooth=(x,a,b)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 // Fully cover every geometry/light switch; reveal the city once it is ready.
