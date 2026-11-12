@@ -11,10 +11,12 @@ import {TrackingClient} from './tracking-client.mjs';
 import { Carol } from './audio.js';
 import {showIntro,openIntro,updateGuide} from './experience-guide.js';
 import {createHandRenderer,pointerHand} from './hand-shape.js';
+import {WebcamDebug} from './webcam-debug.js';
 
 const $=id=>document.getElementById(id),motion=new ShakeMotion(),carol=new Carol($('carol-track'),$('city-track')),grip=new HandPickup(),headLook=new HeadLook(),snowCatch=new SnowCollection();
 let virtualPointer=[.72,.72],virtualCurl=0;
 const handOutline=$('hand-outline'),drawHandOutline=createHandRenderer(handOutline);let outlinedAt=-Infinity,lastOutlineDraw=-Infinity;
+const webcamDebug=new WebcamDebug($('webcam-skeleton'),$('tracking-status'),$('tracking-metrics'));
 const snowEntry=new SnowEntry();
 const previewMuted=new URLSearchParams(location.search).has('muted');
 carol.mute(previewMuted);$('sound').textContent=previewMuted?'소리 꺼짐':'소리 켜짐';$('sound').setAttribute('aria-pressed',String(previewMuted));
@@ -116,6 +118,7 @@ window.addEventListener('art-error',event=>loadingFailed(event.detail));
 try{scene=createScene($('scene'));$('camera').disabled=$('pointer').disabled=$('reset').disabled=true;status('3D 스노우볼을 준비하고 있습니다…');scene.ready.then(ok=>{$('camera').disabled=$('pointer').disabled=$('reset').disabled=$('enter-city').disabled=!ok;$('scene').setAttribute('aria-busy','false');if(ok){$('loading').hidden=true;}else{loadingFailed('스노우볼을 불러오지 못했어요');}status(ok?'시작 방법을 선택해주세요':'3D 파일을 읽지 못했습니다');});}catch(e){loadingFailed('입체 화면을 시작하지 못했습니다. Chrome의 그래픽 가속 설정과 브라우저를 확인해주세요.');console.error(e);}
 function stopCamera(){if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('webcam').srcObject=null;$('camera-preview').removeAttribute('data-active');$('viewer-calibration').hidden=true;calibrationStart=null;audience.reset();trackingSchedule.reset();tracker?.reset();}
 function setMode(value){
+  webcamDebug.reset();
   audience.reset();trackingSchedule.reset();tracker?.reset();
   snowEntry.reset();
   clearWish();$('catch-snow').hidden=true;
@@ -221,12 +224,14 @@ function frame(now){
   if(demoTime!==null&&phase==='globe'){const t=time-demoTime;motion.keepHeld=true;motion.sample(.5+.19*Math.sin(t*demoFrequency),.5+.10*Math.cos(t*demoFrequency*.8),time);if(t>32){demoTime=null;releasePointer();}}
   if(demoTime!==null&&phase==='city'){demoTime=null;releasePointer();}
   if(phase!=='entering'&&mode==='camera'&&tracker&&!tracker.busy&&stream&&$('webcam').readyState>=2){
-    const inference=trackingSchedule.next(now,$('webcam').currentTime,{allowed:audience.allowed,phase,calibrating:calibrationStart!==null});
+    const inference=trackingSchedule.next(now,$('webcam').currentTime,{allowed:audience.allowed,phase,calibrating:calibrationStart!==null,diagnostics:true});
     if(inference){
       const token=generation,requestPhase=phase;
-      tracker.detect(inference,$('webcam'),now).then(packet=>{
-        if(!packet||token!==generation||mode!=='camera'||phase!==requestPhase||document.hidden)return;
-        applyTrackingResult(inference,packet.result,packet.timestamp);
+      tracker.detect(inference,$('webcam'),now,raw=>{
+        if(token===generation&&mode==='camera'&&phase===requestPhase&&!document.hidden)webcamDebug.record(raw);
+      }).then(packet=>{
+        if(token!==generation||mode!=='camera'||phase!==requestPhase||document.hidden)return;
+        if(packet)applyTrackingResult(inference,packet.result,packet.timestamp);
         document.body.dataset.tracking=JSON.stringify({...tracker.metrics,handHz:trackingSchedule.handHz(performance.now()),delegates:tracker.delegates});
       }).catch(e=>{
         if(token!==generation||mode!=='camera')return;
@@ -263,6 +268,7 @@ function frame(now){
     else if(!audience.allowed)$('motion-title').textContent=audience.reference?'카메라에서 3m 안으로 다가와주세요':'2.3m 거리 기준을 먼저 맞춰주세요';
   }
   const showHand=mode==='camera'&&(phase==='globe'||phase==='city')&&trackedHand&&audience.allowed&&time-trackedAt<=.35;
+  if(mode==='camera')webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:!!showHand,delegates:tracker?.delegates,dropped:tracker?.metrics.dropped,paused:phase==='entering'});
   virtualCurl+=((pointerHeld&&phase==='globe'?1:0)-virtualCurl)*(1-Math.exp(-dt*16));
   const shownHand=showHand?trackedHand:mode==='pointer'&&(phase==='globe'||phase==='city')?pointerHand(...virtualPointer,virtualCurl,innerWidth/innerHeight):null;
   handOutline.hidden=!shownHand;

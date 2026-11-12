@@ -13,7 +13,7 @@ export class TrackingClient{
   worker.postMessage({type:'init'});
  }
  fail(error){clearTimeout(this.initTimer);this.rejectReady(error);if(this.pending){clearTimeout(this.pending.timer);this.pending.reject(error);this.pending=null;}}
- async detect(kind,source,timestamp){
+ async detect(kind,source,timestamp,onResult=()=>{}){
   if(this.busy||this.closed)return null;
   this.busy=true;const epoch=this.epoch,id=++this.sequence;let image;
   try{
@@ -28,6 +28,7 @@ export class TrackingClient{
    if(this.closed||epoch!==this.epoch)return null;
    const ageMs=performance.now()-timestamp;
    this.metrics={ageMs,inferenceMs:data.inferenceMs,dropped:this.metrics.dropped};
+   onResult({kind,result:data.result,timestamp,ageMs,inferenceMs:data.inferenceMs,stale:ageMs>160});
    if(ageMs>160){this.metrics.dropped++;return null;}
    return {result:data.result,timestamp};
   }finally{image?.close();this.busy=false;}

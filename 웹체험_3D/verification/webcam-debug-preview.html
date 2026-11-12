@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="../style.css"><title>웹캠 스켈레톤 · 합성 검증</title><body style="background:#283331"><h1 style="padding:32px">웹캠 표시 검증 · 합성 관절 데이터</h1><details id="camera-preview" data-active open><summary>내 모습 · 웹캠 (합성 검증)</summary><div class="webcam-frame"><video id="webcam" style="aspect-ratio:4/3;background:#364541"></video><canvas id="webcam-skeleton"></canvas></div><strong id="tracking-status"></strong><small id="tracking-metrics"></small><strong id="viewer-distance">예상 거리 · 얼굴 감지 대기</strong></details><script type="module">
+import {WebcamDebug} from '../webcam-debug.js';
+import {pointerHand} from '../hand-shape.js';
+const d=new WebcamDebug(document.querySelector('canvas'),document.querySelector('#tracking-status'),document.querySelector('#tracking-metrics'));
+d.record({kind:'hand',timestamp:1000,ageMs:48,inferenceMs:20,stale:false,result:{landmarks:[pointerHand(.5,.65,0,4/3)]}});
+d.draw(1100,{video:document.querySelector('video'),allowed:false,selected:null,controlled:false,delegates:{face:'GPU',hand:'GPU'}});
+</script>
