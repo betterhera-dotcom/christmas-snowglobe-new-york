@@ -1,5 +1,5 @@
 <!doctype html><html lang="ko"><meta charset="utf-8"><base href="../"><title>입체 손 미리보기</title><style>body{margin:0;background:#303235;color:#eee;font:16px sans-serif}canvas{display:block;width:100vw;height:100vh}nav{position:fixed;top:20px;left:20px}button{padding:12px;margin-right:10px}</style><nav><button id="bare">손 형태 보기</button><button id="grip">스노우볼 가이드</button><button id="snow">눈 받기 보기</button><span id="status">손 모델 준비 중</span></nav><script type="module">
-import * as T from './vendor/three.module.js';import {createVirtualHand} from './receiving-natural-hand.js?pose=skin-left-v13';
+import * as T from './vendor/three.module.js';import {createVirtualHand} from './receiving-natural-hand.js?pose=white-guide-v14';
 const r=new T.WebGLRenderer({antialias:true});r.setPixelRatio(Math.min(devicePixelRatio,1.5));r.setSize(innerWidth,innerHeight);r.setClearColor(0x303235);r.toneMapping=T.ACESFilmicToneMapping;document.body.append(r.domElement);
 const h=createVirtualHand(),empty=new T.Scene(),c=new T.Camera();await h.ready;document.getElementById('status').textContent='실제 적용 모델 · 피부색 손';h.set(true,[.5,.55],0);
 document.getElementById('grip').onclick=()=>h.set(true,[.5,.55],0,true);
