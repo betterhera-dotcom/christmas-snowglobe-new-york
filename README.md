@@ -1,5 +1,9 @@
 # 손끝에서 열리는 크리스마스 · 스노우볼 세계여행
 
+**[▶ 작품 바로 체험하기](https://betterhera-dotcom.github.io/christmas-snowglobe-new-york/)**
+
+설치 없이 브라우저에서 열 수 있습니다. 카메라 또는 마우스·터치로 체험하세요.
+
 뉴욕을 시작으로 제작하는 1인 인터랙티브 미디어아트입니다. MediaPipe 손·얼굴 추적과 Blender/Three.js 3D 도시, 실시간 눈, 속도가 변하는 캐롤을 연결합니다.
 
 ## 최신 변경 (v06)
