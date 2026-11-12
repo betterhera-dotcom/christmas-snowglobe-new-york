@@ -1,3 +1,4 @@
+import {handLift} from './hand-height.mjs';
 import {openFingers,curledFingers,isCGrip} from './grip.mjs';
 
 // A visible open palm must precede the catch; tracking gaps never count as a grip.
@@ -38,9 +39,31 @@ export class SnowCollection {
   return this.progress>=1;
  }
 }
-export function isReceivingSnow(hand){
- return !!hand&&hand.length===21&&hand.every(p=>p&&Number.isFinite(p.x+p.y+(p.z??0)))&&(openFingers(hand)>=3||isCGrip(hand));
+// City snow needs only a visible raised hand, regardless of palm angle or finger pose.
+export function isReceivingSnow(hand,body){
+ if(!hand||hand.length!==21||!hand.every(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)))return false;
+ const y=[0,5,9,13,17].reduce((sum,i)=>sum+hand[i].y,0)/5;
+ return handLift(y,body)>0;
 }
+
+// A brief stable hold, with tolerance scaled to the person's shoulder width.
+// Finger shape, handedness and palm-facing direction are deliberately ignored.
+export class RaisedHandHold {
+ constructor(){this.reset();}
+ reset(){this.anchor=null;this.since=0;this.lastTime=null;}
+ update(hand,body,time){
+  if(!isReceivingSnow(hand,body)||!Number.isFinite(time)){this.reset();return false;}
+  const points=[0,5,9,13,17].map(i=>hand[i]);
+  const point={x:points.reduce((sum,p)=>sum+p.x,0)/5,y:points.reduce((sum,p)=>sum+p.y,0)/5};
+  const gap=this.lastTime===null?Infinity:time-this.lastTime;
+  if(!this.anchor||gap<0||gap>.8||Math.hypot(point.x-this.anchor.x,point.y-this.anchor.y)>body.size*.18){
+   this.anchor=point;this.since=time;this.lastTime=time;return false;
+  }
+  this.lastTime=time;return time-this.since>=.2;
+ }
+}
+
+
 
 export const WINTER_WISHES=[
  {title:'새로운 문이 열리는 운',message:'크리스마스의 작은 빛이\n새해의 새로운 문을 비춥니다.\n망설이던 첫걸음에 반가운 기회가 찾아올 거예요.',token:'행운의 열쇠 · 작은 용기'},

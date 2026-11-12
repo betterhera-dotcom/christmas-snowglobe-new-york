@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>개발자 모드 · 손끝에서 열리는 크리스마스</title>
+  <title>손끝에서 열리는 크리스마스</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
 </head>
@@ -61,7 +61,7 @@
           <g fill="#fffdf6"><ellipse cx="100" cy="123" rx="2.2" ry="1.1"/><ellipse cx="144" cy="138" rx="1.7" ry=".9"/><circle cx="122" cy="113" r="1"/><circle cx="81" cy="142" r="1.2"/><circle cx="165" cy="145" r="1"/></g>
           <g fill="none" stroke="#fff" stroke-linecap="round" opacity=".85"><path d="M112 128v5m-2.5-2.5h5M157 124v3m-1.5-1.5h3"/></g>
         </g>
-      </svg><span id="palm-caption">손바닥을 펴서 눈을 받아주세요</span>
+      </svg><span id="palm-caption">펼친 손바닥을 화면에 보여주세요</span>
     </div>
     <section class="instruction arcade-panel">
       <div class="guide"><span class="step">01 / LIFT THE SNOWGLOBE</span><h2 id="prompt">손으로 작은 겨울을 들어보세요</h2><p id="hint">C 모양으로 잡고 손 높이와 흔드는 강도로 조작해주세요.</p></div>
@@ -69,7 +69,7 @@
       <div class="readout"><div class="signal"><i id="status-dot"></i><span id="status">시작 방법을 선택해주세요</span></div><span id="mode-label">READY</span><div class="energy"><span>SNOW</span><div class="meter" role="progressbar" aria-label="눈을 깨우는 힘" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="energy-bar"></div></div></div><span class="tempo"><span id="bpm">1.00</span> <small>× SPEED</small></span></div>
       <p id="error" role="alert" hidden></p>
     </section>
-    <footer><span class="footer-title">개발자 모드 · EXPERIMENT</span><div><button id="catch-snow" hidden>눈 받기 테스트</button><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset">처음으로</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
+    <footer><span class="footer-title">CHRISTMAS IN YOUR HANDS</span><div><button id="catch-snow" hidden>눈 받기</button><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset">처음으로</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
     <div id="winter-wish" hidden data-stage="grow">
       <div class="wish-frost" aria-hidden="true"></div>
       <svg id="caught-snowflake" viewBox="-60 -60 120 120" aria-hidden="true">
@@ -79,12 +79,12 @@
       <div class="wish-radiance" aria-hidden="true"></div>
       <div class="wish-card"><div class="wish-star" aria-hidden="true">✧</div><span class="wish-caption">크리스마스가 건네는 새해의 행운</span><h2 id="wish-title"></h2><p id="wish-message" role="status" aria-live="polite"></p><p id="wish-token"></p><p class="ending-note">체험이 끝났어요 · 잠시 후 첫 화면으로 돌아갑니다</p><button id="wish-close">처음부터 다시 체험</button></div>
     </div>
-    <details id="camera-preview"><summary>내 모습 · 웹캠</summary><div class="webcam-frame"><video id="webcam" autoplay playsinline muted></video><canvas id="webcam-skeleton" aria-hidden="true"></canvas></div><button id="recognition-only" aria-pressed="false">인식만 비교 · 3D 정지</button>
-      <a href="./recognition.html" class="recognition-link">몸·손·얼굴 크게 확인하기</a><small id="comparison-status">3D 실행 중</small><strong id="tracking-status" role="status">영상 연결 후 분석 대기</strong><small id="tracking-metrics">몸 — · 손 —</small><p id="viewer-status" role="status">거리 제한 없이 앞쪽 관객 한 분의 손을 연결합니다.</p></details>
+    <aside id="camera-preview" aria-label="내 모습과 인식 상태"><div class="camera-title">내 모습 <span>몸 · 손 · 얼굴</span></div><div class="webcam-frame"><video id="webcam" autoplay playsinline muted></video><canvas id="webcam-skeleton" aria-hidden="true"></canvas></div><div hidden><button id="recognition-only" aria-pressed="false">인식만 비교 · 3D 정지</button>
+      <a href="./recognition.html" class="recognition-link">몸·손·얼굴 크게 확인하기</a><small id="comparison-status">3D 실행 중</small></div><strong id="tracking-status" role="status">영상 연결 후 분석 대기</strong><small id="tracking-metrics">몸 — · 손 —</small><p id="viewer-status" role="status">거리 제한 없이 앞쪽 관객 한 분의 손을 연결합니다.</p></aside>
     <canvas id="storm-particles" aria-hidden="true"></canvas><div id="blizzard" aria-hidden="true"></div>
     <noscript>이 작품을 실행하려면 Chrome에서 JavaScript를 허용해주세요.</noscript>
   </main>
-  <audio id="carol-track" preload="auto" src="assets/audio/jingle-bells-vocals.mp3" hidden></audio>
+  <audio id="carol-track" preload="auto" src="assets/audio/jingle-bells-musicbox-20s.m4a" hidden></audio>
   <audio id="city-track" preload="auto" loop src="assets/audio/jingle-bells-city.mp3" hidden></audio>
   <script id="app-bootstrap">
     // This small loader still runs when an app module fails to download or evaluate.

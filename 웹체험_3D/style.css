@@ -196,3 +196,15 @@ body[data-phase=city] #hand-outline{display:none}
 
 /* Snow now shares the shaded 3D hand pass; keep only the caption in the HUD. */
 body[data-phase=city] #palm-snow{display:none}
+
+/* Public experience: persistent, compact camera inset. */
+#camera-preview,body.city-settled #camera-preview{right:18px;bottom:70px;width:clamp(210px,21vw,310px);max-height:calc(100dvh - 150px);overflow:auto;box-sizing:border-box}
+.camera-title{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:600}.camera-title span{font-size:11px;font-weight:400;color:#cbd9d3}
+#camera-preview [hidden]{display:none!important}#tracking-status{padding:7px 0 2px;font-size:12px}#tracking-metrics{padding:0;font-size:11px}
+#enter-city.test-entry{display:none}
+footer .footer-title{font-size:10px;letter-spacing:1.5px}
+@media(max-width:650px){#camera-preview,body.city-settled #camera-preview{right:10px;bottom:60px;width:165px;max-height:38dvh}.camera-title span{display:none}#tracking-status,#tracking-metrics{font-size:10px}}
+
+/* Keep the live self-view visible above the scene in both interaction stages. */
+body[data-phase="globe"] #camera-preview[data-active="true"],
+body[data-phase="city"] #camera-preview[data-active="true"]{display:block;visibility:visible;opacity:1;z-index:30;}

@@ -192,7 +192,7 @@ export function createScene(container){
   setView(0);renderer.render(scene,camera);loaded=true;lastTick=previousTick=performance.now();
   container.dataset.loaded='true';return true;
  }).catch(e=>{error=e.message;window.dispatchEvent(new CustomEvent('art-error',{detail:'그래픽 준비를 완료하지 못했습니다. 다시 불러와주세요.'}));return false;});
- const api={setReceivingHand:(show,point,progress)=>virtualHand.set(show,point,progress),canvas:renderer.domElement,ready,
+ const api={setReceivingHand:(show,point,progress,guide=false)=>virtualHand.set(show,point,progress,guide),canvas:renderer.domElement,ready,
  handOverGlobe(x,y){
   if(!loaded||travelLast>0)return false;
   const box=new THREE.Box3();for(const glass of groups.GLASS||[])box.expandByObject(glass);
@@ -223,12 +223,12 @@ export function createScene(container){
   inv.copy(pivot.quaternion).invert();g.set(0,-1,0).applyQuaternion(inv);v.set(...pose.velocity).applyQuaternion(inv);
   // HeldPose already compensates camera motion, including the velocity used by snow.
   if(travel<.42){physics.update(dt,time,[v.x,v.y,v.z],[g.x,g.y,g.z]);snowGeo.attributes.position.needsUpdate=true;snowGeo.attributes.flakeAngle.needsUpdate=true;}
-  look+=(targetLook-look)*(1-Math.exp(-dt*3));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*3));
+  look+=(targetLook-look)*(1-Math.exp(-dt*5));lookY+=(targetLookY-lookY)*(1-Math.exp(-dt*5));
   setView(travel);
   if(cityFlakes.visible){citySnowMat.uniforms.time.value=time;for(let i=0;i<cityCount;i++){cityPos[i*3+1]-=dt*citySpeeds[i];cityPos[i*3]+=(.045+Math.sin(time*.8+i*2.4)*(.025+citySeed[i]*.065))*dt;cityPos[i*3+2]+=Math.cos(time*.65+i*1.7)*dt*.035;if(cityPos[i*3+1]<.87)cityPos[i*3+1]=i<650?4.9:9;if(cityPos[i*3]>11)cityPos[i*3]=-11;if(cityPos[i*3+2]>12)cityPos[i*3+2]=-12;if(cityPos[i*3+2]<-12)cityPos[i*3+2]=12;}cityGeo.attributes.position.needsUpdate=true;}
   const nextShadowPhase=travel<.5?0:travel<=.55?1:2;
   renderer.shadowMap.autoUpdate=travel<.46&&(quality===1||renderedFrames%(quality===.75?4:8)===0);if(nextShadowPhase!==shadowPhase){renderer.shadowMap.needsUpdate=true;shadowPhase=nextShadowPhase;}
-  const now=performance.now();renderer.info.autoReset=false;renderer.info.reset();renderer.render(scene,camera);if(travel>=1)virtualHand.render(renderer,container.clientWidth,container.clientHeight);frameMs+=(performance.now()-now-frameMs)*.03;
+  const now=performance.now();renderer.info.autoReset=false;renderer.info.reset();renderer.render(scene,camera);virtualHand.render(renderer,container.clientWidth,container.clientHeight);frameMs+=(performance.now()-now-frameMs)*.03;
   renderedFrames++;slowRenderSeconds=(frameMs>35||frameInterval>34)?slowRenderSeconds+dt:Math.max(0,slowRenderSeconds-dt*2);if(renderedFrames>180&&slowRenderSeconds>2)api.reduceQuality();
   const stats=api.stats();container.dataset.state=JSON.stringify(stats);container.dataset.holding=String(pose.held);container.dataset.airborne=String(stats.airborne);
  },

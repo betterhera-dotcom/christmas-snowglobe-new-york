@@ -32,3 +32,9 @@ for(const [time,faceLandmarks,owned,stale,label] of [
  debug.draw(time+20,options);assert.ok(metrics.textContent.includes('얼굴 상태: '+label),'face timing is not confused with successful head control');
 }
 console.log('PASS: city face absence, ownership, successful connection and stale result are distinguished');
+
+const publicMetrics={},publicStatus={},publicDebug=new WebcamDebug(canvas,publicStatus,publicMetrics,{compact:true});
+publicDebug.record({kind:'hand',timestamp:5000,result:{landmarks:[Array.from({length:21},()=>({x:.5,y:.5}))]}});
+publicDebug.draw(5100,{...options,allowed:true});
+assert.match(publicMetrics.textContent,/손 1/);assert.doesNotMatch(publicMetrics.textContent,/ms|GPU|CPU/);
+console.log('PASS: public webcam panel shows recognition counts without developer timings');

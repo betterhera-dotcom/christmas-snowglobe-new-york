@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import {createHandRenderer,pointerHand} from '../hand-shape.js';
 let draws=0;
 function canvas(width=300,height=150){
- const context=new Proxy({}, {get:(_,key)=>key==='drawImage'?(source)=>{
+ const context=new Proxy({}, {get:(_,key)=>key==='createLinearGradient'?()=>({addColorStop(){}}):key==='drawImage'?(source)=>{
   if(!source.width||!source.height)throw new Error('empty canvas');
   draws++;
  }:()=>{}});
  return {width,height,getContext:()=>context};
 }
+globalThis.Path2D=class {};
 globalThis.document={createElement:()=>canvas()};
 const target=canvas(0,0),render=createHandRenderer(target),hands=[pointerHand(.5,.5,0,1)];
 assert.doesNotThrow(()=>render(hands),'zero viewport must not kill the frame loop');

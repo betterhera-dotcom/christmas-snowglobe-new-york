@@ -8,7 +8,7 @@ export class HeldPose{
   this.gripRevision=revision;
   this.held=held;
   const gain=m.followHand&&Number.isFinite(m.cameraScale)&&m.cameraScale>0?m.cameraScale:1;
-  this.target=held?[Math.max(-1.25,Math.min(1.25,this.anchor.base[0]+(m.x-this.anchor.x)*gain*4)),Math.max(.12,Math.min(1.1,this.anchor.base[1]+.22+(this.anchor.y-m.y)*gain*3)),0]:[0,0,0];
+  this.target=held?[Math.max(-1.25,Math.min(1.25,this.anchor.base[0]+(m.x-this.anchor.x)*gain*4)),m.followHand&&Number.isFinite(m.lift)?m.lift:Math.max(.12,Math.min(1.1,this.anchor.base[1]+.22+(this.anchor.y-m.y)*gain*3)),0]:[0,0,0];
   const steps=Math.max(1,Math.ceil(dt/.008)),h=dt/steps;
   // Camera tracking follows fast arm motion more closely, while slow movement
   // retains gentle damping. Pointer behaviour stays unchanged.

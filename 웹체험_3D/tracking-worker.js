@@ -27,7 +27,7 @@ self.onmessage=async({data})=>{
   const {image,id,kind}=data;
   try{
    const start=performance.now(),task={hand,body,face}[kind],raw=task.detect(image);
-   const result=kind==='face'?{faceLandmarks:raw.faceLandmarks}:{landmarks:raw.landmarks,worldLandmarks:raw.worldLandmarks};
+   const result=kind==='face'?{faceLandmarks:raw.faceLandmarks}:{landmarks:raw.landmarks,worldLandmarks:raw.worldLandmarks,handedness:raw.handedness||raw.handednesses};
    self.postMessage({type:'result',id,result,inferenceMs:performance.now()-start});
   }catch(e){self.postMessage({type:'error',id,message:e.message});}
   finally{image.close();}

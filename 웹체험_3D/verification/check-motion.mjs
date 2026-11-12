@@ -5,7 +5,7 @@ const m=new ShakeMotion();let t=0;
 function run(seconds,position){for(let i=0;i<seconds*60;i++){t+=1/60;if(position){const [x,y]=position(t);m.sample(x,y,t);}m.update(1/60,t);}}
 run(3,()=>[.5,.5]);assert.equal(m.energy,0,'stationary hand must not stir snow');
 run(3,time=>[.5+Math.sin(time*2*Math.PI)*.001,.5]);assert.equal(m.burst,0,'tiny jitter must not trigger storm');assert.ok(m.energy<.01);
-m.reset();run(2,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.energy>.4,'real repeated waving should stir snow');assert.equal(m.cooldown,0,'two seconds must not enter city');run(2,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.equal(m.cooldown,0,'four seconds still leaves a brief music introduction');run(5,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.cooldown>0,'sustained waving enters after the extended introduction');const peak=m.energy;
+m.reset();run(2,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.energy>.4,'real repeated waving should stir snow');assert.equal(m.cooldown,0,'two seconds must not enter city');run(2,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.equal(m.cooldown,0,'four seconds still leaves a brief music introduction');run(MIN_PLAY_SECONDS-1,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.cooldown>0,'sustained waving triggers a storm after the configured introduction');const peak=m.energy;
 run(8,null);assert.ok(m.energy<.01,'hand loss should settle the motion');assert.equal(m.burst,0);
 m.sample(.1,.1,t+1);assert.equal(m.raw,0,'reacquiring hand must not register a shake');
 m.sample(.9,.9,t+1.07);assert.equal(m.raw,0,'large tracking jump must be ignored');
@@ -17,7 +17,7 @@ assert.ok(fastTriggered,'fast broad waving sampled at camera rate must enter cit
 m.reset();for(let i=0;i<10;i++){t+=1;m.sample(i%2?.8:.2,.5,t);m.update(.05,t);}assert.equal(m.cooldown,0,'separate reacquisitions must not accumulate a journey');
 console.log(JSON.stringify({stationary:true,jitter:true,shakePeak:peak,storm:true,lossDecay:true,reacquire:true,reset:true,slowNoJourney:true,fastCameraRateJourney:true,noReacquireAccumulation:true}));
 m.reset();run(2,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);const enjoyed=m.playTime;m.release();run(5,null);assert.equal(m.playTime,enjoyed,'pauses preserve music play time without advancing it');
-run(6,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.burst>0,'resumed shaking can enter after the total enjoyment time');
+run(MIN_PLAY_SECONDS+1,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.burst>0,'resumed shaking can trigger a storm after the total enjoyment time');
 m.reset();assert.equal(m.playTime,0);
 for(const t of [.42,.44,.5,.55,.6,.67])assert.equal(transitionVeil(t),1,'all geometry switches must be fully covered');
 assert.equal(transitionVeil(0),0);assert.equal(transitionVeil(1),0);
@@ -41,4 +41,4 @@ for(const [amplitude,frequency] of [[.14,1.2],[.04,10]]){
 }
 const intro=new ShakeMotion();for(let f=0;f<60*MIN_PLAY_SECONDS;f++){const t=f/60;intro.sample(.5+.2*Math.sin(t*2*Math.PI*2),.5,t);intro.update(1/60,t);assert.equal(intro.entryTime,0,'initial enjoyment period cannot charge entry');}
 intro.release();assert.equal(intro.entryTime,0);assert.equal(intro.entrySpan,0);
-console.log('PASS: five-second introduction, fresh deliberate effort, no gentle or small-fast entry');
+console.log('PASS: configured introduction, fresh deliberate effort, no gentle or small-fast entry');

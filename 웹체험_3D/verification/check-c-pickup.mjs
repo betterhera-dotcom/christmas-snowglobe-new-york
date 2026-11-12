@@ -16,3 +16,6 @@ assert.ok(pose.position[1]>initial+.3,'raising the hand raises the globe');
 function energy(amplitude){const m=new ShakeMotion();m.followHand=true;for(let i=0;i<180;i++){const t=i/60;m.sample(.5+amplitude*Math.sin(t*8),.5,t);m.update(1/60,t);}return m.energy;}
 assert.ok(energy(.15)>energy(.02)*2,'strong movement produces stronger response');
 console.log('PASS: open palm ignored, immediate C grip, open release, hand height and shake strength');
+
+const {handLift}=await import('../hand-height.mjs');
+for(const size of [.2,.08]){const body={size,y:.3};assert.equal(handLift(.3+size,body),0,'low hand cannot lift');assert.ok(handLift(.3,body)>.8,'raised hand lifts at either distance');}

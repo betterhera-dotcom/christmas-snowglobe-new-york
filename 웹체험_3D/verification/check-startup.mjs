@@ -1,3 +1,5 @@
+import {citySnowReady,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS} from '../journey.mjs';
+import {handLift} from '../hand-height.mjs';
 // Execute the real app orchestration with controlled browser/scene/model promises.
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -8,6 +10,7 @@ import {TrackingSchedule} from '../tracking-schedule.mjs';
 import {ShakeMotion} from '../motion.mjs';
 import {HandPickup} from '../hand-pickup.mjs';
 import {HeadLook} from '../head-look.mjs';
+import {SnowCollection,RaisedHandHold,isReceivingSnow} from '../snow-wish.mjs';
 import {body,hand} from './body-fixture.mjs';
 import {BODY_HOLD_SECONDS,HAND_HOLD_SECONDS} from '../tracking-policy.mjs';
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
@@ -22,7 +25,7 @@ function setup(){
  class FakeTracker extends Noop{constructor(){super();models++;this.ready=model.promise;} }
  const looks=[];
  const scene={ready:art.promise,stats:()=>({artLoaded:ready}),reset(){},resumeTiming(){},handOverGlobe:()=>false,lookAt:(x,y)=>looks.push([x,y])};
- const context=vm.createContext({console:{warn(){},error(){}},performance,URLSearchParams,location:{search:'?muted=1'},document:{getElementById:element,querySelector:element,addEventListener(){},body:element('body')},window:{addEventListener(){}},navigator:{mediaDevices:{getUserMedia(){events.push('permission');return permission.promise;}}},localStorage:{getItem(){throw Error('removed range settings must not be read');}},requestAnimationFrame(){},setTimeout(fn,ms){const id=++timerId;timers.set(id,{fn,ms});return id;},clearTimeout(id){timers.delete(id);},innerWidth:1280,innerHeight:720,AudienceGate,cameraMotionScale,TrackingSchedule,getHandPreview,ShakeMotion,HandPickup,BODY_HOLD_SECONDS,HAND_HOLD_SECONDS,TrackingClient:FakeTracker,HeadLook,SnowCollection:Noop,SnowEntry:Noop,Carol:Noop,WebcamDebug:Noop,createHandRenderer:()=>()=>{},showIntro(){},openIntro(){events.push('curtain');},createScene:()=>scene});
+ const context=vm.createContext({console:{warn(){},error(){}},performance,URLSearchParams,location:{search:'?muted=1'},document:{getElementById:element,querySelector:element,addEventListener(){},body:element('body')},window:{addEventListener(){}},navigator:{mediaDevices:{getUserMedia(){events.push('permission');return permission.promise;}}},localStorage:{getItem(){throw Error('removed range settings must not be read');}},requestAnimationFrame(){},setTimeout(fn,ms){const id=++timerId;timers.set(id,{fn,ms});return id;},clearTimeout(id){timers.delete(id);},innerWidth:1280,innerHeight:720,citySnowReady,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,handLift,AudienceGate,cameraMotionScale,TrackingSchedule,getHandPreview,ShakeMotion,HandPickup,BODY_HOLD_SECONDS,HAND_HOLD_SECONDS,TrackingClient:FakeTracker,HeadLook,SnowCollection,RaisedHandHold,isReceivingSnow,SnowEntry:Noop,Carol:Noop,WebcamDebug:Noop,createHandRenderer:()=>()=>{},showIntro(){},openIntro(){events.push('curtain');},createScene:()=>scene});
  vm.runInContext(source,context);
  return {context,art,permission,model,events,element,fire(ms){for(const [id,timer]of [...timers])if(timer.ms===ms){timers.delete(id);timer.fn();}},scene,looks,get models(){return models;},loadArt(){ready=true;art.resolve(true);},run:code=>vm.runInContext(code,context)};
 }
@@ -31,7 +34,7 @@ function cameraStream(){let stopped=false;const track={stop(){stopped=true;},get
  const t=setup(),stream=cameraStream();
  t.element('webcam').play=()=>{
   assert.equal(t.element('camera-preview').dataset.active,'true','preview is visible before requesting playback');
-  assert.equal(t.element('camera-preview').open,true,'video is not inside a collapsed details panel');
+  assert.match(html,/<aside id="camera-preview"/,'video stays in a non-collapsible camera panel');
   assert.equal(t.element('webcam').muted,true);
   assert.equal(t.element('webcam').playsInline,true);
   return Promise.resolve();
@@ -88,7 +91,7 @@ for(const movingSide of [0,1]){
  function feed(time,x){
   t.context.packet={landmarks:[body()]};t.context.now=time*1000;
   t.run("applyTrackingResult('body',packet,now)");
-  let hands=[hand(.38),hand(.62)];hands[movingSide]=hand(x);
+  let hands=[hand(.38,.42),hand(.62,.42)];hands[movingSide]=hand(x,.42);
   if(Math.round(time*10)%2)hands.reverse();
   t.context.packet={landmarks:hands,worldLandmarks:hands.map(()=>gesture(true))};t.run("applyTrackingResult('hand',packet,now)");
  }
@@ -122,3 +125,27 @@ for(const movingSide of [0,1]){
  assert.equal(t.looks.length,3,'no face cannot invent a turn');
 }
 console.log('PASS: actual app single-hand shake with both hands visible, no handover impulse, and immediate city head turns');
+
+{
+ const t=setup();t.run("setMode('camera'); phase='city'; cityArrivedAt=1");
+ t.context.packet={landmarks:[body()]};t.run("applyTrackingResult('body',packet,5000)");
+ t.context.packet={landmarks:[hand(.38,.85),hand(.62,.42)],worldLandmarks:[gesture(false),gesture(false)],handedness:[[{categoryName:'Left'}],[{categoryName:'Right'}]]};
+ t.run("applyTrackingResult('hand',packet,4900)");
+ assert.equal(t.run('receivingSnow'),false,'city look-around blocks raised hands');
+ assert.equal(t.run('snowCatch.progress'),0,'look-around never collects snow');
+ t.run("applyTrackingResult('hand',packet,5100)");
+ assert.equal(t.run('trackedHand===packet.landmarks[1]'),true,'city chooses the raised hand when the other hand is lowered');
+ assert.equal(t.run('receivingSnow'),false,'one frame does not establish a stable hand');
+ assert.equal(t.run('snowCatch.progress'),0);
+ t.run("applyTrackingResult('hand',packet,5310)");
+ assert.equal(t.run('receivingSnow'),true);
+ t.run("applyTrackingResult('hand',packet,5410)");
+ assert.ok(t.run('snowCatch.progress')>0,'valid palm frames accumulate snow through the real app path');
+ t.context.packet.handedness=[[{categoryName:'Left'}],[{categoryName:'Left'}]];
+ t.run("applyTrackingResult('hand',packet,5510)");
+ assert.equal(t.run('receivingSnow'),true,'palm orientation does not block raised hands');
+ t.context.packet.landmarks=[hand(.38,.85),hand(.62,.85)];
+ t.run("applyTrackingResult('hand',packet,5610)");
+ assert.equal(t.run('receivingSnow'),false,'lowered hands stop receiving');
+}
+console.log('PASS: actual city input selects raised hands regardless of palm orientation');

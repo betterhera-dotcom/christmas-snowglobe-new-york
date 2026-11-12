@@ -1,6 +1,6 @@
 // Intro chimes crossfade to the user's recording. Rate changes never seek/restart it.
 export class Carol {
-  constructor(track,cityTrack){this.track=track;this.cityTrack=cityTrack;this.cityTrack.loop=true;this.cityTrack.playbackRate=1;this.cityTrack.preservesPitch=true;this.context=null;this.muted=false;this.bpm=116;this.rate=1;this.songVolume=.12;this.startTime=20;this.beat=0;this.note=0;this.mode='intro';if(track){track.playbackRate=1;track.preservesPitch=true;track.webkitPreservesPitch=true;track.mozPreservesPitch=true;track.loop=false;track.addEventListener('ended',()=>{if(this.mode==='song'){track.currentTime=this.startTime;track.play().catch(()=>{});}});}}
+  constructor(track,cityTrack){this.track=track;this.cityTrack=cityTrack;this.cityTrack.loop=true;this.cityTrack.playbackRate=1;this.cityTrack.preservesPitch=true;this.context=null;this.muted=false;this.bpm=116;this.rate=1;this.songVolume=.12;this.startTime=0;this.beat=0;this.note=0;this.mode='intro';if(track){track.playbackRate=1;track.preservesPitch=true;track.webkitPreservesPitch=true;track.mozPreservesPitch=true;track.loop=false;track.addEventListener('loadedmetadata',()=>{if(this.mode==='intro')track.currentTime=this.startTime;});track.addEventListener('ended',()=>{if(this.mode==='song'){track.currentTime=this.startTime;track.play().catch(()=>{});}});}}
   resumeContext(){
     if(!this.context){this.context=new AudioContext();this.master=this.context.createGain();this.master.gain.value=this.muted?0:.14;this.master.connect(this.context.destination);this.beat=0;
      this.melody=this.context.createGain();this.melody.connect(this.master);
@@ -44,9 +44,9 @@ export class Carol {
    if(this.shakeBeats<.15)return;
    await this.start();
   }
-  async unlockTrack(){const resumed=this.resumeContext();try{await Promise.all([resumed,this.track.play(),this.cityTrack.play()]);}finally{if(this.mode==='intro'){this.track.pause();this.track.currentTime=0;this.cityTrack.pause();this.cityTrack.currentTime=0;}}}
+  async unlockTrack(){const resumed=this.resumeContext();if(this.mode==='intro')this.track.currentTime=this.startTime;try{await Promise.all([resumed,this.track.play(),this.cityTrack.play()]);}finally{if(this.mode==='intro'){this.track.pause();this.track.currentTime=this.startTime;this.cityTrack.pause();this.cityTrack.currentTime=0;}}}
   async start(){
-   const resumed=this.resumeContext(),fresh=this.mode!=='song';this.mode='song';if(fresh){this.track.currentTime=this.startTime;this.songVolume=.12;this.rate=1;this.track.playbackRate=1;}
+   const resumed=this.resumeContext(),fresh=this.mode!=='song';this.mode='song';if(fresh){this.track.currentTime=this.startTime;this.songVolume=.12;this.songElapsed=0;this.rate=.68;this.track.playbackRate=.68;}
    try{await Promise.all([resumed,this.track.play()]);}catch(e){this.startIntro().catch(()=>{});throw e;}
    if(this.mode!=='song'){this.track.pause();return;}
    this.melody.gain.setTargetAtTime(0,this.context.currentTime,.45);this.songGain.gain.setTargetAtTime(this.muted?0:this.songVolume,this.context.currentTime,.7);
@@ -63,9 +63,13 @@ export class Carol {
   mute(value){this.muted=value;this.cityTrack.muted=value;if(this.track)this.track.muted=value;if(this.master){this.cityGain.gain.setTargetAtTime(value||this.mode!=='city'?0:.45,this.context.currentTime,.08);this.master.gain.setTargetAtTime(value?0:.14,this.context.currentTime,.08);this.songGain.gain.setTargetAtTime(value||this.mode!=='song'?0:this.songVolume,this.context.currentTime,.08);}}
   update(dt,energy,phase='globe'){
     const strength=Math.min(1,Math.max(0,energy)/.85),shaking=this.mode==='song'&&phase==='globe';
-    // Make slow and strong shakes audibly distinct while preserving voice pitch.
-    const targetRate=.68+strength*.82;
-    this.rate=shaking?this.rate+(targetRate-this.rate)*(1-Math.exp(-dt/.28)):1;
+    // Smoothly slow a quiet globe and speed up stronger shakes without seeking.
+    if(shaking)this.songElapsed=(this.songElapsed||0)+dt;
+    // Let the slow opening be heard, then blend into gesture-driven tempo.
+    const openingMix=Math.min(1,Math.max(0,((this.songElapsed||0)-2)/1));
+    const targetRate=.68+strength*.47*openingMix;
+    const tempoEase=targetRate>this.rate?1:1.6;
+    this.rate=shaking?this.rate+(targetRate-this.rate)*(1-Math.exp(-dt/tempoEase)):1;
     const volume=shaking?.12+strength**.8*.60:.4;
     this.songVolume+=(volume-this.songVolume)*(1-Math.exp(-dt/1.2));
     if(this.songGain&&this.mode==='song')this.songGain.gain.setTargetAtTime(this.muted?0:this.songVolume,this.context.currentTime,.15);
@@ -123,5 +127,5 @@ export class Carol {
    if(this.track)this.track.dataset.lastEffect=type;
   }
   async pause(){this.track?.pause();this.cityTrack.pause();if(this.context)await this.context.suspend();}
-  reset(){this.enterUntil=0;this.nextGrain=0;this.grainIndex=0;if(this.wind){this.wind.gain.cancelScheduledValues(this.context.currentTime);this.wind.gain.setValueAtTime(0,this.context.currentTime);}this.track?.pause();if(this.track)this.track.currentTime=0;this.cityTrack.pause();this.cityTrack.currentTime=0;this.mode='intro';this.rate=1;this.note=0;this.beat=0;this.shakeBeats=0;this.bpm=116;}
+  reset(){this.enterUntil=0;this.nextGrain=0;this.grainIndex=0;if(this.wind){this.wind.gain.cancelScheduledValues(this.context.currentTime);this.wind.gain.setValueAtTime(0,this.context.currentTime);}this.track?.pause();if(this.track)this.track.currentTime=this.startTime;this.cityTrack.pause();this.cityTrack.currentTime=0;this.mode='intro';this.rate=1;this.note=0;this.beat=0;this.shakeBeats=0;this.bpm=116;}
 }
