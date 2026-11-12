@@ -28,6 +28,18 @@ function setup(){
 }
 function cameraStream(){let stopped=false;const track={stop(){stopped=true;},getSettings:()=>({deviceId:'test',width:640,height:480}),addEventListener(){}};return {get stopped(){return stopped;},getTracks:()=>[track],getVideoTracks:()=>[track]};}
 {
+ const t=setup(),stream=cameraStream();
+ t.element('webcam').play=()=>{
+  assert.equal(t.element('camera-preview').dataset.active,'true','preview is visible before requesting playback');
+  assert.equal(t.element('camera-preview').open,true,'video is not inside a collapsed details panel');
+  assert.equal(t.element('webcam').muted,true);
+  assert.equal(t.element('webcam').playsInline,true);
+  return Promise.resolve();
+ };
+ const job=t.run('startCamera()');t.permission.resolve(stream);t.model.resolve();t.loadArt();await job;
+ assert.equal(t.run('mode'),'camera');
+}
+{
  const t=setup();t.run("beginExperience('camera')");assert.deepEqual(t.events,['permission','curtain'],'request and curtain happen with 3D/audio/model all unresolved');assert.equal(t.models,0,'models do not delay the permission prompt');
  const pointer=t.run('startPointer()'),stream=cameraStream();t.permission.resolve(stream);await tick();assert.equal(stream.stopped,true,'late permission grant after cancellation stops its tracks');t.loadArt();await pointer;assert.equal(t.run('mode'),'pointer');
 }

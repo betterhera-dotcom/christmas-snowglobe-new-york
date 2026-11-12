@@ -5,6 +5,7 @@ export function createHandRenderer(canvas){
  const m=mask.getContext('2d'),e=edge.getContext('2d');
  return hands=>{
   const w=canvas.width,h=canvas.height;
+  if(!w||!h)return; // A hidden/resizing viewport must not stop the animation loop.
   if(mask.width!==w||mask.height!==h){mask.width=edge.width=w;mask.height=edge.height=h;}
   ctx.clearRect(0,0,w,h);
   for(const hand of hands){

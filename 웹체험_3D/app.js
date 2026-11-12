@@ -133,9 +133,11 @@ async function startCamera(){
     carol.startIntro().catch(()=>{});
     const candidate=await startupDeadline(request,20000,'CAMERA_TIMEOUT');clearTimeout(permissionHint);
     if(token!==generation){candidate.getTracks().forEach(t=>t.stop());return;}
-    stream=candidate;$('webcam').srcObject=stream;status('2 / 3 · 카메라 허용됨 · 영상이 시작되기를 기다립니다');await startupDeadline($('webcam').play(),12000,'VIDEO_TIMEOUT');
-    if(token!==generation)return;
+    // Make the video visible before playback; do not wait on a hidden, closed details panel.
     $('camera-preview').dataset.active='true';$('camera-preview').open=true;
+    const video=$('webcam');video.muted=true;video.playsInline=true;
+    stream=candidate;video.srcObject=stream;status('2 / 3 · 카메라 허용됨 · 영상이 시작되기를 기다립니다');await startupDeadline(video.play(),12000,'VIDEO_TIMEOUT');
+    if(token!==generation)return;
     stream.getVideoTracks()[0].addEventListener('ended',()=>{if(token===generation){generation++;starting=false;$('camera').disabled=false;$('cancel-start').hidden=true;stopCamera();setMode('idle');status('카메라 연결이 끊어졌습니다');error('카메라를 연결하고 ‘카메라로 시작’을 다시 눌러주세요.');}});
     status('3 / 3 · 카메라 영상 연결됨 · 몸과 손 인식을 준비하고 있습니다');
     if(!tracker)tracker=new TrackingClient();
