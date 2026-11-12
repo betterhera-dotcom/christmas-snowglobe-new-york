@@ -44,3 +44,12 @@ body[data-phase="city"]{background:#a3a9b1}body[data-phase="city"] .vignette{bac
 
 body[data-phase="entering"] .instruction{backdrop-filter:none;background:#10251cbd}
 #blizzard{mix-blend-mode:normal;will-change:opacity}
+body[data-phase="entering"] #enter-city,body[data-phase="city"] #enter-city{display:none}
+
+/* Arrival guidance gives way to the winter scene after four seconds. */
+.instruction{transition:padding .65s,background .65s,bottom .65s}
+body.city-settled .instruction{left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100% - 28px);bottom:62px;padding:9px 16px;gap:0;background:#13233085;pointer-events:none}
+body.city-settled .instruction h2,body.city-settled .instruction .readout{display:none}
+body.city-settled #hint{font-size:12px;line-height:1.5;text-align:center}
+body.city-settled #camera-preview{bottom:110px}
+@media(prefers-reduced-motion:reduce){.instruction{transition:none}}

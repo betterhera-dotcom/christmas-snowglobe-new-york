@@ -11,6 +11,25 @@ function components(geometry){
  return [...parts.values()].map(part=>({...part,center:part.box.getCenter(new THREE.Vector3())}));
 }
 const hash=n=>{const x=Math.sin(n)*43758.5453;return x-Math.floor(x);};
+export function separateGlobeRailing(props){
+ const railing=[];
+ for(const mesh of props){
+  const material=Array.isArray(mesh.material)?mesh.material[0]:mesh.material;
+  if(!mesh.isMesh||!['Ironwork','Aged champagne brass'].includes(material.name))continue;
+  const vertices=new Set();
+  for(const part of components(mesh.geometry)){
+   const c=part.center;
+   if(part.box.max.y<1.07&&(Math.abs(Math.hypot(c.x,c.z)-1.1)<.045||part.box.max.x-part.box.min.x>2))for(const i of part.vertices)vertices.add(i);
+  }
+  if(!vertices.size)continue;
+  const keep=[],remove=[],index=mesh.geometry.index;
+  for(let i=0;i<index.count;i+=3){const triangle=[index.getX(i),index.getX(i+1),index.getX(i+2)];(vertices.has(triangle[0])?remove:keep).push(...triangle);}
+  const geometry=mesh.geometry.clone();geometry.setIndex(remove);
+  const edge=new THREE.Mesh(geometry,material);edge.name='Miniature perimeter railing';mesh.add(edge);railing.push(edge);
+  mesh.geometry=mesh.geometry.clone();mesh.geometry.setIndex(keep);
+ }
+ return railing;
+}
 export async function decorateCityLights(art){
  const [atlas,stoneMap]=await Promise.all(['rooms-atlas.png','limestone-ashlar.png'].map(name=>new THREE.TextureLoader().loadAsync('./assets/window-interiors/'+name)));atlas.colorSpace=THREE.SRGBColorSpace;atlas.anisotropy=4;
  const city=art.getObjectByName('CITY'),trees=art.getObjectByName('TREES'),rooms=[];let lit=0,dark=0,bulbs=0;
@@ -35,6 +54,7 @@ export async function decorateCityLights(art){
   }
   o.geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));o.geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
   o.material=interior?new THREE.MeshBasicMaterial({map:atlas,vertexColors:true,toneMapped:false}):new THREE.MeshStandardMaterial({color:0xffffff,vertexColors:true,roughness:.9});
+  o.material.name=interior?'City room atlas':'City curtains';
  });
  // Recut limestone courses use the existing world-scaled UVs; brick stays untouched.
  stoneMap.colorSpace=THREE.SRGBColorSpace;stoneMap.wrapS=stoneMap.wrapT=THREE.RepeatWrapping;stoneMap.repeat.set(.8,.8);stoneMap.anisotropy=8;
@@ -48,7 +68,26 @@ export async function decorateCityLights(art){
  trims.name='Stone window reveals and sills';trims.castShadow=true;trims.receiveShadow=true;city?.add(trims);
  const canvas=document.createElement('canvas');canvas.width=canvas.height=64;const ctx=canvas.getContext('2d'),g=ctx.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,242,200,.9)');g.addColorStop(.2,'rgba(255,213,129,.5)');g.addColorStop(.55,'rgba(255,176,61,.12)');g.addColorStop(1,'rgba(255,176,61,0)');ctx.fillStyle=g;ctx.fillRect(0,0,64,64);const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
  const bulbMeshes=[];trees?.traverse(o=>{if(o.isMesh&&o.material.name==='Warm window glass')bulbMeshes.push(o);});
- for(const mesh of bulbMeshes){const parts=components(mesh.geometry);bulbs+=parts.length;const positions=new Float32Array(parts.length*3);parts.forEach((p,i)=>p.center.toArray(positions,i*3));const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));const halo=new THREE.Points(geometry,new THREE.PointsMaterial({map:texture,size:.10,color:0xffdb9a,transparent:true,opacity:.8,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));halo.name='Christmas bulb halos';mesh.add(halo);mesh.material=mesh.material.clone();mesh.material.emissive.setHex(0xffcd83);mesh.material.emissiveIntensity=5;mesh.material.roughness=.3;
+ for(const mesh of bulbMeshes){mesh.geometry=mesh.geometry.clone();const parts=components(mesh.geometry);bulbs+=parts.length;const positions=new Float32Array(parts.length*3),vertices=mesh.geometry.attributes.position;parts.forEach((part,i)=>{part.center.toArray(positions,i*3);for(const v of part.vertices){const point=new THREE.Vector3().fromBufferAttribute(vertices,v).sub(part.center).multiplyScalar(.42).add(part.center);vertices.setXYZ(v,point.x,point.y,point.z);}});vertices.needsUpdate=true;mesh.geometry.computeBoundingSphere();const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));const halo=new THREE.Points(geometry,new THREE.PointsMaterial({map:texture,size:.055,color:0xffdfb1,transparent:true,opacity:.38,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));halo.name='Christmas bulb halos';mesh.add(halo);mesh.material=mesh.material.clone();mesh.material.color.setHex(0xf4dfbc);mesh.material.emissive.setHex(0xffd7a0);mesh.material.emissiveIntensity=1.1;mesh.material.roughness=.45;
  }
  return {windowInteriorsLoaded:true,stoneFacadeLoaded:true,stoneWindowFrames:trimRooms.length,litWindows:lit,darkWindows:dark,christmasBulbs:bulbs};
+}
+
+// Each surrounding block has a stable, independent occupancy pattern.
+export function varyCityWindows(city,seed){
+ city.traverse(mesh=>{
+  if(!mesh.isMesh||!['City room atlas','Courtyard lit interior','Courtyard dark interior'].includes(mesh.material.name))return;
+  mesh.geometry=mesh.geometry.clone();mesh.material=mesh.material.clone();
+  const uv=mesh.geometry.attributes.uv,colors=new Float32Array(mesh.geometry.attributes.position.count*3);
+  for(const part of components(mesh.geometry)){
+   const c=part.center,n=hash(c.x*37+c.y*83+c.z*19+seed*127),on=n>.38;
+   const first=part.vertices[0],oldColumn=Math.floor(uv.getX(first)*2),oldRow=Math.floor(uv.getY(first)*2),column=hash(n*719)>.5?1:0;
+   for(const i of part.vertices){
+    uv.setXY(i,uv.getX(i)+(column-oldColumn)*.5,uv.getY(i)+((on?1:0)-oldRow)*.5);
+    const brightness=on?.78+hash(n*81)*.22:.6;
+    colors.set([brightness,brightness*(.96+n*.04),brightness*(.88+n*.12)],i*3);
+   }
+  }
+  mesh.geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));mesh.material.vertexColors=true;uv.needsUpdate=true;
+ });
 }

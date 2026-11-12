@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {RoomEnvironment} from './vendor/RoomEnvironment.js';
-import {decorateCityLights} from './city-lighting.js';
+import {decorateCityLights,varyCityWindows,separateGlobeRailing} from './city-lighting.js';
 import {HeldPose} from './pose.mjs';
 import {GlobeSnow} from './snow3d.mjs';
 export function createScene(container){
@@ -14,15 +14,18 @@ export function createScene(container){
  function tuneMaterial(m){if(m.map)m.map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());m.envMapIntensity=.55;if(/limestone/i.test(m.name))m.color.setRGB(.68,.61,.49);if(/walnut|timber|wood/i.test(m.name))m.color.setRGB(.48,.32,.19);if(m.name.startsWith('SHOP cloth binding')){const c=[[.16,.027,.035],[.035,.10,.065],[.24,.16,.065],[.045,.07,.10]][Number(m.name.slice(-1))]||[.1,.07,.04];m.color.setRGB(...c);}if(/Snow/.test(m.name))m.color.setRGB(.88,.92,.97);}
  const transitionFrames=[];let previousTick=0;
  let cityLightStats={};
- const lanternMaterials=[];
+ const lanternMaterials=[];let globeRailing=[];
  const groups={};const loader=new GLTFLoader();
  const globeReady=loader.loadAsync('./assets/3d/snowglobe.glb').then(async gltf=>{
   model.add(gltf.scene);gltf.scene.traverse(o=>{if(o.isMesh){o.frustumCulled=true;o.castShadow=true;o.receiveShadow=true;if(o.name.startsWith('TREES'))o.castShadow=false;
-   const name=o.name;for(const kind of ['GLASS','BASE','CITY','TREES','PROPS'])if(name.startsWith(kind)){(groups[kind]||=[]).push(o);}
+   for(const kind of ['GLASS','BASE','CITY','TREES','PROPS']){let parent=o;while(parent&&!parent.name.startsWith(kind))parent=parent.parent;if(parent){(groups[kind]||=[]).push(o);if(kind==='TREES')o.castShadow=false;}}
    const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(m.map)m.map.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());tuneMaterial(m);if(m.normalMap)materialMaps++;}
+   if(mats.some(m=>m.name==='Winter paving'||m.name==='Snow-covered ground'))o.castShadow=false;
   }});
-  for(const o of groups.PROPS||[]){const materials=Array.isArray(o.material)?o.material:[o.material];o.material=materials.map(m=>{if(m.name!=='Warm window glass')return m;const lit=m.clone();lit.emissive.setHex(0xffc36a);lit.emissiveIntensity=1.4;lit.roughness=.35;lanternMaterials.push(lit);return lit;});}
+  for(const o of groups.PROPS||[]){const array=Array.isArray(o.material),materials=array?o.material:[o.material];const tuned=materials.map(m=>{if(m.name!=='Warm window glass')return m;const lit=m.clone();lit.emissive.setHex(0xffd5a0);lit.emissiveIntensity=1.4;lit.roughness=.35;lanternMaterials.push(lit);return lit;});o.material=array?tuned:tuned[0];}
   cityLightStats=await decorateCityLights(gltf.scene);
+  for(const tree of groups.TREES||[])tree.traverse(o=>{if(o.isMesh&&/Fir needle shade/.test(o.material.name)){o.material=o.material.clone();o.material.color.setRGB(.82,1,.91);o.material.emissive.setHex(0x446354);o.material.emissiveIntensity=.4;o.material.envMapIntensity=.9;}});
+  globeRailing=separateGlobeRailing(groups.PROPS||[]);
   // Thin optical shell: real volume, controlled reflections, no 2D deformation.
   for(const o of groups.GLASS||[])o.material=new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:.012,transmission:1,thickness:.003,ior:1.24,transparent:true,opacity:1,depthWrite:false,side:THREE.FrontSide,envMapIntensity:.65});
   for(const o of groups.GLASS||[])o.castShadow=false;const base=model.getObjectByName('BASE');if(base){baseBounds=new THREE.Box3().setFromObject(base);baseMin=baseBounds.min.y-(pivot.position.y+model.position.y);model.position.y=-1.5-baseMin;}return true;
@@ -43,10 +46,11 @@ export function createScene(container){
  const glowContext=glowCanvas.getContext('2d'),glowGradient=glowContext.createRadialGradient(64,64,0,64,64,64);
  glowGradient.addColorStop(0,'rgba(255,235,183,.65)');glowGradient.addColorStop(.2,'rgba(255,204,112,.35)');glowGradient.addColorStop(.5,'rgba(255,174,66,.09)');glowGradient.addColorStop(1,'rgba(255,174,66,0)');glowContext.fillStyle=glowGradient;glowContext.fillRect(0,0,128,128);
  const glowMap=new THREE.CanvasTexture(glowCanvas);glowMap.colorSpace=THREE.SRGBColorSpace;
- const glowMaterial=new THREE.SpriteMaterial({map:glowMap,transparent:true,opacity:.85,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending,toneMapped:false});
+ const glowMaterial=new THREE.SpriteMaterial({map:glowMap,transparent:true,opacity:.28,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending,toneMapped:false});
  for(const [x,z] of [[-.65,.83],[-.3,.46],[-.29,-.03]]){
-  const light=new THREE.PointLight(0xffbd69,.24,1.35,2);light.position.set(x,1.28,z);light.castShadow=false;lanterns.add(light);
-  const halo=new THREE.Sprite(glowMaterial);halo.position.set(x,1.28,z+.035);halo.scale.set(.32,.38,1);halo.userData.center=new THREE.Vector3(x,1.28,z);lanternHalos.push(halo);lanterns.add(halo);
+  const light=new THREE.PointLight(0xffd6a3,.085,1.65,2);light.position.set(x,1.26,z);light.castShadow=false;lanterns.add(light);
+  const spill=new THREE.PointLight(0xffd7ad,.018,.85,2);spill.position.set(x,1.06,z);lanterns.add(spill);
+  const halo=new THREE.Sprite(glowMaterial);halo.position.set(x,1.28,z+.035);halo.scale.set(.21,.25,1);halo.userData.center=new THREE.Vector3(x,1.28,z);lanternHalos.push(halo);lanterns.add(halo);
  }
  // Main particles share the miniature coordinate system and are occluded by actual buildings.
  const snowGeo=new THREE.BufferGeometry();snowGeo.setAttribute('position',new THREE.BufferAttribute(physics.p,3));
@@ -58,16 +62,42 @@ export function createScene(container){
  // Contact shadow stays at the counter while the held globe lifts.
  const shadowTexture=document.createElement('canvas');shadowTexture.width=shadowTexture.height=128;const c=shadowTexture.getContext('2d'),grad=c.createRadialGradient(64,64,5,64,64,64);grad.addColorStop(0,'#00000088');grad.addColorStop(1,'#00000000');c.fillStyle=grad;c.fillRect(0,0,128,128);
  const shadow=new THREE.Mesh(new THREE.PlaneGeometry(3.8,3),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowTexture),transparent:true,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.004;scene.add(shadow);
+ // Local ambient contact beneath each foot remains legible at the miniature scale.
+ const footShadowMaterial=new THREE.MeshBasicMaterial({map:shadow.material.map,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
+ const footShadowGeometry=new THREE.PlaneGeometry(.14,.14);
+ for(const [x,z] of [[-.65,.83],[-.3,.46],[-.29,-.03]]){
+  const footShadow=new THREE.Mesh(footShadowGeometry,footShadowMaterial);
+  footShadow.rotation.x=-Math.PI/2;footShadow.position.set(x,.8405,z);
+  model.add(footShadow);
+ }
  // Surrounding streets are visible only after crossing the glass; the central city never swaps.
  const outer=new THREE.Group();scene.add(outer);outer.visible=false;
- const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),new THREE.MeshStandardMaterial({color:0xe4e9e8,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.position.y=.84;ground.receiveShadow=true;outer.add(ground);
- const street=new THREE.Mesh(new THREE.PlaneGeometry(1.2,45),new THREE.MeshStandardMaterial({color:0x7c8389,roughness:.6}));street.rotation.x=-Math.PI/2;street.position.set(-.4,.846,-4);outer.add(street);
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),new THREE.MeshStandardMaterial({color:0xe8edf1,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.position.y=.839;ground.receiveShadow=true;outer.add(ground);
  const architecture=new THREE.Group();outer.add(architecture);
+ const cityFill=new THREE.DirectionalLight(0xc1d9ff,.85);cityFill.position.set(2,3,4);outer.add(cityFill);
  const cityReady=modelReady.then(ok=>{if(!ok)return;
+  // Match the miniature's counter-contact offset so the surrounding street meets its floor.
+  outer.position.y=-baseMin;
   function tileMaterial(source,repeat,color){const m=source.clone();for(const key of ['map','normalMap','roughnessMap','metalnessMap','aoMap'])if(m[key]){m[key]=m[key].clone();m[key].wrapS=m[key].wrapT=THREE.RepeatWrapping;m[key].repeat.set(...repeat);m[key].needsUpdate=true;}if(color)m.color.setRGB(...color);return m;}
-  let snowSurface,stoneSurface;model.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material]){if(m.name.startsWith('Snow'))snowSurface=m;if(m.name.startsWith('AI aged cream'))stoneSurface=m;}});
-  if(snowSurface)ground.material=tileMaterial(snowSurface,[180,180],[.88,.92,.98]);if(stoneSurface)street.material=tileMaterial(stoneSurface,[2,70],[.12,.14,.16]);
-  const city=model.getObjectByName('CITY');if(city)for(const [x,z,rotation] of [[-3,-2,0],[2.7,-2,0],[-3,-5,0],[2.7,-5,0],[-3,-8,0],[2.7,-8,0],[0,-10,Math.PI],[3,1,-Math.PI/2],[-3,1,Math.PI/2]]){const copy=city.clone();copy.traverse(o=>{if(o.isMesh&&o.material.name.startsWith('Snow')){const geometry=o.geometry.clone(),positions=geometry.attributes.position,index=geometry.index,keep=[];for(let n=0;n<index.count;n+=3){const a=index.getX(n),b=index.getX(n+1),c=index.getX(n+2);if(Math.max(positions.getY(a),positions.getY(b),positions.getY(c))>.90)keep.push(a,b,c);}geometry.setIndex(keep);o.geometry=geometry;}});copy.traverse(o=>{if(o.isMesh)o.castShadow=false;});copy.position.set(x,0,z);copy.rotation.y=rotation;architecture.add(copy);}
+  let snowSurface;model.traverse(o=>{if(o.isMesh)for(const m of Array.isArray(o.material)?o.material:[o.material]){if(m.name==='Settled ground snow')snowSurface=m;}});
+  if(snowSurface)ground.material=tileMaterial(snowSurface,[480,480]);
+  const city=model.getObjectByName('CITY');
+  city?.traverse(o=>{
+   if(!o.isMesh||o.material.name!=='Settled ground snow')return;
+   const p=o.geometry.attributes.position,colors=new Float32Array(p.count*3);
+   const bases=[[-.13,.23,-.56,-.14],[.27,.67,-.58,-.16],[.71,1.05,-.51,-.09],[-.715,-.325,-.64,-.32]];
+   for(let i=0;i<p.count;i++){
+    let shade=0;for(const [x0,x1,z0,z1] of bases){const dx=Math.max(x0-p.getX(i),0,p.getX(i)-x1),dz=Math.max(z0-p.getZ(i),0,p.getZ(i)-z1);shade=Math.max(shade,.20*Math.exp(-Math.hypot(dx,dz)/.055));}
+    colors.set([1-shade,1-shade*.91,1-shade*.72],i*3);
+   }
+   o.geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));o.material=o.material.clone();o.material.vertexColors=true;
+  });
+  const blocks=[[-3.2,-2.3,.12,.90],[2.9,-2.6,-.17,1.12],[-3.4,-5.5,.32,1.17],[3.2,-5.8,-.28,.84],[-3,-8.6,-.13,.79],[3.5,-9,.21,1.06],[.6,-11,Math.PI+.18,.91],[3.3,1.1,-Math.PI/2,1.04],[-3.4,.7,Math.PI/2,.87]];
+  if(city)for(const [i,[x,z,rotation,height]] of blocks.entries()){
+   const copy=city.clone();
+   copy.traverse(o=>{if(o.isMesh&&(o.material.name.startsWith('Snow')||o.material.name==='Winter paving')){const geometry=o.geometry.clone(),positions=geometry.attributes.position,index=geometry.index,keep=[];for(let n=0;n<index.count;n+=3){const a=index.getX(n),b=index.getX(n+1),c=index.getX(n+2);if(Math.max(positions.getY(a),positions.getY(b),positions.getY(c))>.90)keep.push(a,b,c);}geometry.setIndex(keep);o.geometry=geometry;}if(o.isMesh)o.castShadow=false;});
+   varyCityWindows(copy,i+1);copy.scale.y=height;copy.position.set(x,.84*(1-height),z);copy.rotation.y=rotation;architecture.add(copy);
+  }
   const trees=model.getObjectByName('TREES');if(trees)for(const [x,z]of [[-2,-3],[2,-3]]){const copy=trees.clone();copy.position.set(x,0,z);outer.add(copy);}
  });
  // Independent sky dome and distant skyline: buildings never stretch with sky elevation.
@@ -102,19 +132,30 @@ export function createScene(container){
  if(alpha<.015)discard;gl_FragColor=vec4(mix(vec3(.83,.88,.93),vec3(.98,.98,.94),flakeSeed),alpha);
  }`});
  const cityFlakes=new THREE.Points(cityGeo,citySnowMat);scene.add(cityFlakes);cityFlakes.visible=false;
- const startPos=new THREE.Vector3(0,2.9,9.5),endPos=new THREE.Vector3(-.20,1.13,1.12),startAim=new THREE.Vector3(0,1.60,0),endAim=new THREE.Vector3(-.10,1.40,-.42),aim=new THREE.Vector3(),inv=new THREE.Quaternion(),g=new THREE.Vector3(),v=new THREE.Vector3();
+ const startPos=new THREE.Vector3(0,2.9,9.5),endPos=new THREE.Vector3(-.12,1.18,1.70),startAim=new THREE.Vector3(0,1.60,0),endAim=new THREE.Vector3(.02,1.34,-.42),aim=new THREE.Vector3(),inv=new THREE.Quaternion(),g=new THREE.Vector3(),v=new THREE.Vector3();
  const smooth=x=>x*x*(3-2*x);
- function resize(){const w=container.clientWidth,h=container.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();startPos.z=camera.aspect<1?12.5:9.5;}
+ let startFov=36;
+ function resize(){
+  const w=container.clientWidth,h=container.clientHeight;
+  renderer.setSize(w,h);camera.aspect=w/h;
+  // Widen the portrait view while keeping the camera inside the shop's front wall.
+  startFov=THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(THREE.MathUtils.degToRad(18))/Math.min(1,camera.aspect)));
+  camera.updateProjectionMatrix();
+ }
  addEventListener('resize',resize);resize();
  function setView(travel){const enter=smooth(Math.min(1,travel));
-  lanterns.visible=travel>.55;for(const material of lanternMaterials)material.emissiveIntensity=travel>.55?4.5:1.4;
+  key.shadow.normalBias=travel>.55?.001:.012;
+  key.shadow.bias=travel>.55?-.00005:-.00025;
+  key.intensity=THREE.MathUtils.lerp(2.8,1.85,enter);
+  lanterns.visible=travel>.55;for(const material of lanternMaterials)material.emissiveIntensity=travel>.55?.65:1.4;
   camera.position.lerpVectors(startPos,endPos,enter);aim.lerpVectors(startAim,endAim,enter);
 
   if(travel>=1){const base=endAim.clone().sub(endPos),yaw=-look*.90,pitch=-lookY*.38;const euler=new THREE.Euler(pitch,yaw,0,'YXZ');base.applyEuler(euler);aim.copy(camera.position).add(base);}
-  camera.lookAt(aim);if(lanterns.visible){model.updateWorldMatrix(true,false);const eye=model.worldToLocal(camera.position.clone());for(const halo of lanternHalos)halo.position.copy(eye).sub(halo.userData.center).normalize().multiplyScalar(.09).add(halo.userData.center);}camera.fov=36+enter*24;camera.updateProjectionMatrix();
+  camera.lookAt(aim);if(lanterns.visible){model.updateWorldMatrix(true,false);const eye=model.worldToLocal(camera.position.clone());for(const halo of lanternHalos)halo.position.copy(eye).sub(halo.userData.center).normalize().multiplyScalar(.09).add(halo.userData.center);}camera.fov=THREE.MathUtils.lerp(startFov,60,enter);camera.updateProjectionMatrix();
   sky.material.opacity=THREE.MathUtils.smoothstep(travel,.55,.86);sky.visible=travel>.55;skyline.material.opacity=sky.material.opacity;skyline.visible=sky.visible;scene.fog=travel>.55?cityFog:null;outer.visible=travel>.55;shadow.visible=travel<.5;shop.visible=travel<.5;
   for(const o of groups.GLASS||[])o.visible=travel<.5;
   for(const o of groups.BASE||[])o.visible=travel<.5;
+  for(const o of globeRailing)o.visible=travel<.55;
   flakes.visible=travel<.55;cityFlakes.visible=travel>.55;
  }
  const ready=Promise.all([modelReady,cityReady,...backgroundJobs]).then(async([ok])=>{

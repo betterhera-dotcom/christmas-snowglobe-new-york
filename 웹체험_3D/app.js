@@ -8,7 +8,7 @@ const $=id=>document.getElementById(id),motion=new ShakeMotion(),carol=new Carol
 let wristBase=0;let demoTime=null;
 let pointerHeld=false;
 let scene,mode='idle',phase='globe',travel=0,tracker=null,faceTracker=null,stream=null,lastVideo=-1,lastDetection=0,lastHand=0,lastFrame=performance.now(),generation=0,starting=false;
-let milestones=[false,false,false],feedbackUntil=0;
+let milestones=[false,false,false],feedbackUntil=0,cityArrivedAt=0;
 const questNames=['스노우볼 들기','눈 깨우기','뉴욕 도착'],questIds=['quest-hold','quest-snow','quest-city'];
 function feedback(text){$('feedback').textContent=text;$('feedback').hidden=false;feedbackUntil=performance.now()+2300;}
 function completeStep(index,text){if(milestones[index])return;milestones[index]=true;if(index===0)carol.effect('lift');if(index===2)carol.effect('arrival');$(questIds[index]).classList.add('done');$(questIds[index]).setAttribute('aria-label',`${questNames[index]}: 완료`);$('quest-count').textContent=milestones.filter(Boolean).length;feedback(text);}
@@ -39,9 +39,10 @@ function error(text){$('error').textContent=text;$('error').hidden=!text;}
 function loadingFailed(message){error(message);$('loading').hidden=false;$('loading-message').textContent=message;$('loading').querySelector('small').textContent='연결을 확인한 후 다시 불러와주세요.';$('retry-load').hidden=false;}
 $('retry-load').addEventListener('click',()=>location.reload());
 window.addEventListener('art-error',event=>loadingFailed(event.detail));
-try{scene=createScene($('scene'));$('camera').disabled=$('pointer').disabled=$('reset').disabled=true;status('3D 스노우볼을 준비하고 있습니다…');scene.ready.then(ok=>{$('camera').disabled=$('pointer').disabled=$('reset').disabled=!ok;$('scene').setAttribute('aria-busy','false');if(ok){$('loading').hidden=true;}else{loadingFailed('스노우볼을 불러오지 못했어요');}status(ok?'시작 방법을 선택해주세요':'3D 파일을 읽지 못했습니다');});}catch(e){loadingFailed('입체 화면을 시작하지 못했습니다. Chrome의 그래픽 가속 설정과 브라우저를 확인해주세요.');console.error(e);}
+try{scene=createScene($('scene'));$('camera').disabled=$('pointer').disabled=$('reset').disabled=true;status('3D 스노우볼을 준비하고 있습니다…');scene.ready.then(ok=>{$('camera').disabled=$('pointer').disabled=$('reset').disabled=$('enter-city').disabled=!ok;$('scene').setAttribute('aria-busy','false');if(ok){$('loading').hidden=true;}else{loadingFailed('스노우볼을 불러오지 못했어요');}status(ok?'시작 방법을 선택해주세요':'3D 파일을 읽지 못했습니다');});}catch(e){loadingFailed('입체 화면을 시작하지 못했습니다. Chrome의 그래픽 가속 설정과 브라우저를 확인해주세요.');console.error(e);}
 function stopCamera(){if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('webcam').srcObject=null;$('camera-preview').removeAttribute('data-active');lastVideo=-1;}
 function setMode(value){
+  cityArrivedAt=0;document.body.classList.remove('city-settled');
   mode=value;phase='globe';travel=0;document.body.dataset.phase=phase;motion.reset();grip.reset();headLook.reset();pointerHeld=false;motion.keepHeld=false;motion.gripRevision=0;motion.wristRoll=0;motion.pitch=0;scene?.reset();milestones=[false,false,false];
   questIds.forEach((id,i)=>{$(id).classList.remove('done');$(id).setAttribute('aria-label',`${questNames[i]}: 대기`);});$('quest-count').textContent='0';$('feedback').hidden=true;
   $('reset').textContent='처음으로';document.querySelector('.step').textContent='01 / LIFT THE SNOWGLOBE';document.body.classList.toggle('active',value!=='idle');
@@ -86,6 +87,20 @@ async function startCamera(){
 $('camera').addEventListener('click',startCamera);
 async function startPointer(){if(!scene?.stats().artLoaded)return;starting=false;$('camera').disabled=false;generation++;stopCamera();setMode('pointer');error('');status('마우스를 누른 채 움직여주세요',true);feedback('손을 C자 모양으로 만들어 스노우볼을 잡아보세요');try{await carol.start();}catch{error('소리를 시작하지 못했습니다. 소리 버튼을 눌러주세요.');}}
 $('pointer').addEventListener('click',startPointer);
+function enterCity(){
+  phase='entering';
+  carol.effect('enter');
+  document.body.dataset.phase=phase;
+  $('hand-cursor').hidden=true;
+  $('prompt').textContent='눈보라 너머, 뉴욕으로';
+  $('hint').textContent='이제 손을 멈추고 작은 겨울 속으로 들어가요.';
+  feedback('겨울 여행이 열립니다');
+}
+$('enter-city').addEventListener('click',()=>{
+  if(starting||phase!=='globe'||!scene?.stats().artLoaded)return;
+  if(mode==='idle')startPointer();
+  enterCity();
+});
 function samplePointer(event){const r=$('scene').getBoundingClientRect(),x=(event.clientX-r.left)/r.width;if(phase==='city'){if(mode==='pointer')scene?.lookAt(x,(event.clientY-r.top)/r.height);return;}if(mode!=='pointer'||phase!=='globe'||!pointerHeld)return;motion.sample(x,(event.clientY-r.top)/r.height,performance.now()/1000);}
 $('scene').addEventListener('pointerdown',event=>{if(mode==='idle'&&!starting)startPointer();if(mode==='pointer'){pointerHeld=true;motion.keepHeld=true;$('scene').setPointerCapture(event.pointerId);samplePointer(event);}});
 $('scene').addEventListener('pointermove',samplePointer);
@@ -137,10 +152,17 @@ function frame(now){
   motion.update(dt,time);
   if(phase==='globe'&&mode!=='idle'&&scene?.stats().holding){completeStep(0,'스노우볼을 들었어요');}
   if(phase==='globe'&&scene?.stats().holding&&motion.energy>.12)completeStep(1,'눈이 깨어났어요!');
-  if(phase==='globe'&&mode!=='idle'&&motion.burst>0&&scene?.stats().holding){phase='entering';carol.effect('enter');document.body.dataset.phase=phase;$('hand-cursor').hidden=true;$('prompt').textContent='눈보라 너머, 뉴욕으로';$('hint').textContent='이제 손을 멈추고 작은 겨울 속으로 들어가요.';feedback('겨울 여행이 열립니다');}
+  if(phase==='globe'&&mode!=='idle'&&motion.burst>0&&scene?.stats().holding)enterCity();
   if(phase==='entering'){
     travel=Math.min(1,travel+dt/3.6);
     if(travel===1){phase='city';headLook.reset();fistReturn.reset(time);document.body.dataset.phase=phase;completeStep(2,'NEW YORK · 도착했어요');document.querySelector('.step').textContent='03 / A WINTER IN NEW YORK';$('prompt').textContent='손안의 뉴욕에 도착했어요';$('hint').textContent=mode==='camera'?'잠시 정면을 본 뒤 고개를 상하좌우로 돌려 둘러보세요. 주먹을 1초간 쥐면 처음으로 돌아갑니다.':'마우스를 상하좌우로 움직여 둘러보세요. 카메라 체험에서는 고개로 조절합니다.';$('reset').textContent='처음으로 돌아가기';status('뉴욕의 겨울을 감상해보세요',true);}
+  }
+  if(phase==='city'){
+    if(!cityArrivedAt)cityArrivedAt=now;
+    if(now-cityArrivedAt>4000&&!document.body.classList.contains('city-settled')){
+      document.body.classList.add('city-settled');
+      $('hint').textContent=mode==='camera'?'고개를 움직여 둘러보세요 · 주먹을 1초간 쥐면 처음으로':'마우스를 움직여 겨울 도시를 둘러보세요';
+    }
   }
   carol.update(dt,mode==='idle'||phase==='city'?0:motion.energy);carol.stir(phase==='globe'?motion.energy:0);scene?.update(dt,time,motion,travel);
   $('energy-bar').style.width=`${motion.energy*100}%`;document.querySelector('.meter').setAttribute('aria-valuenow',Math.round(motion.energy*100));$('bpm').textContent=Math.round(carol.bpm);

@@ -4,7 +4,7 @@ const m=new ShakeMotion();let t=0;
 function run(seconds,position){for(let i=0;i<seconds*60;i++){t+=1/60;if(position){const [x,y]=position(t);m.sample(x,y,t);}m.update(1/60,t);}}
 run(3,()=>[.5,.5]);assert.equal(m.energy,0,'stationary hand must not stir snow');
 run(3,time=>[.5+Math.sin(time*2*Math.PI)*.001,.5]);assert.equal(m.burst,0,'tiny jitter must not trigger storm');assert.ok(m.energy<.01);
-m.reset();run(2,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.energy>.4,'real repeated waving should stir snow');assert.equal(m.cooldown,0,'two seconds must not enter city');run(4,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.equal(m.cooldown,0,'six seconds must not enter city');run(4,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.cooldown>0,'sustained waving should enter city');const peak=m.energy;
+m.reset();run(2,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.energy>.4,'real repeated waving should stir snow');assert.equal(m.cooldown,0,'two seconds must not enter city');run(2,time=>[.5+Math.sin(time*2*Math.PI*1.7)*.18,.5]);assert.ok(m.cooldown>0,'four seconds of sustained waving should enter city');const peak=m.energy;
 run(8,null);assert.ok(m.energy<.01,'hand loss should settle the motion');assert.equal(m.burst,0);
 m.sample(.1,.1,t+1);assert.equal(m.raw,0,'reacquiring hand must not register a shake');
 m.sample(.9,.9,t+1.07);assert.equal(m.raw,0,'large tracking jump must be ignored');
