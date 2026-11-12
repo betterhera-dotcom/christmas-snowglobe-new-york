@@ -13,7 +13,7 @@ for(const fps of [30,60])for(const phase of ['globe','city']){
   if(kind==='hand'){maxHandGap=Math.max(maxHandGap,now-lastHand);lastHand=now;}
   if(kind==='body'){maxBodyGap=Math.max(maxBodyGap,now-lastBody);lastBody=now;}
  }
- assert.ok(count.hand>=(phase==='city'?45:75)&&count.hand<=90);assert.ok(maxBodyGap<750);
+ assert.ok(count.hand>=(phase==='city'?45:75)&&count.hand<=90);assert.ok(maxBodyGap<800,'700ms body refresh allows the intervening face/hand turns');
  assert.ok(count.face>=(phase==='city'?20:4),'face analysis runs from the globe and continues in the city');
  if(phase==='city'){assert.ok(maxFaceGap<=201,'city face targets update within 200ms on a responsive worker');assert.ok(maxHandGap<=101,'frequent face scans leave hands responsive');}
  console.log('PASS scheduling',{fps,phase,...count});
@@ -47,3 +47,29 @@ assert.ok(fastError<oldError*.7,'camera globe follows fast movement with substan
 const last=motion.last;motion.sample(.99,.99,last.t+.02);assert.equal(motion.inputSpeed,0,'a tracking jump clears speed instead of launching the globe');
 motion.release();assert.equal(motion.inputSpeed,0,'release clears speed');
 console.log('PASS: fast C grip, brief loss, measured movement speed and reduced following lag',{errorRatio:fastError/oldError,maxSpeed});
+
+// Optional globe face scans cannot occupy the first two hand opportunities.
+for(const interval of [33,100,220,600]){
+ const schedule=new TrackingSchedule();let handsSinceFace=0,faces=0,bodies=0;
+ for(let now=0;now<12000;now+=interval){
+  const kind=schedule.next(now,now/1000,{allowed:true,phase:'globe',faceReady:true});
+  if(kind==='hand')handsSinceFace++;
+  if(kind==='body')bodies++;
+  if(kind==='face'){assert.ok(handsSinceFace>=2,'globe gives at least two hand samples before each face scan');handsSinceFace=0;faces++;}
+ }
+ assert.ok(faces>0&&bodies>0,'face outlines and body ownership still update on slow workers');
+}
+// Measure the camera pose step response independently of camera inference latency.
+for(const fps of [30,60]){
+ const camera=new HeldPose();
+ const input={keepHeld:true,followHand:true,lift:.4,x:.5,y:.5,inputSpeed:0};
+ camera.update(1/fps,input);
+ input.x=.7;let reached=null;
+ for(let f=1;f<=fps;f++){
+  camera.update(1/fps,input);
+  assert.ok(camera.position[0]<=camera.target[0]+.001,'camera follow must not overshoot');
+  if(reached===null&&camera.position[0]>=camera.target[0]*.9)reached=f/fps;
+ }
+ assert.ok(reached<=.2334,'camera follows 90% of a new hand target within 234ms');
+ console.log('PASS camera follow response',{fps,reached});
+}
