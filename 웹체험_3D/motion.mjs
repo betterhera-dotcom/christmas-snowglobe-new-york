@@ -25,7 +25,7 @@ export class ShakeMotion {
         if(angle>.08){
           if(time-this.lastStroke>1.35){this.turn=0;this.firstStroke=time;}
           this.turn+=angle;this.strokes=Math.floor(this.turn/Math.PI);this.lastStroke=time;
-          if(this.playTime>=MIN_PLAY_SECONDS&&this.turn>=Math.PI*6&&time-this.firstStroke>=3&&this.energy>.22&&this.cooldown<=0){this.burst=1;this.cooldown=7;this.turn=0;this.strokes=0;}
+          if(this.playTime>=MIN_PLAY_SECONDS&&this.turn>=Math.PI*4&&time-this.firstStroke>=1.5&&this.energy>.28&&this.cooldown<=0){this.burst=1;this.cooldown=7;this.turn=0;this.strokes=0;}
         }
       }
       this.vector=next;this.anchor={x,y};

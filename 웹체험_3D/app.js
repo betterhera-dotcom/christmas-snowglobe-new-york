@@ -114,7 +114,7 @@ function setMode(value){
   questIds.forEach((id,i)=>{$(id).classList.remove('done');$(id).setAttribute('aria-label',`${questNames[i]}: 대기`);});$('quest-count').textContent='0';$('feedback').hidden=true;
   $('reset').textContent='처음으로';document.querySelector('.step').textContent='01 / LIFT THE SNOWGLOBE';document.body.classList.toggle('active',value!=='idle');
   $('mode-label').textContent=value==='camera'?'CAMERA':value==='pointer'?'TOUCH / MOUSE':'READY';$('prompt').textContent='손으로 작은 겨울을 들어보세요';
-  $('hint').textContent=value==='pointer'?'마우스를 누른 채 천천히, 빠르게 흔들며 음악을 즐겨보세요. 충분히 즐긴 뒤 계속 흔들면 뉴욕으로 들어갑니다.':'손을 C자 모양으로 만들어 잡고 자유롭게 흔들어보세요. 손을 완전히 펴서 1초간 유지하면 내려놓습니다.';$('hand-cursor').hidden=true;lastHand=0;
+  $('hint').textContent=value==='pointer'?'마우스를 누른 채 흔들어보세요. 조금 힘 있게 약 5초 이상 흔들면 뉴욕으로 들어갑니다.':'손을 C자로 잡고 조금 힘 있게 약 5초 이상 흔들면 뉴욕으로 들어갑니다. 손을 완전히 펴서 1초간 유지하면 내려놓습니다.';$('hand-cursor').hidden=true;lastHand=0;
 }
 async function startCamera(){
   if(starting||!scene?.stats().artLoaded)return;const token=++generation;starting=true;$('camera').disabled=true;error('');stopCamera();setMode('idle');status('손 인식을 준비하고 있습니다…');
