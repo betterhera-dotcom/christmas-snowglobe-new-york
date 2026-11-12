@@ -13,7 +13,7 @@ export class ShakeMotion {
     const dx=x-this.last.x,dy=y-this.last.y;
     // Reject tracking swaps/jumps; reacquisition must never launch a snowstorm.
     if(Math.hypot(dx,dy)>.45){this.last=null;this.raw=0;this.inputSpeed=0;this.entryStrength=0;this.entryTime=0;this.entryPath=[];this.entrySpan=0;this.strokes=0;return;}
-    const gain=this.followHand?Math.max(.75,Math.min(3,this.cameraScale||1)):1;
+    const gain=this.followHand&&Number.isFinite(this.cameraScale)&&this.cameraScale>0?this.cameraScale:1;
     const speed=Math.hypot(dx,dy)/dt*gain;
     this.inputSpeed+=(speed-this.inputSpeed)*(1-Math.exp(-dt/.05));
     this.raw=Math.min(1,Math.max(0,(speed-.12)/1.8));

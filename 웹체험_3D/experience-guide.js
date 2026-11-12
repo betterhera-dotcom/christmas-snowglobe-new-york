@@ -37,6 +37,6 @@ export function updateGuide({mode,phase,playTime=0,globeFill=0,trackingHz=0,hand
  $('snow-hand').hidden=!city||!(camera?seen:receiving||progress>0);
  $('snow-hand').style.left=`${Math.max(.16,Math.min(.84,point[0]))*100}%`;$('snow-hand').style.top=`${Math.max(.38,Math.min(.72,point[1]))*100}%`;
  $('snow-hand').dataset.receiving=String(receiving);
- $('palm-snow').style.opacity=String(Math.min(1,progress*5));$('palm-snow').style.transform=`translateY(${(1-progress)*22}px) scale(${.18+progress*.82})`;
+ $('palm-snow').style.opacity=String(Math.min(1,progress*5));$('palm-snow').style.transform=`translateY(${(1-progress)*22}px) scale(${.58+progress*.42},${.12+progress*.88})`;
  $('palm-caption').textContent=receiving?`눈을 받는 중 · ${percent}%`:'손바닥을 펴서 눈을 받아주세요';
 }

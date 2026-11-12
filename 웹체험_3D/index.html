@@ -39,10 +39,23 @@
     </aside>
     <div id="snow-hand" hidden aria-hidden="true">
       <svg viewBox="0 0 260 240">
-        <defs><linearGradient id="palm-glow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#effbff" stop-opacity=".5"/><stop offset="1" stop-color="#aed3e0" stop-opacity=".12"/></linearGradient><radialGradient id="snow-shade" cx=".4" cy=".25" r=".8"><stop stop-color="#fffef8"/><stop offset=".65" stop-color="#edf5f7"/><stop offset="1" stop-color="#b3cedb"/></radialGradient></defs>
+        <defs><linearGradient id="palm-glow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#effbff" stop-opacity=".5"/><stop offset="1" stop-color="#aed3e0" stop-opacity=".12"/></linearGradient><radialGradient id="snow-shade" cx=".4" cy=".25" r=".8"><stop stop-color="#fffef8"/><stop offset=".65" stop-color="#edf5f7"/><stop offset="1" stop-color="#b3cedb"/></radialGradient>
+          <linearGradient id="snow-front" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f4f9fb"/><stop offset="1" stop-color="#91b3c5"/></linearGradient>
+          <radialGradient id="snow-soft" cx=".35" cy=".2" r=".85"><stop stop-color="#fffef9"/><stop offset=".6" stop-color="#f1f7fa"/><stop offset="1" stop-color="#bdd2df"/></radialGradient>
+          <pattern id="snow-grain" width="19" height="17" patternUnits="userSpaceOnUse"><g fill="#fff" opacity=".85"><circle cx="2" cy="3" r=".75"/><circle cx="12" cy="7" r="1.1"/><circle cx="7" cy="14" r=".6"/><path d="M16 12l1-1 1 1-1 1Z"/></g><g fill="#7d9fb5" opacity=".22"><circle cx="5" cy="6" r=".65"/><circle cx="15" cy="3" r=".5"/><circle cx="11" cy="14" r=".7"/></g></pattern>
+          <path id="snow-mound" d="M66 148Q62 139 73 133Q72 123 87 122Q90 111 104 113Q113 98 128 104Q145 100 153 115Q169 111 176 126Q190 132 184 144Q190 153 172 158Q131 173 88 162Q70 159 66 148Z"/>
+        </defs>
         <path class="virtual-palm" fill="url(#palm-glow)" d="M101 232L96 201Q69 184 56 161L31 125Q23 113 30 106Q38 99 47 108L74 131L61 78Q57 64 67 61Q77 59 81 72L94 112L88 55Q86 42 97 40Q107 39 109 53L118 105L122 48Q123 35 134 37Q144 39 143 52L142 108L155 63Q159 51 169 55Q179 59 175 72L160 131Q159 145 169 139L193 114Q203 104 212 112Q220 120 210 132L185 164Q172 190 155 202L154 232Z"/>
         <path class="palm-detail" d="M82 142Q102 128 125 138M96 162Q123 176 150 151M104 194Q125 183 151 191M92 116L97 136M119 109L120 128M141 113L137 129"/>
-        <g id="palm-snow"><path fill="url(#snow-shade)" d="M68 148Q62 139 75 132Q69 119 88 117Q87 102 105 106Q112 87 128 101Q142 91 153 111Q174 107 174 123Q191 125 182 140Q186 153 164 159Q120 176 79 158Q67 156 68 148Z"/><path fill="none" stroke="#ffffffb3" stroke-width="2" d="M80 133Q94 125 105 128M116 108Q129 103 139 112M144 141Q160 130 172 135"/></g>
+        <g id="palm-snow">
+          <ellipse cx="126" cy="160" rx="55" ry="8" fill="#244a64" opacity=".16"/>
+          <use href="#snow-mound" fill="url(#snow-shade)"/>
+          <path fill="url(#snow-front)" d="M67 145Q88 153 107 148Q132 155 153 146Q171 148 184 141Q192 153 172 158Q131 173 88 162Q70 159 67 145Z"/>
+          <path fill="url(#snow-soft)" d="M76 136Q81 122 97 125Q100 116 112 119Q123 107 136 115Q150 113 157 127Q172 125 177 137Q154 146 134 141Q110 150 88 141Z"/>
+          <use href="#snow-mound" fill="url(#snow-grain)"/>
+          <g fill="#fffdf6"><ellipse cx="100" cy="123" rx="2.2" ry="1.1"/><ellipse cx="144" cy="138" rx="1.7" ry=".9"/><circle cx="122" cy="113" r="1"/><circle cx="81" cy="142" r="1.2"/><circle cx="165" cy="145" r="1"/></g>
+          <g fill="none" stroke="#fff" stroke-linecap="round" opacity=".85"><path d="M112 128v5m-2.5-2.5h5M157 124v3m-1.5-1.5h3"/></g>
+        </g>
       </svg><span id="palm-caption">손바닥을 펴서 눈을 받아주세요</span>
     </div>
     <section class="instruction arcade-panel">

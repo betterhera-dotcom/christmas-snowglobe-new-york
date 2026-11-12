@@ -3,7 +3,7 @@ import {BODY_HOLD_SECONDS} from './tracking-policy.mjs';
 // Relative movement compensation only; no metre estimate or distance cutoff.
 export function cameraMotionScale(size){
  if(!Number.isFinite(size)||size<=0)return 1;
- return Math.max(.75,Math.min(3,.35/size));
+ return .35/Math.max(.005,size);
 }
 const visible=p=>p&&Number.isFinite(p.x+p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1&&(p.visibility??0)>=.5&&(p.presence??1)>=.5;
 function describe(points,index){

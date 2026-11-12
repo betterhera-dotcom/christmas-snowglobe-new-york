@@ -1,6 +1,6 @@
 // Intro chimes crossfade to the user's recording. Rate changes never seek/restart it.
 export class Carol {
-  constructor(track,cityTrack){this.track=track;this.cityTrack=cityTrack;this.cityTrack.loop=true;this.cityTrack.playbackRate=1;this.cityTrack.preservesPitch=true;this.context=null;this.muted=false;this.bpm=116;this.rate=1;this.songVolume=.12;this.startTime=20;this.beat=0;this.note=0;this.mode='intro';if(track){track.preservesPitch=false;track.webkitPreservesPitch=false;track.mozPreservesPitch=false;track.loop=false;track.addEventListener('ended',()=>{if(this.mode==='song'){track.currentTime=this.startTime;track.play().catch(()=>{});}});}}
+  constructor(track,cityTrack){this.track=track;this.cityTrack=cityTrack;this.cityTrack.loop=true;this.cityTrack.playbackRate=1;this.cityTrack.preservesPitch=true;this.context=null;this.muted=false;this.bpm=116;this.rate=1;this.songVolume=.12;this.startTime=20;this.beat=0;this.note=0;this.mode='intro';if(track){track.playbackRate=1;track.preservesPitch=true;track.webkitPreservesPitch=true;track.mozPreservesPitch=true;track.loop=false;track.addEventListener('ended',()=>{if(this.mode==='song'){track.currentTime=this.startTime;track.play().catch(()=>{});}});}}
   resumeContext(){
     if(!this.context){this.context=new AudioContext();this.master=this.context.createGain();this.master.gain.value=this.muted?0:.14;this.master.connect(this.context.destination);this.beat=0;
      this.melody=this.context.createGain();this.melody.connect(this.master);
@@ -46,7 +46,7 @@ export class Carol {
   }
   async unlockTrack(){const resumed=this.resumeContext();try{await Promise.all([resumed,this.track.play(),this.cityTrack.play()]);}finally{if(this.mode==='intro'){this.track.pause();this.track.currentTime=0;this.cityTrack.pause();this.cityTrack.currentTime=0;}}}
   async start(){
-   const resumed=this.resumeContext(),fresh=this.mode!=='song';this.mode='song';if(fresh){this.track.currentTime=this.startTime;this.songVolume=.12;this.rate=.6;this.track.playbackRate=.6;}
+   const resumed=this.resumeContext(),fresh=this.mode!=='song';this.mode='song';if(fresh){this.track.currentTime=this.startTime;this.songVolume=.12;this.rate=1;this.track.playbackRate=1;}
    try{await Promise.all([resumed,this.track.play()]);}catch(e){this.startIntro().catch(()=>{});throw e;}
    if(this.mode!=='song'){this.track.pause();return;}
    this.melody.gain.setTargetAtTime(0,this.context.currentTime,.45);this.songGain.gain.setTargetAtTime(this.muted?0:this.songVolume,this.context.currentTime,.7);
@@ -63,18 +63,15 @@ export class Carol {
   mute(value){this.muted=value;this.cityTrack.muted=value;if(this.track)this.track.muted=value;if(this.master){this.cityGain.gain.setTargetAtTime(value||this.mode!=='city'?0:.45,this.context.currentTime,.08);this.master.gain.setTargetAtTime(value?0:.14,this.context.currentTime,.08);this.songGain.gain.setTargetAtTime(value||this.mode!=='song'?0:this.songVolume,this.context.currentTime,.08);}}
   update(dt,energy,phase='globe'){
     const strength=Math.min(1,Math.max(0,energy)/.85),shaking=this.mode==='song'&&phase==='globe';
-    // Most ordinary movement stays at the recording's original speed. Only
-    // deliberate vigorous shaking opens the fast-forward range.
-    const fast=Math.max(0,Math.min(1,(energy-.72)/.28));
-    const target=shaking?(energy<.035?.85+energy/.035*.15:1+fast*fast*2.4):1;
-    this.rate=phase==='city'?1:this.rate+(target-this.rate)*(1-Math.exp(-dt/.85));
+    // Keep the recording at its original tempo for every gesture and distance.
+    this.rate=1;
     const volume=shaking?.12+strength**.8*.60:.4;
     this.songVolume+=(volume-this.songVolume)*(1-Math.exp(-dt/1.2));
     if(this.songGain&&this.mode==='song')this.songGain.gain.setTargetAtTime(this.muted?0:this.songVolume,this.context.currentTime,.15);
     if(this.mode==='city'&&this.context?.currentTime>=this.globeStopAt&&!this.track.paused)this.track.pause();
     if(this.mode==='ending'&&this.context?.currentTime>=this.fadeEnd){this.track.pause();this.cityTrack.pause();this.songGain.gain.setValueAtTime(0,this.context.currentTime);this.cityGain.gain.setValueAtTime(0,this.context.currentTime);}
     if(this.track){this.track.dataset.audioMode=this.mode;this.track.dataset.audioContext=this.context?.state||'none';this.track.dataset.gain=this.muted||this.mode!=='song'?'0':this.songVolume.toFixed(3);}
-    if(this.track&&((phase==='city'&&this.track.playbackRate!==1)||Math.abs(this.track.playbackRate-this.rate)>.003))this.track.playbackRate=this.rate;
+    if(this.track&&this.track.playbackRate!==1)this.track.playbackRate=1;
     if(!this.context||this.context.state!=='running')return;
     if(this.mode!=='intro')return;
     this.beat-=dt*this.bpm/60;
