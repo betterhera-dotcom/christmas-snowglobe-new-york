@@ -16,7 +16,7 @@ import {body,hand} from './body-fixture.mjs';
 import {BODY_HOLD_SECONDS,HAND_HOLD_SECONDS} from '../tracking-policy.mjs';
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
 assert.doesNotMatch(html,/id="(?:distance-limit|calibrate-distance|viewer-distance|viewer-calibration)"/,'range and calibration controls removed');
-const source=(await readFile(new URL('../app.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,'');
+const source=(await readFile(new URL('../app.js',import.meta.url),'utf8')).replace(/^import .*?;\r?\n/gm,'');
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
 const tick=()=>new Promise(r=>setImmediate(r));
 function setup(){
@@ -96,10 +96,10 @@ for(const movingSide of [0,1]){
   t.run("applyTrackingResult('body',packet,now)");
   let hands=[hand(.38,.42),hand(.62,.42)];hands[movingSide]=hand(x,.42);
   if(Math.round(time*10)%2)hands.reverse();
-  t.context.packet={landmarks:hands,worldLandmarks:hands.map(()=>gesture(true))};t.run("applyTrackingResult('hand',packet,now)");
+  t.context.packet={landmarks:hands,worldLandmarks:hands.map(()=>gesture(time>0))};t.run("applyTrackingResult('hand',packet,now)");
  }
  for(const time of [0,.1,.2,.3])feed(time,movingSide===0?.38:.62);
- assert.equal(t.run('grip.closed'),true,'one C-shaped hand outside the globe can pick up with two hands visible');
+ assert.equal(t.run('grip.closed'),true,'open palm then curl outside the globe can pick up with two hands visible');
  let switches=0,maxSpeed=0;
  for(let i=4;i<24;i++){
   const x=(movingSide===0?.38:.62)+.07*Math.sin((i-3)*.8);

@@ -134,7 +134,7 @@ function setMode(value){
   questIds.forEach((id,i)=>{$(id).classList.remove('done');$(id).setAttribute('aria-label',`${questNames[i]}: 대기`);});$('quest-count').textContent='0';$('feedback').hidden=true;
   $('reset').textContent='처음으로 · R';document.querySelector('.step').textContent='01 / LIFT THE SNOWGLOBE';document.body.classList.toggle('active',value!=='idle');
   $('mode-label').textContent=value==='camera'?'CAMERA':value==='pointer'?'TOUCH / MOUSE':'READY';$('prompt').textContent='손으로 작은 겨울을 들어보세요';
-  $('hint').textContent=value==='pointer'?'스노우볼 위를 눌러 잡고, 9초간 들고 음악과 눈을 즐긴 뒤, 좌우로 짧게 흔들어주세요.':'한 손을 C 모양으로 만들어 잡습니다. 9초간 들고 음악과 눈을 즐긴 뒤, 좌우로 짧게 흔들어주세요.';$('hand-cursor').hidden=true;lastHand=0;
+  $('hint').textContent=value==='pointer'?'스노우볼 위를 눌러 잡고, 빨리 흔들면 음악이 빨라져요. 천천히 흔들면 느려져요.':'손바닥을 화면에 향하게 해주세요. 손가락을 살짝 오므리면 스노우볼을 잡습니다. 빨리 흔들면 음악이 빨라져요. 천천히 흔들면 느려져요.';$('hand-cursor').hidden=true;lastHand=0;
 }
 function startupDeadline(promise,ms,message){
  let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);})]).finally(()=>clearTimeout(timer));
@@ -250,7 +250,7 @@ function applyTrackingResult(inference,result,now){
       if(handChanged){
         // A handover is not a shake: rebase position and wrist rotation.
         motion.release();motion.gripRevision=(motion.gripRevision||0)+1;
-        grip.since=null;snowCatch.reset();raisedHandHold.reset();
+        if(!grip.closed)grip.reset();grip.since=null;snowCatch.reset();raisedHandHold.reset();
       }
       trackedHand=hand||null;trackedAt=time;
       if(phase==='city'){
@@ -270,8 +270,8 @@ function applyTrackingResult(inference,result,now){
           motion.pitch=Math.max(-.65,Math.min(.65,(points3D[9].z-points3D[0].z)/Math.max(.001,palm)));
         }
         motion.keepHeld=closed;
-        if(closed)motion.sample(x,y,time,performance.now()/1000);else motion.release();lastHand=time;status(closed?'스노우볼을 잡고 있어요':'손을 C 모양으로 만들어 잡아주세요',closed);$('hand-cursor').hidden=phase==='city';$('hand-cursor').style.left=`${x*100}%`;$('hand-cursor').style.top=`${y*100}%`;
-      }else{const held=grip.update(null,time);motion.keepHeld=held;if(!held)motion.release();$('hand-cursor').hidden=true;status(held?'잡은 상태를 유지하고 있어요 · 손을 보여주세요':'손이 카메라에 보이도록 들어주세요');}
+        if(closed)motion.sample(x,y,time,performance.now()/1000);else motion.release();lastHand=time;status(closed?'스노우볼을 잡고 있어요':grip.ready?'손가락을 살짝 오므려 스노우볼을 잡아주세요':'손바닥을 화면에 향하게 해주세요',closed);$('hand-cursor').hidden=phase==='city';$('hand-cursor').style.left=`${x*100}%`;$('hand-cursor').style.top=`${y*100}%`;
+      }else{const held=grip.update(null,time);motion.keepHeld=held;if(!held)motion.release();$('hand-cursor').hidden=true;status(held?'잡은 상태를 유지하고 있어요 · 손을 보여주세요':'손바닥을 화면에 향하게 해주세요');}
       }
  }
 function frame(now){
@@ -342,10 +342,7 @@ function frame(now){
   const preview=mode==='camera'&&(phase==='globe'||phase==='city')?getHandPreview(handPreviewPacket,audience,now):null;
   const handControllable=!!preview&&!preview.delayed&&trackedHand===preview.hand&&trackedAt===preview.timestamp/1000;
   scene?.setReceivingHand?.(phase==='city'&&wishStartedAt===null&&(receivingSnow||snowCatch.progress>0),palmPoint,snowCatch.progress);
-  if(updateDiagnostics)updateGuide({mode,phase,cityLookIntro:!citySnowReady(now,cityArrivedAt),handPreview:preview,handControllable,playTime:globeEnjoyTime,globeFill:fillState?.globeFill||0,trackingHz:trackingSchedule.handHz(now),hand:time-trackedAt<=HAND_HOLD_SECONDS&&audience.allowed?trackedHand:null,held:motion.keepHeld,receiving:receivingSnow,progress:snowCatch.progress,point:palmPoint,test:testSnow});
-  if(mode==='camera'&&(phase==='globe'||phase==='city')){
-    if(!audience.selected)$('motion-title').textContent='어깨와 손이 카메라에 보이게 서주세요';
-  }
+  if(updateDiagnostics)updateGuide({mode,phase,cityLookIntro:!citySnowReady(now,cityArrivedAt),handPreview:preview,handControllable,palmReady:grip.ready,playTime:globeEnjoyTime,globeFill:fillState?.globeFill||0,trackingHz:trackingSchedule.handHz(now),hand:time-trackedAt<=HAND_HOLD_SECONDS&&audience.allowed?trackedHand:null,held:motion.keepHeld,receiving:receivingSnow,progress:snowCatch.progress,point:palmPoint,test:testSnow});
   const showHand=!!preview;
   if(mode==='camera')webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:handControllable,delegates:tracker?.delegates,faceError:tracker?.faceError,held:motion.keepHeld,phase,analysisOnly:recognitionOnly,dropped:tracker?.metrics.dropped,paused:phase==='entering'});
   virtualCurl+=((pointerHeld&&phase==='globe'?1:0)-virtualCurl)*(1-Math.exp(-dt*16));
@@ -363,9 +360,9 @@ function frame(now){
   drawStorm(time);drawWinter(dt,time);if(now>feedbackUntil)$('feedback').hidden=true;
   if(mode!=='idle'&&phase==='globe'){
     const holding=scene?.stats().holding;
-    if(holding)$('hint').textContent='빠르게 흔들면 음악도 빨라져요 · 천천히 흔들면 느려져요';
+    $('hint').textContent=holding?'빨리 흔들면 음악이 빨라져요 · 천천히 흔들면 느려져요':mode==='camera'?'어깨와 손이 함께 보이게 해주세요. 손가락을 살짝 오므리면 잡고, 펼치면 내려놓습니다.':'스노우볼 위를 누른 채 움직여주세요.';
     document.querySelector('.step').textContent=holding?'02 / SHAKE A LITTLE MAGIC':'01 / LIFT THE SNOWGLOBE';
-    $('prompt').textContent=!milestones[0]?'손을 C 모양으로 만들어 잡아주세요':!holding?'한 손을 다시 보여주세요':globeEnjoyTime<MIN_PLAY_SECONDS?'빠르게, 느리게 · 음악과 눈을 즐겨보세요':'뉴욕으로 떠나려면 좌우로 짧게 흔들어주세요';
+    $('prompt').textContent=!holding?(mode==='camera'?(grip.ready?'손가락을 살짝 오므려 스노우볼을 잡아주세요':'손바닥을 화면에 향하게 해주세요'):'스노우볼 위를 눌러 잡아주세요'):globeEnjoyTime<MIN_PLAY_SECONDS?'빨리 흔들면 음악이 빨라져요':'뉴욕으로 떠나려면 좌우로 짧게 흔들어주세요';
   }
   requestAnimationFrame(frame);
 }

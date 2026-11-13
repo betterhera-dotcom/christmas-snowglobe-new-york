@@ -30,11 +30,27 @@ assert.ok(getHandPreview(raw,gate,performance.now()),'same dropped result remain
 raw=null;const old=client.detect('hand',{},performance.now(),p=>raw=p);await Promise.resolve();client.reset();worker.respond();assert.equal(await old,null);assert.equal(raw,null,'old session cannot restore a ghost hand');client.close();
 // Verify the real guide distinguishes a visible preview from working control.
 const elements=new Map();const element=id=>{if(!elements.has(id))elements.set(id,{style:{},dataset:{},children:[],firstElementChild:{style:{}},setAttribute(){},append(v){this.children.push(v);},classList:{toggle(){}}});return elements.get(id);};
-const source=(await readFile(new URL('../experience-guide.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,'').replaceAll('export function','function');
+const source=(await readFile(new URL('../experience-guide.js',import.meta.url),'utf8')).replace(/^import .*?;\r?\n/gm,'').replaceAll('export function','function');
 const ctx=vm.createContext({document:{getElementById:element,createElementNS:()=>({setAttribute(){}})},MIN_PLAY_SECONDS:3});vm.runInContext(source,ctx);
 ctx.options={mode:'camera',phase:'globe',hand:null,handPreview:{hand:frontHand,delayed:true},handControllable:false,point:[.5,.5]};vm.runInContext('updateGuide(options)',ctx);
-assert.match(element('tracking-state').textContent,/손 위치 표시 · 조작 대기/);assert.match(element('motion-title').textContent,/분석이 늦어/);
+assert.equal(element('tracking-state').textContent,'● 카메라 연결됨');assert.equal(element('motion-title').textContent,'손바닥을 화면에 향하게 해주세요');
 console.log('PASS: delayed white-hand preview without control, expiry, no/rear hands, no anchor mutation, session reset and waiting guide');
 
 ctx.options={mode:'camera',phase:'city',hand:null,progress:0,point:[.5,.5]};vm.runInContext('updateGuide(options)',ctx);
 assert.match(element('motion-help').textContent,/고개를 돌려/,'city keeps head-look instructions alongside snow collection');
+
+ctx.options={mode:'camera',phase:'globe',hand:frontHand,handControllable:true,palmReady:false,held:false,point:[.5,.5]};vm.runInContext('updateGuide(options)',ctx);
+assert.equal(element('motion-title').textContent,'손바닥을 화면에 향하게 해주세요');
+ctx.options.palmReady=true;vm.runInContext('updateGuide(options)',ctx);
+assert.equal(element('motion-title').textContent,'손가락을 살짝 오므려 스노우볼을 잡아주세요');
+ctx.options.held=true;vm.runInContext('updateGuide(options)',ctx);
+assert.equal(element('motion-title').textContent,'빨리 흔들면 음악이 빨라져요');
+assert.equal(element('motion-help').textContent,'빨리 흔들면 음악이 빨라져요 · 천천히 흔들면 느려져요');
+console.log('PASS: palm preparation, curl and music-speed guidance');
+
+for(const held of [false,true])for(const delayed of [false,true,false,true]){
+ ctx.options={mode:'camera',phase:'globe',hand:frontHand,handPreview:{hand:frontHand,delayed},handControllable:!delayed,palmReady:true,held,point:[.5,.5]};vm.runInContext('updateGuide(options)',ctx);
+ assert.equal(element('tracking-state').textContent,'● 카메라 연결됨');
+ assert.equal(element('motion-title').textContent,held?'빨리 흔들면 음악이 빨라져요':'손가락을 살짝 오므려 스노우볼을 잡아주세요','tracking delays must not replace the action guide');
+}
+console.log('PASS: action guidance stays stable across delayed and accepted hand samples');
