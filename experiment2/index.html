@@ -69,7 +69,7 @@
       <div class="readout"><div class="signal"><i id="status-dot"></i><span id="status">시작 방법을 선택해주세요</span></div><span id="mode-label">READY</span><div class="energy"><span>SNOW</span><div class="meter" role="progressbar" aria-label="눈을 깨우는 힘" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="energy-bar"></div></div></div><span class="tempo"><span id="bpm">1.00</span> <small>× SPEED</small></span></div>
       <p id="error" role="alert" hidden></p>
     </section>
-    <footer><span class="footer-title">CHRISTMAS IN YOUR HANDS</span><div><button id="catch-snow" hidden>눈 받기</button><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset" aria-keyshortcuts="R" title="R 키로 처음 화면으로 돌아가기">처음으로 · R</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
+    <footer><span class="footer-title">CHRISTMAS IN YOUR HANDS</span><div><button id="catch-snow" hidden>눈 받기</button><button id="sound" aria-pressed="false">소리 켜짐</button><button id="reset" aria-keyshortcuts="R" title="R: 처음으로 · Shift+R: 오류 복구용 새로고침">처음으로 · R</button><button id="fullscreen">전체 화면 ↗</button></div></footer>
     <div id="winter-wish" hidden data-stage="grow">
       <div class="wish-frost" aria-hidden="true"></div>
       <svg id="caught-snowflake" viewBox="-60 -60 120 120" aria-hidden="true">
@@ -86,6 +86,34 @@
   </main>
   <audio id="carol-track" preload="auto" src="assets/audio/jingle-bells-musicbox-20s.m4a" hidden></audio>
   <audio id="city-track" preload="auto" loop src="assets/audio/jingle-bells-city.mp3" hidden></audio>
+  <button id="recovery-reset" hidden style="position:fixed;right:16px;top:16px;z-index:100000;background:#173b2d;color:white;border:1px solid #dec38a;border-radius:8px;padding:12px 16px" title="페이지를 다시 불러와 오류에서 복구합니다">오류 복구 · R</button>
+  <script id="recovery-controls">
+    // Independent of app imports and the animation loop, so R survives app failures.
+    (() => {
+      let ready = false, failed = false;
+      const button = document.getElementById('recovery-reset');
+      const fail = () => { failed = true; button.hidden = false; };
+      window.addEventListener('snowglobe-ready', () => { ready = true; });
+      window.addEventListener('snowglobe-failed', fail);
+      window.addEventListener('error', fail);
+      window.addEventListener('unhandledrejection', fail);
+      document.addEventListener('webglcontextlost', fail, true);
+      button.addEventListener('click', () => location.reload());
+      document.addEventListener('click', event => {
+        if (event.target?.closest?.('#reset') && (!ready || failed)) {
+          event.preventDefault(); event.stopImmediatePropagation(); location.reload();
+        }
+      }, true);
+      document.addEventListener('keydown', event => {
+        if (event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.target?.isContentEditable || event.target?.closest?.('input,textarea,select,[role="textbox"]')) return;
+        if (event.code !== 'KeyR' && event.key?.toLowerCase() !== 'r') return;
+        if (!ready || failed || event.shiftKey) {
+          event.preventDefault(); event.stopImmediatePropagation(); location.reload();
+        }
+      }, true);
+    })();
+  </script>
   <script id="app-bootstrap">
     // This small loader still runs when an app module fails to download or evaluate.
     (() => {
@@ -98,10 +126,12 @@
       }, 15000);
       import('./app.js?release=exhibition-preview-v20&timing=v21&guide=v22').then(() => {
         clearTimeout(timer);
+        window.dispatchEvent(new Event('snowglobe-ready'));
         retry.hidden = true;
         buttons.forEach(button => button.disabled = false);
         status.textContent = '시작 방법을 누르면 음악과 함께 커튼이 열립니다';
       }).catch(error => {
+        window.dispatchEvent(new Event('snowglobe-failed'));
         clearTimeout(timer);
         buttons.forEach(button => button.disabled = true);
         status.textContent = '실행 파일을 불러오지 못했습니다. 다시 불러오기를 눌러주세요.';
