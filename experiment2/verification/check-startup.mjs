@@ -20,15 +20,15 @@ const source=(await readFile(new URL('../app.js',import.meta.url),'utf8')).repla
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
 const tick=()=>new Promise(r=>setImmediate(r));
 function setup(){
- const art=deferred(),permission=deferred(),model=deferred(),audio=deferred(),nodes=new Map(),events=[];let ready=false,models=0;const timers=new Map();let timerId=0;
+ const art=deferred(),permission=deferred(),model=deferred(),audio=deferred(),nodes=new Map(),events=[],documentEvents=new Map();let ready=false,models=0;const timers=new Map();let timerId=0;
  function element(id){if(nodes.has(id))return nodes.get(id);const classes=new Set();const e={id,hidden:false,disabled:false,dataset:{},style:{setProperty(){}},children:[],firstElementChild:{style:{}},classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(){}},addEventListener(type,fn){this[type]=fn;},setAttribute(){},removeAttribute(){},getContext:()=>({clearRect(){}}),play:()=>Promise.resolve(),querySelector:()=>element(id+' child'),focus(){}};nodes.set(id,e);return e;}
  class Noop{prepareFace(){} reset(){} pause(){} close(){} mute(){} update(){} startIntro(){return audio.promise;}unlockTrack(){return audio.promise;}resume(){return audio.promise;}effect(){} }
  class FakeTracker extends Noop{constructor(){super();models++;this.ready=model.promise;}prepareFace(){events.push('face-prepare');} }
  const looks=[];
  const scene={ready:art.promise,stats:()=>({artLoaded:ready}),reset(){},resumeTiming(){},handOverGlobe:()=>false,lookAt:(x,y)=>looks.push([x,y])};
- const context=vm.createContext({FrameCadence,console:{warn(){},error(){}},performance,URLSearchParams,location:{search:'?muted=1'},document:{getElementById:element,querySelector:element,addEventListener(){},body:element('body')},window:{addEventListener(){}},navigator:{mediaDevices:{getUserMedia(){events.push('permission');return permission.promise;}}},localStorage:{getItem(){throw Error('removed range settings must not be read');}},requestAnimationFrame(){},setTimeout(fn,ms){const id=++timerId;timers.set(id,{fn,ms});return id;},clearTimeout(id){timers.delete(id);},innerWidth:1280,innerHeight:720,advanceGlobeEnjoy,citySnowReady,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,handLift,AudienceGate,cameraMotionScale,TrackingSchedule,getHandPreview,ShakeMotion,HandPickup,BODY_HOLD_SECONDS,HAND_HOLD_SECONDS,TrackingClient:FakeTracker,HeadLook,SnowCollection,RaisedHandHold,isReceivingSnow,SnowEntry:Noop,Carol:Noop,WebcamDebug:Noop,createHandRenderer:()=>()=>{},showIntro(){},openIntro(){events.push('curtain');},createScene:()=>scene});
+ const context=vm.createContext({FrameCadence,console:{warn(){},error(){}},performance,URLSearchParams,location:{search:'?muted=1'},document:{getElementById:element,querySelector:element,addEventListener(type,fn){documentEvents.set(type,fn);},body:element('body')},window:{addEventListener(){}},navigator:{mediaDevices:{getUserMedia(){events.push('permission');return permission.promise;}}},localStorage:{getItem(){throw Error('removed range settings must not be read');}},requestAnimationFrame(){},setTimeout(fn,ms){const id=++timerId;timers.set(id,{fn,ms});return id;},clearTimeout(id){timers.delete(id);},innerWidth:1280,innerHeight:720,advanceGlobeEnjoy,citySnowReady,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,handLift,AudienceGate,cameraMotionScale,TrackingSchedule,getHandPreview,ShakeMotion,HandPickup,BODY_HOLD_SECONDS,HAND_HOLD_SECONDS,TrackingClient:FakeTracker,HeadLook,SnowCollection,RaisedHandHold,isReceivingSnow,SnowEntry:Noop,Carol:Noop,WebcamDebug:Noop,createHandRenderer:()=>()=>{},showIntro(){},openIntro(){events.push('curtain');},createScene:()=>scene});
  vm.runInContext(source,context);
- return {context,art,permission,model,events,element,fire(ms){for(const [id,timer]of [...timers])if(timer.ms===ms){timers.delete(id);timer.fn();}},scene,looks,get models(){return models;},loadArt(){ready=true;art.resolve(true);},run:code=>vm.runInContext(code,context)};
+ return {context,art,permission,model,events,element,documentEvents,fire(ms){for(const [id,timer]of [...timers])if(timer.ms===ms){timers.delete(id);timer.fn();}},scene,looks,get models(){return models;},loadArt(){ready=true;art.resolve(true);},run:code=>vm.runInContext(code,context)};
 }
 function cameraStream(){let stopped=false;const track={stop(){stopped=true;},getSettings:()=>({deviceId:'test',width:640,height:480}),addEventListener(){}};return {get stopped(){return stopped;},getTracks:()=>[track],getVideoTracks:()=>[track]};}
 {
@@ -171,3 +171,16 @@ console.log('PASS: actual city input selects raised hands regardless of palm ori
  assert.equal(t.run('mode'),'pointer','prewarm failure does not block mouse mode');
 }
 console.log('PASS: model prewarm without camera, reuse, and failure recovery');
+
+{
+ const t=setup(),handler=t.documentEvents.get('keydown');assert.equal(typeof handler,'function');
+ for(const key of [{key:'r',code:'KeyR'},{key:'R',code:'KeyR',shiftKey:true},{key:'ㄱ',code:'KeyR'}]){
+  t.run("setMode('pointer');phase='city'");let prevented=false;
+  handler({...key,preventDefault(){prevented=true;}});
+  assert.equal(t.run('mode'),'idle');assert.equal(t.run('phase'),'globe');assert.ok(prevented);
+ }
+ for(const ignored of [{repeat:true},{isComposing:true},{ctrlKey:true},{metaKey:true},{altKey:true},{defaultPrevented:true},{target:{isContentEditable:true}},{target:{closest:()=>true}}]){
+  t.run("setMode('pointer')");handler({key:'r',code:'KeyR',preventDefault(){throw Error('must not consume typing or browser shortcuts');},...ignored});assert.equal(t.run('mode'),'pointer');
+ }
+ console.log('PASS: R/Shift+R/Korean physical R resets actual app, typing/repeat/browser shortcuts ignored');
+}
