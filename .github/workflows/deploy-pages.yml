@@ -1,5 +1,5 @@
 name: Deploy snowglobe and developer preview
-# experiment2 release: 65f402b7a1f210090e5e6116a39dfcba3616768c
+# experiment2 release: 5f1e7f9392207e6a3160eb1d814f0123c98f9399
 
 on:
   push:
