@@ -1,20 +1,19 @@
 import {FrameCadence} from './frame-budget.mjs';
 import {handLift} from './hand-height.mjs';
 import {trackingRegion} from './tracking-region.mjs';
-import {ENTRY_DURATION_MS,MIN_PLAY_SECONDS,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,citySnowReady,transitionVeil,advanceGlobeEnjoy} from './journey.mjs';
+import {ENTRY_DURATION_MS,GLOBE_PLAY_MS,MIN_PLAY_SECONDS,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,citySnowReady,transitionVeil,advanceGlobeEnjoy} from './journey.mjs?exhibition=v21';
 import { createScene } from './scene3d.js?hand=skin-left-v13';
 import { ShakeMotion } from './motion.mjs';
 import { HeadLook } from './head-look.mjs';
-import {HandPickup} from './hand-pickup.mjs';
+import {HandPickup} from './hand-pickup.mjs?exhibition=v20';
 import {SnowCollection,RaisedHandHold,isReceivingSnow,WINTER_WISHES,nextWish} from './snow-wish.mjs';
 import {AudienceGate,cameraMotionScale} from './audience.mjs';
-import {SnowEntry} from './snow-entry.mjs';
 import {TrackingSchedule} from './tracking-schedule.mjs';
 import {TrackingClient} from './tracking-client.mjs';
 import {getHandPreview} from './hand-preview.mjs';
 import {BODY_HOLD_SECONDS,HAND_HOLD_SECONDS} from './tracking-policy.mjs';
 import { Carol } from './audio.js?cue=soft-fade-v8';
-import {showIntro,openIntro,updateGuide} from './experience-guide.js';
+import {showIntro,openIntro,updateGuide} from './experience-guide.js?exhibition=v22';
 import {createHandRenderer,pointerHand} from './hand-shape.js';
 import {WebcamDebug} from './webcam-debug.js';
 
@@ -23,7 +22,7 @@ const visualCadence=new FrameCadence(60);let diagnosticAt=-Infinity;
 let virtualPointer=[.72,.72],virtualCurl=0;
 const handOutline=$('hand-outline'),drawHandOutline=createHandRenderer(handOutline);let outlinedAt=-Infinity,lastOutlineDraw=-Infinity;
 const webcamDebug=new WebcamDebug($('webcam-skeleton'),$('tracking-status'),$('tracking-metrics'),{compact:true});
-const snowEntry=new SnowEntry();
+
 let recognitionOnly=false,comparisonSamples=[],comparisonBefore=null,trackingPressure=0;
 $('recognition-only').addEventListener('click',()=>{
  recognitionOnly=!recognitionOnly;
@@ -49,7 +48,7 @@ $('intro-pointer').addEventListener('click',()=>beginExperience('pointer'));
 let wristBase=0;let demoTime=null,demoFrequency=10;
 let pointerHeld=false;
 let scene,mode='idle',phase='globe',travel=0,tracker=null,stream=null,lastHand=0,lastFrame=performance.now(),generation=0,starting=false;
-let milestones=[false,false,false],feedbackUntil=0,cityArrivedAt=0,globeEnjoyTime=0;
+let milestones=[false,false,false],feedbackUntil=0,cityArrivedAt=0,globeEnjoyTime=0,globeStartedAt=null;
 let entryStartedAt=0,wishStartedAt=null,lastWish=-1,pointerCatchAt=null,pointerCatchPoint=[.5,.5];
 const trialSelection=new URLSearchParams(location.search).get('trial');
 const trialEnabled=id=>trialSelection===null||trialSelection.split(',').includes(String(id));
@@ -127,14 +126,14 @@ function setMode(value){
   snowCatch.maxGap=value==='camera'?HAND_HOLD_SECONDS:.35;
   recognitionOnly=false;comparisonSamples=[];comparisonBefore=null;$('recognition-only').textContent='인식만 비교 · 3D 정지';$('recognition-only').setAttribute('aria-pressed','false');webcamDebug.reset();
   audience.reset();trackingSchedule.reset();tracker?.reset();
-  snowEntry.reset();
   clearWish();$('catch-snow').hidden=true;
   cityArrivedAt=0;globeEnjoyTime=0;document.body.classList.remove('city-settled');
+  globeStartedAt=value==='idle'?null:performance.now();
   mode=value;phase='globe';travel=0;document.body.dataset.phase=phase;document.body.dataset.input=value;motion.reset();motion.followHand=value==='camera';grip.reset();headLook.reset();pointerHeld=false;motion.keepHeld=false;motion.gripRevision=0;motion.wristRoll=0;motion.pitch=0;scene?.reset();milestones=[false,false,false];
   questIds.forEach((id,i)=>{$(id).classList.remove('done');$(id).setAttribute('aria-label',`${questNames[i]}: 대기`);});$('quest-count').textContent='0';$('feedback').hidden=true;
   $('reset').textContent='처음으로 · R';document.querySelector('.step').textContent='01 / LIFT THE SNOWGLOBE';document.body.classList.toggle('active',value!=='idle');
   $('mode-label').textContent=value==='camera'?'CAMERA':value==='pointer'?'TOUCH / MOUSE':'READY';$('prompt').textContent='손으로 작은 겨울을 들어보세요';
-  $('hint').textContent=value==='pointer'?'스노우볼 위를 눌러 잡고, 빨리 흔들면 음악이 빨라져요. 천천히 흔들면 느려져요.':'손바닥을 화면에 향하게 해주세요. 손가락을 살짝 오므리면 스노우볼을 잡습니다. 빨리 흔들면 음악이 빨라져요. 천천히 흔들면 느려져요.';$('hand-cursor').hidden=true;lastHand=0;
+  $('hint').textContent=value==='pointer'?'스노우볼 위를 누른 채 흔들어주세요. 빠르게 흔들면 음악도 빨라져요.':'손바닥을 화면에 보여주고 좌우로 흔들어주세요. 빠르게 흔들면 음악도 빨라져요.';$('hand-cursor').hidden=true;lastHand=0;
 }
 function startupDeadline(promise,ms,message){
  let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(message)),ms);})]).finally(()=>clearTimeout(timer));
@@ -191,6 +190,11 @@ async function startPointer(){
 }
 $('cancel-start').addEventListener('click',startPointer);
 $('pointer').addEventListener('click',startPointer);
+function updateGlobeJourney(now){
+ if(mode==='idle'||phase!=='globe'||globeStartedAt===null)return;
+ globeEnjoyTime=Math.min(GLOBE_PLAY_MS/1000,Math.max(0,now-globeStartedAt)/1000);
+ if(now-globeStartedAt>=GLOBE_PLAY_MS)enterCity();
+}
 function enterCity(){
   trackingSchedule.reset();if(mode==='camera')tracker?.prepareFace();
   entryStartedAt=performance.now();
@@ -250,7 +254,7 @@ function applyTrackingResult(inference,result,now){
       if(handChanged){
         // A handover is not a shake: rebase position and wrist rotation.
         motion.release();motion.gripRevision=(motion.gripRevision||0)+1;
-        if(!grip.closed)grip.reset();grip.since=null;snowCatch.reset();raisedHandHold.reset();
+        grip.since=null;snowCatch.reset();raisedHandHold.reset();
       }
       trackedHand=hand||null;trackedAt=time;
       if(phase==='city'){
@@ -270,13 +274,14 @@ function applyTrackingResult(inference,result,now){
           motion.pitch=Math.max(-.65,Math.min(.65,(points3D[9].z-points3D[0].z)/Math.max(.001,palm)));
         }
         motion.keepHeld=closed;
-        if(closed)motion.sample(x,y,time,performance.now()/1000);else motion.release();lastHand=time;status(closed?'스노우볼을 잡고 있어요':grip.ready?'손가락을 살짝 오므려 스노우볼을 잡아주세요':'손바닥을 화면에 향하게 해주세요',closed);$('hand-cursor').hidden=phase==='city';$('hand-cursor').style.left=`${x*100}%`;$('hand-cursor').style.top=`${y*100}%`;
-      }else{const held=grip.update(null,time);motion.keepHeld=held;if(!held)motion.release();$('hand-cursor').hidden=true;status(held?'잡은 상태를 유지하고 있어요 · 손을 보여주세요':'손바닥을 화면에 향하게 해주세요');}
+        if(closed)motion.sample(x,y,time,performance.now()/1000);else motion.release();lastHand=time;status(closed?'스노우볼을 잡고 있어요':'손바닥을 화면에 보여주세요',closed);$('hand-cursor').hidden=phase==='city';$('hand-cursor').style.left=`${x*100}%`;$('hand-cursor').style.top=`${y*100}%`;
+      }else{const held=grip.update(null,time);motion.keepHeld=held;if(!held)motion.release();$('hand-cursor').hidden=true;status(held?'잡은 상태를 유지하고 있어요 · 손을 보여주세요':'손이 카메라에 보이도록 들어주세요');}
       }
  }
 function frame(now){
   const time=now/1000;let dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
   if(starting){visualCadence.reset();requestAnimationFrame(frame);return;}
+  updateGlobeJourney(now);
   $('recognition-only').disabled=phase==='entering'||phase==='ending';
   if(demoTime!==null&&phase==='globe'){const t=time-demoTime;pointerHeld=true;motion.keepHeld=true;motion.sample(.5+.19*Math.sin(t*demoFrequency),.5+.10*Math.cos(t*demoFrequency*.8),time);if(t>32){demoTime=null;releasePointer();}}
   if(demoTime!==null&&phase==='city'){demoTime=null;releasePointer();}
@@ -317,12 +322,8 @@ function frame(now){
   if(phase==='globe'&&mode!=='idle')carol.followShake(dt,!!scene?.stats().holding&&motion.keepHeld,motion.raw).catch(()=>error('소리를 시작하지 못했어요. 소리 버튼을 눌러주세요.'));
   if(phase==='globe'&&mode!=='idle'&&scene?.stats().holding){completeStep(0,'스노우볼을 들었어요');}
   if(phase==='globe'&&scene?.stats().holding&&motion.energy>.12)completeStep(1,'눈이 깨어났어요!');
-  if(phase==='globe'&&mode!=='idle')globeEnjoyTime=advanceGlobeEnjoy(globeEnjoyTime,dt,{
-    held:motion.keepHeld,observed:mode==='pointer'?pointerHeld:!!motion.last&&time-(motion.last.receivedAt??motion.last.t)<HAND_HOLD_SECONDS
-  });
   const fillState=scene?.stats();
-  if(snowEntry.update(dt,{ready:phase==='globe'&&mode!=='idle'&&globeEnjoyTime>=MIN_PLAY_SECONDS,strong:motion.keepHeld&&motion.raw>.35&&motion.entrySpan>.10&&!!motion.last&&time-(motion.last.receivedAt??motion.last.t)<(motion.followHand?.35:.16)}))enterCity();
-  if(updateDiagnostics)document.body.dataset.journey=JSON.stringify({enjoySeconds:Math.round(globeEnjoyTime*10)/10,ready:globeEnjoyTime>=MIN_PLAY_SECONDS,strongSeconds:Math.round(snowEntry.strongTime*100)/100});
+  if(updateDiagnostics)document.body.dataset.journey=JSON.stringify({elapsedSeconds:Math.round(globeEnjoyTime*10)/10,transitionAfterSeconds:GLOBE_PLAY_MS/1000});
   if(phase==='entering'){
     travel=Math.min(1,(now-entryStartedAt)/ENTRY_DURATION_MS);
     if(travel===1){phase='city';cityArrivedAt=now;carol.startCity().catch(()=>error('도시 음악을 시작하지 못했어요. 소리 버튼을 눌러 다시 켜주세요.'));pointerHeld=false;pointerCatchAt=null;testSnow=false;receivingSnow=false;headLook.reset();snowCatch.reset();raisedHandHold.reset();document.body.dataset.phase=phase;completeStep(2,'NEW YORK · 도착했어요');document.querySelector('.step').textContent='03 / A WINTER IN NEW YORK';$('prompt').textContent='손안의 뉴욕에 도착했어요';$('hint').textContent=mode==='camera'?'먼저 고개를 돌려 5초 동안 도시를 둘러보세요':'먼저 마우스를 움직여 5초 동안 도시를 둘러보세요';$('catch-snow').hidden=true;$('reset').textContent='처음으로 · R';status('뉴욕의 겨울을 감상해보세요',true);}
@@ -342,7 +343,10 @@ function frame(now){
   const preview=mode==='camera'&&(phase==='globe'||phase==='city')?getHandPreview(handPreviewPacket,audience,now):null;
   const handControllable=!!preview&&!preview.delayed&&trackedHand===preview.hand&&trackedAt===preview.timestamp/1000;
   scene?.setReceivingHand?.(phase==='city'&&wishStartedAt===null&&(receivingSnow||snowCatch.progress>0),palmPoint,snowCatch.progress);
-  if(updateDiagnostics)updateGuide({mode,phase,cityLookIntro:!citySnowReady(now,cityArrivedAt),handPreview:preview,handControllable,palmReady:grip.ready,playTime:globeEnjoyTime,globeFill:fillState?.globeFill||0,trackingHz:trackingSchedule.handHz(now),hand:time-trackedAt<=HAND_HOLD_SECONDS&&audience.allowed?trackedHand:null,held:motion.keepHeld,receiving:receivingSnow,progress:snowCatch.progress,point:palmPoint,test:testSnow});
+  if(updateDiagnostics)updateGuide({mode,phase,cityLookIntro:!citySnowReady(now,cityArrivedAt),handPreview:preview,handControllable,playTime:globeEnjoyTime,globeFill:fillState?.globeFill||0,trackingHz:trackingSchedule.handHz(now),hand:time-trackedAt<=HAND_HOLD_SECONDS&&audience.allowed?trackedHand:null,held:motion.keepHeld,receiving:receivingSnow,progress:snowCatch.progress,point:palmPoint,test:testSnow});
+  if(mode==='camera'&&(phase==='globe'||phase==='city')){
+    if(!audience.selected)$('motion-title').textContent='어깨와 손이 카메라에 보이게 서주세요';
+  }
   const showHand=!!preview;
   if(mode==='camera')webcamDebug.draw(now,{video:$('webcam'),allowed:audience.allowed,selected:audience.selected?.index,controlled:handControllable,delegates:tracker?.delegates,faceError:tracker?.faceError,held:motion.keepHeld,phase,analysisOnly:recognitionOnly,dropped:tracker?.metrics.dropped,paused:phase==='entering'});
   virtualCurl+=((pointerHeld&&phase==='globe'?1:0)-virtualCurl)*(1-Math.exp(-dt*16));
@@ -360,9 +364,9 @@ function frame(now){
   drawStorm(time);drawWinter(dt,time);if(now>feedbackUntil)$('feedback').hidden=true;
   if(mode!=='idle'&&phase==='globe'){
     const holding=scene?.stats().holding;
-    $('hint').textContent=holding?'빨리 흔들면 음악이 빨라져요 · 천천히 흔들면 느려져요':mode==='camera'?'어깨와 손이 함께 보이게 해주세요. 손가락을 살짝 오므리면 잡고, 펼치면 내려놓습니다.':'스노우볼 위를 누른 채 움직여주세요.';
+    if(holding)$('hint').textContent='빠르게 흔들면 음악도 빨라져요 · 천천히 흔들면 느려져요';
     document.querySelector('.step').textContent=holding?'02 / SHAKE A LITTLE MAGIC':'01 / LIFT THE SNOWGLOBE';
-    $('prompt').textContent=!holding?(mode==='camera'?(grip.ready?'손가락을 살짝 오므려 스노우볼을 잡아주세요':'손바닥을 화면에 향하게 해주세요'):'스노우볼 위를 눌러 잡아주세요'):globeEnjoyTime<MIN_PLAY_SECONDS?'빨리 흔들면 음악이 빨라져요':'뉴욕으로 떠나려면 좌우로 짧게 흔들어주세요';
+    $('prompt').textContent=!milestones[0]?'손바닥을 화면에 보여주세요':!holding?'한 손을 다시 보여주세요':globeEnjoyTime<MIN_PLAY_SECONDS?'빠르게 흔들면 음악도 빨라져요':'잠시 후 뉴욕으로 떠나요';
   }
   requestAnimationFrame(frame);
 }

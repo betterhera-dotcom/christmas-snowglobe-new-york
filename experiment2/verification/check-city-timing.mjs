@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import {ENTRY_DURATION_MS,MIN_PLAY_SECONDS,CITY_TITLE_MS,WISH_DURATION_MS,citySnowReady,advanceGlobeEnjoy} from '../journey.mjs';
-assert.equal(1.5+MIN_PLAY_SECONDS+ENTRY_DURATION_MS/1000+CITY_TITLE_MS/1000+4+WISH_DURATION_MS/1000,30);
+import {GLOBE_PLAY_MS,WISH_FADE_MS,ENTRY_DURATION_MS,MIN_PLAY_SECONDS,CITY_TITLE_MS,WISH_DURATION_MS,citySnowReady,advanceGlobeEnjoy} from '../journey.mjs';
+assert.equal(GLOBE_PLAY_MS,12000);
+assert.equal(WISH_FADE_MS-2300,5700,'message stays readable three seconds longer');
+assert.equal(WISH_DURATION_MS-WISH_FADE_MS,1500,'preserve gentle fade duration');
 assert.equal(citySnowReady(5999,1000),false);
 assert.equal(citySnowReady(6000,1000),true);
 assert.equal(citySnowReady(10000,0),false);
-console.log('PASS: 30-second planned stages; snow blocked until five seconds after arrival');
+console.log('PASS: 12-second globe timer and longer card; snow blocked until five seconds after arrival');
 
 let enjoy=0;
 for(let i=0;i<600;i++)enjoy=advanceGlobeEnjoy(enjoy,1/60,{held:false,observed:true});

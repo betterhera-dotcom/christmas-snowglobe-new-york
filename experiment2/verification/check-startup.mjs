@@ -1,5 +1,5 @@
 import {FrameCadence} from '../frame-budget.mjs';
-import {citySnowReady,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,advanceGlobeEnjoy} from '../journey.mjs';
+import {citySnowReady,GLOBE_PLAY_MS,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,advanceGlobeEnjoy} from '../journey.mjs';
 import {handLift} from '../hand-height.mjs';
 // Execute the real app orchestration with controlled browser/scene/model promises.
 import assert from 'node:assert/strict';
@@ -16,7 +16,7 @@ import {body,hand} from './body-fixture.mjs';
 import {BODY_HOLD_SECONDS,HAND_HOLD_SECONDS} from '../tracking-policy.mjs';
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
 assert.doesNotMatch(html,/id="(?:distance-limit|calibrate-distance|viewer-distance|viewer-calibration)"/,'range and calibration controls removed');
-const source=(await readFile(new URL('../app.js',import.meta.url),'utf8')).replace(/^import .*?;\r?\n/gm,'');
+const source=(await readFile(new URL('../app.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,'');
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
 const tick=()=>new Promise(r=>setImmediate(r));
 function setup(){
@@ -26,7 +26,7 @@ function setup(){
  class FakeTracker extends Noop{constructor(){super();models++;this.ready=model.promise;}prepareFace(){events.push('face-prepare');} }
  const looks=[];
  const scene={ready:art.promise,stats:()=>({artLoaded:ready}),reset(){},resumeTiming(){},handOverGlobe:()=>false,lookAt:(x,y)=>looks.push([x,y])};
- const context=vm.createContext({FrameCadence,console:{warn(){},error(){}},performance,URLSearchParams,location:{search:'?muted=1'},document:{getElementById:element,querySelector:element,addEventListener(type,fn){documentEvents.set(type,fn);},body:element('body')},window:{addEventListener(){}},navigator:{mediaDevices:{getUserMedia(){events.push('permission');return permission.promise;}}},localStorage:{getItem(){throw Error('removed range settings must not be read');}},requestAnimationFrame(){},setTimeout(fn,ms){const id=++timerId;timers.set(id,{fn,ms});return id;},clearTimeout(id){timers.delete(id);},innerWidth:1280,innerHeight:720,advanceGlobeEnjoy,citySnowReady,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,handLift,AudienceGate,cameraMotionScale,TrackingSchedule,getHandPreview,ShakeMotion,HandPickup,BODY_HOLD_SECONDS,HAND_HOLD_SECONDS,TrackingClient:FakeTracker,HeadLook,SnowCollection,RaisedHandHold,isReceivingSnow,SnowEntry:Noop,Carol:Noop,WebcamDebug:Noop,createHandRenderer:()=>()=>{},showIntro(){},openIntro(){events.push('curtain');},createScene:()=>scene});
+ const context=vm.createContext({FrameCadence,console:{warn(){},error(){}},performance,URLSearchParams,location:{search:'?muted=1'},document:{getElementById:element,querySelector:element,addEventListener(type,fn){documentEvents.set(type,fn);},body:element('body')},window:{addEventListener(){}},navigator:{mediaDevices:{getUserMedia(){events.push('permission');return permission.promise;}}},localStorage:{getItem(){throw Error('removed range settings must not be read');}},requestAnimationFrame(){},setTimeout(fn,ms){const id=++timerId;timers.set(id,{fn,ms});return id;},clearTimeout(id){timers.delete(id);},innerWidth:1280,innerHeight:720,advanceGlobeEnjoy,citySnowReady,GLOBE_PLAY_MS,CITY_TITLE_MS,WISH_DURATION_MS,WISH_FADE_MS,handLift,AudienceGate,cameraMotionScale,TrackingSchedule,getHandPreview,ShakeMotion,HandPickup,BODY_HOLD_SECONDS,HAND_HOLD_SECONDS,TrackingClient:FakeTracker,HeadLook,SnowCollection,RaisedHandHold,isReceivingSnow,SnowEntry:Noop,Carol:Noop,WebcamDebug:Noop,createHandRenderer:()=>()=>{},showIntro(){},openIntro(){events.push('curtain');},createScene:()=>scene});
  vm.runInContext(source,context);
  return {context,art,permission,model,events,element,documentEvents,fire(ms){for(const [id,timer]of [...timers])if(timer.ms===ms){timers.delete(id);timer.fn();}},scene,looks,get models(){return models;},loadArt(){ready=true;art.resolve(true);},run:code=>vm.runInContext(code,context)};
 }
@@ -96,10 +96,10 @@ for(const movingSide of [0,1]){
   t.run("applyTrackingResult('body',packet,now)");
   let hands=[hand(.38,.42),hand(.62,.42)];hands[movingSide]=hand(x,.42);
   if(Math.round(time*10)%2)hands.reverse();
-  t.context.packet={landmarks:hands,worldLandmarks:hands.map(()=>gesture(time>0))};t.run("applyTrackingResult('hand',packet,now)");
+  t.context.packet={landmarks:hands,worldLandmarks:hands.map(()=>gesture(true))};t.run("applyTrackingResult('hand',packet,now)");
  }
  for(const time of [0,.1,.2,.3])feed(time,movingSide===0?.38:.62);
- assert.equal(t.run('grip.closed'),true,'open palm then curl outside the globe can pick up with two hands visible');
+ assert.equal(t.run('grip.closed'),true,'one C-shaped hand outside the globe can pick up with two hands visible');
  let switches=0,maxSpeed=0;
  for(let i=4;i<24;i++){
   const x=(movingSide===0?.38:.62)+.07*Math.sin((i-3)*.8);
@@ -183,4 +183,14 @@ console.log('PASS: model prewarm without camera, reuse, and failure recovery');
   t.run("setMode('pointer')");handler({key:'r',code:'KeyR',preventDefault(){throw Error('must not consume typing or browser shortcuts');},...ignored});assert.equal(t.run('mode'),'pointer');
  }
  console.log('PASS: R/Shift+R/Korean physical R resets actual app, typing/repeat/browser shortcuts ignored');
+}
+
+{
+ const t=setup();
+ t.run("setMode('camera')");const start=t.run('globeStartedAt');
+ t.run(`updateGlobeJourney(${start+11999})`);assert.equal(t.run('phase'),'globe');
+ t.run('releaseAudience()');t.run(`updateGlobeJourney(${start+12000})`);assert.equal(t.run('phase'),'entering','12 seconds triggers without any hand or shake');
+ t.run('resetExperience()');t.run(`updateGlobeJourney(${start+90000})`);assert.equal(t.run('phase'),'globe');assert.equal(t.run('globeStartedAt'),null,'reset cancels old countdown');
+ t.run("setMode('pointer')");const restart=t.run('globeStartedAt');t.run(`updateGlobeJourney(${restart+20000})`);assert.equal(t.run('phase'),'entering','late frame catches up without counting tracking frames');
+ console.log('PASS: wall-clock 12-second transition, no tracking dependency, reset cancels and restart gets fresh clock');
 }

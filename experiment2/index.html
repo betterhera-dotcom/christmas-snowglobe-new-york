@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>손끝에서 열리는 크리스마스</title>
   <meta name="robots" content="noindex,nofollow">
-  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?exhibition=v20">
 </head>
 <body data-phase="globe">
   <main id="experience">
@@ -38,7 +38,7 @@
     <aside id="motion-guide" hidden aria-label="동작 인식 가이드">
       <div class="motion-heading"><span id="tracking-state" role="status">손을 보여주세요</span><span id="tracking-mode">카메라</span></div>
       <svg id="tracking-map" viewBox="0 0 120 90" aria-hidden="true"><path id="tracking-lines"/><g id="tracking-joints"></g></svg>
-      <div class="motion-copy"><strong id="motion-title">손바닥을 화면에 향하게 해주세요</strong><p id="motion-help">어깨와 손이 카메라에 함께 보이게 해주세요.</p></div>
+      <div class="motion-copy"><strong id="motion-title">손바닥을 화면에 보여주세요</strong><p id="motion-help">어깨와 손이 카메라에 함께 보이게 해주세요.</p></div>
       <div id="snow-progress" hidden><div class="snow-progress-label"><span id="snow-progress-label">손에 쌓인 눈</span><span id="snow-percent">0%</span></div><div id="snow-meter" role="progressbar" aria-label="손에 쌓인 눈" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div></div>
       <ol class="motion-steps"><li id="guide-hold">1 잡기</li><li id="guide-shake">2 흔들기</li><li id="guide-snow">3 눈 받기</li></ol>
     </aside>
@@ -64,7 +64,7 @@
       </svg><span id="palm-caption">펼친 손바닥을 화면에 보여주세요</span>
     </div>
     <section class="instruction arcade-panel">
-      <div class="guide"><span class="step">01 / LIFT THE SNOWGLOBE</span><h2 id="prompt">손으로 작은 겨울을 들어보세요</h2><p id="hint">손바닥을 화면에 향하게 해주세요. 손가락을 살짝 오므려 잡은 뒤 흔들어주세요.</p></div>
+      <div class="guide"><span class="step">01 / LIFT THE SNOWGLOBE</span><h2 id="prompt">손으로 작은 겨울을 들어보세요</h2><p id="hint">손바닥을 화면에 보여주고 좌우로 흔들어주세요.</p></div>
       <div class="actions"><button id="camera" class="primary">카메라로 시작 <span aria-hidden="true">▶</span></button><button id="pointer">마우스 · 터치로 체험</button><button id="enter-city" class="test-entry" disabled title="흔들기 없이 도시 화면 테스트">도시 들어가기</button></div>
       <div class="readout"><div class="signal"><i id="status-dot"></i><span id="status">시작 방법을 선택해주세요</span></div><span id="mode-label">READY</span><div class="energy"><span>SNOW</span><div class="meter" role="progressbar" aria-label="눈을 깨우는 힘" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="energy-bar"></div></div></div><span class="tempo"><span id="bpm">1.00</span> <small>× SPEED</small></span></div>
       <p id="error" role="alert" hidden></p>
@@ -96,7 +96,7 @@
         status.textContent = '시작 준비가 늦어지고 있습니다. 연결을 확인하거나 다시 불러와주세요.';
         retry.hidden = false;
       }, 15000);
-      import('./app.js?release=exhibition-reset-v19').then(() => {
+      import('./app.js?release=exhibition-preview-v20&timing=v21&guide=v22').then(() => {
         clearTimeout(timer);
         retry.hidden = true;
         buttons.forEach(button => button.disabled = false);
