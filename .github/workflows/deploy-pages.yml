@@ -1,5 +1,5 @@
 name: Deploy snowglobe and developer preview
-# experiment2 release: 5f1e7f9392207e6a3160eb1d814f0123c98f9399
+# experiment2 release: 23a5b43fe950711c45b642e3f3f12394a54d0710
 
 on:
   push:
@@ -58,6 +58,8 @@ jobs:
           node _lite/웹체험_3D/verification/check-snow-entry.mjs
           node _lite/웹체험_3D/verification/check-city-timing.mjs
           node _lite/웹체험_3D/verification/check-lite.mjs
+          node _experiment/experiment2/verification/check-recovery.mjs
+          node _experiment/experiment2/verification/check-bootstrap.mjs
           node _experiment/experiment2/verification/check-startup.mjs
           node _experiment/experiment2/verification/check-response-trial.mjs
           node _experiment/experiment2/verification/check-hand-target-bridge.mjs
